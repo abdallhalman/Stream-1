@@ -27,6 +27,7 @@ jobs:
           gdown 1ekfJ69Z-pglTaOUVOYjzfiGdXLgpBrw3 -O a8.tmp && ffmpeg -i a8.tmp audio8.mp3 -y
           gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O a9.tmp && ffmpeg -i a9.tmp audio9.mp3 -y
           gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O a10.tmp && ffmpeg -i a10.tmp audio10.mp3 -y
+
       - name: Create playlist and merge
         run: |
           ls audio*.mp3 | shuf > playlist.txt
@@ -39,11 +40,5 @@ jobs:
         run: |
           ffmpeg -stream_loop -1 -re -i video.mp4 \
           -stream_loop -1 -re -i merged_audio.mp3 \
-          -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k \
-          -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
-      - name: Start Stream
-        run: |
-          ffmpeg -stream_loop -1 -re -i video.mp4 \
-          -stream_loop -1 -re -i merged_audio.m4a \
           -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k \
           -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
