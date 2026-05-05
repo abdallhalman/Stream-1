@@ -7,19 +7,42 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - name: Install ffmpeg and gdown
+      - name: Install tools
         run: |
           sudo apt-get install -y ffmpeg
           pip install gdown
 
-      - name: Download files
+      - name: Download video
+        run: gdown 10knwfZRkqZcvlmge4iZtqkDo5p7wROke -O video.mp4
+
+      - name: Download audio files
         run: |
-          gdown 1z-dOnuBqFZY0CRSdo4SPtue0ACRRcwaC -O video.mp4
-          gdown 1krr-Qk_El6pk3ZdFjzJXfpYZ2ijdxpzL -O audio.mp3
+          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O audio1.m4a
+          gdown 1UyYE8WpXlqxfGrOMos4HNpDNakpKsvRL -O audio2.m4a
+          gdown 1dMaQqnHTPQXOZJCB3TtbTr6cdmBBIPSs -O audio3.m4a
+          gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O audio4.m4a
+          gdown 1ah1sQo22RucADqxmblL7W2UAw14YIGdt -O audio5.m4a
+          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O audio6.m4a
+          gdown 15uGUtcjaojhbLfdn55i4jGYczf86QrFo -O audio7.m4a
+          gdown 1ekfJ69Z-pglTaOUVOYjzfiGdXLgpBrw3 -O audio8.m4a
+          gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O audio9.m4a
+          gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O audio10.mp3
+
+      - name: Create playlist
+        run: |
+          ls audio*.m4a audio*.mp3 2>/dev/null | shuf > playlist.txt
+          cat playlist.txt
+
+      - name: Merge audio
+        run: |
+          while IFS= read -r file; do
+            echo "file '$file'"
+          done < playlist.txt > concat.txt
+          ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.m4a
 
       - name: Start Stream
         run: |
           ffmpeg -stream_loop -1 -re -i video.mp4 \
-          -stream_loop -1 -re -i audio.mp3 \
+          -stream_loop -1 -re -i merged_audio.m4a \
           -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k \
           -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
