@@ -7,15 +7,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 345
     steps:
+
       - name: Install tools
         run: |
           sudo apt-get install -y ffmpeg
           pip install gdown
 
+      - name: Cache media files
+        id: cache-media
+        uses: actions/cache@v4
+        with:
+          path: |
+            video.mp4
+            merged_audio.mp3
+          key: media-files-v1
+
       - name: Download video
+        if: steps.cache-media.outputs.cache-hit != 'true'
         run: gdown 10knwfZRkqZcvlmge4iZtqkDo5p7wROke -O video.mp4
 
       - name: Download audio files
+        if: steps.cache-media.outputs.cache-hit != 'true'
         run: |
           gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
           gdown 1UyYE8WpXlqxfGrOMos4HNpDNakpKsvRL -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
@@ -29,6 +41,7 @@ jobs:
           gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O a10.tmp && ffmpeg -i a10.tmp audio10.mp3 -y
 
       - name: Create playlist and merge
+        if: steps.cache-media.outputs.cache-hit != 'true'
         run: |
           ls audio*.mp3 | shuf > playlist.txt
           while IFS= read -r file; do
