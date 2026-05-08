@@ -7,12 +7,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 345
     steps:
+
       - name: Install tools
         run: |
           sudo apt-get install -y ffmpeg
           pip install gdown
 
+      - name: Cache media files
+        id: cache-media
+        uses: actions/cache@v4
+        with:
+          path: |
+            video.mp4
+            audio.mp3
+          key: media-files-stream2-v1
+
       - name: Download files
+        if: steps.cache-media.outputs.cache-hit != 'true'
         run: |
           gdown 1z-dOnuBqFZY0CRSdo4SPtue0ACRRcwaC -O video.mp4
           gdown 1krr-Qk_El6pk3ZdFjzJXfpYZ2ijdxpzL -O audio.mp3
