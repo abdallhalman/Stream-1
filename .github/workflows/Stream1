@@ -1,0 +1,57 @@
+name: Stream
+on:
+  workflow_dispatch:
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    steps:
+
+      - name: Install tools
+        run: |
+          sudo apt-get install -y ffmpeg
+          pip install gdown
+
+      - name: Cache media files
+        id: cache-media
+        uses: actions/cache@v4
+        with:
+          path: |
+            video.mp4
+            merged_audio.mp3
+          key: media-files-v1
+
+      - name: Download video
+        if: steps.cache-media.outputs.cache-hit != 'true'
+        run: gdown 10knwfZRkqZcvlmge4iZtqkDo5p7wROke -O video.mp4
+
+      - name: Download audio files
+        if: steps.cache-media.outputs.cache-hit != 'true'
+        run: |
+          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
+          gdown 1UyYE8WpXlqxfGrOMos4HNpDNakpKsvRL -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
+          gdown 1dMaQqnHTPQXOZJCB3TtbTr6cdmBBIPSs -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
+          gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O a4.tmp && ffmpeg -i a4.tmp audio4.mp3 -y
+          gdown 1ah1sQo22RucADqxmblL7W2UAw14YIGdt -O a5.tmp && ffmpeg -i a5.tmp audio5.mp3 -y
+          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O a6.tmp && ffmpeg -i a6.tmp audio6.mp3 -y
+          gdown 15uGUtcjaojhbLfdn55i4jGYczf86QrFo -O a7.tmp && ffmpeg -i a7.tmp audio7.mp3 -y
+          gdown 1ekfJ69Z-pglTaOUVOYjzfiGdXLgpBrw3 -O a8.tmp && ffmpeg -i a8.tmp audio8.mp3 -y
+          gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O a9.tmp && ffmpeg -i a9.tmp audio9.mp3 -y
+          gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O a10.tmp && ffmpeg -i a10.tmp audio10.mp3 -y
+
+      - name: Create playlist and merge
+        if: steps.cache-media.outputs.cache-hit != 'true'
+        run: |
+          ls audio*.mp3 | shuf > playlist.txt
+          while IFS= read -r file; do
+            echo "file '$file'"
+          done < playlist.txt > concat.txt
+          ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3
+
+      - name: Start Stream
+        run: |
+          ffmpeg -stream_loop -1 -re -i video.mp4 \
+          -stream_loop -1 -re -i merged_audio.mp3 \
+          -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k \
+          -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
