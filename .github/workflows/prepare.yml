@@ -13,12 +13,13 @@ jobs:
           sudo apt-get install -y ffmpeg
           pip install gdown
 
-      - name: Download video
-        run: gdown 1Cr8G_0gD4LgabKztsIJOp0ddlUYqXNK2 -O video.mp4
-
-      - name: Convert video to H264
+      - name: Download video files
         run: |
-          ffmpeg -i video.mp4 -c:v libx264 -preset veryfast -crf 23 -an video_h264.mp4
+          gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video1.mp4
+          gdown 1AOyK6tYphq81bt9LC5okcxA0JqNJdR-C -O video2.mp4
+          gdown 1841s1wEpXdFHGQTPV8rJaj_736EaFWVB -O video3.mp4
+          gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O video4.mp4
+          gdown 13VykZHBpj6IZRv_l1Adm27UKEYLmKLA_ -O video5.mp4
 
       - name: Download audio files
         run: |
@@ -33,19 +34,36 @@ jobs:
           gdown 1TXbWo89v0e8RMkwuuwkilB24LdCc0Xkn -O a9.tmp && ffmpeg -i a9.tmp audio9.mp3 -y
           gdown 1pcFXubIlecpZCyWEbVZ-ZXeJbBvemnik -O a10.tmp && ffmpeg -i a10.tmp audio10.mp3 -y
           gdown 1lI1QjxrDFraxniv2Dzvs3O9s0w_kRuqx -O a11.tmp && ffmpeg -i a11.tmp audio11.mp3 -y
+          gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O a12.tmp && ffmpeg -i a12.tmp audio12.mp3 -y
+          gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O a13.tmp && ffmpeg -i a13.tmp audio13.mp3 -y
+          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O a14.tmp && ffmpeg -i a14.tmp audio14.mp3 -y
+          gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O a15.tmp && ffmpeg -i a15.tmp audio15.mp3 -y
+          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
 
-      - name: Create playlist and merge
+      - name: Create video playlist (random)
         run: |
-          ls audio*.mp3 | shuf > playlist.txt
+          ls video*.mp4 | shuf > video_playlist.txt
           while IFS= read -r file; do
             echo "file '$file'"
-          done < playlist.txt > concat.txt
+          done < video_playlist.txt > video_concat.txt
+
+      - name: Merge audio (random)
+        run: |
+          ls audio*.mp3 | shuf > audio_playlist.txt
+          while IFS= read -r file; do
+            echo "file '$file'"
+          done < audio_playlist.txt > concat.txt
           ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3
 
       - name: Save cache
         uses: actions/cache/save@v4
         with:
           path: |
-            video_h264.mp4
+            video1.mp4
+            video2.mp4
+            video3.mp4
+            video4.mp4
+            video5.mp4
+            video_concat.txt
             merged_audio.mp3
-          key: media-files-v2
+          key: media-files-v3
