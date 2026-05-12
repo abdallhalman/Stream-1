@@ -40,14 +40,15 @@ jobs:
           gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O a15.tmp && ffmpeg -i a15.tmp audio15.mp3 -y
           gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
 
-      - name: Create video playlist (random)
+      - name: Merge video files (random)
         run: |
           ls video*.mp4 | shuf > video_playlist.txt
           while IFS= read -r file; do
             echo "file '$file'"
           done < video_playlist.txt > video_concat.txt
+          ffmpeg -f concat -safe 0 -i video_concat.txt -c copy merged_video.mp4
 
-      - name: Merge audio (random)
+      - name: Merge audio files (random)
         run: |
           ls audio*.mp3 | shuf > audio_playlist.txt
           while IFS= read -r file; do
@@ -59,11 +60,6 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: |
-            video1.mp4
-            video2.mp4
-            video3.mp4
-            video4.mp4
-            video5.mp4
-            video_concat.txt
+            merged_video.mp4
             merged_audio.mp3
           key: media-files-v3
