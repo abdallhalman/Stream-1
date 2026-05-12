@@ -23,7 +23,7 @@ jobs:
             video5.mp4
             video_concat.txt
             merged_audio.mp3
-          key: media-files-v3
+          key: media-files-v4
 
       - name: Start Stream
         run: |
