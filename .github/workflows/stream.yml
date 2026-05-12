@@ -1,3 +1,4 @@
+```yaml
 name: Stream
 on:
   workflow_dispatch:
@@ -104,9 +105,13 @@ jobs:
 
       - name: Start Stream
         run: |
-          ffmpeg -re -f concat -safe 0 -stream_loop -1 -i v_list.txt \
-          -re -f concat -safe 0 -stream_loop -1 -i a_list.txt \
-          -map 0:v:0 -map 1:a:0 \
-          -c:v copy -c:a aac -b:a 128k \
-          -f flv -flvflags no_duration_filesize \
-          rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
+          while true; do
+            ffmpeg -re -f concat -safe 0 -stream_loop -1 -i v_list.txt \
+            -re -f concat -safe 0 -stream_loop -1 -i a_list.txt \
+            -map 0:v:0 -map 1:a:0 \
+            -c:v copy -bsf:v h264_mp4toannexb \
+            -c:a aac -b:a 128k \
+            -f flv -flvflags no_duration_filesize \
+            rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }} || true
+            sleep 3
+          done
