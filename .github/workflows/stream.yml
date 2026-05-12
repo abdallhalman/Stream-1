@@ -41,7 +41,7 @@ jobs:
             audio16.mp3
           key: media-files-v4
 
-      - name: Download video files
+      - name: Download files
         if: steps.cache-media.outputs.cache-hit != 'true'
         run: |
           pip install gdown
@@ -50,10 +50,6 @@ jobs:
           gdown 1841s1wEpXdFHGQTPV8rJaj_736EaFWVB -O video3.mp4
           gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O video4.mp4
           gdown 13VykZHBpj6IZRv_l1Adm27UKEYLmKLA_ -O video5.mp4
-
-      - name: Download audio files
-        if: steps.cache-media.outputs.cache-hit != 'true'
-        run: |
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
           gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
           gdown 17nqAmBYExskUmySAzB51NAxic5XJRuLj -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
@@ -99,22 +95,18 @@ jobs:
             audio16.mp3
           key: media-files-v4
 
-      - name: Prepare Final Stream
+      - name: Prepare Playlists
         run: |
-          ls video*.mp4 | shuf > video_playlist.txt
-          sed -i "s/^/file '/;s/$/'/" video_playlist.txt
-          ffmpeg -f concat -safe 0 -i video_playlist.txt -c copy full_video.mp4
-
-          ls audio*.mp3 | shuf > audio_playlist.txt
-          sed -i "s/^/file '/;s/$/'/" audio_playlist.txt
-          ffmpeg -f concat -safe 0 -i audio_playlist.txt -c copy full_audio.mp3
-
-          ffmpeg -i full_video.mp4 -i full_audio.mp3 \
-          -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 128k \
-          -shortest ready_to_stream.mp4
+          ls video*.mp4 | shuf > v_list.txt
+          sed -i "s/^/file '/;s/$/'/" v_list.txt
+          ls audio*.mp3 | shuf > a_list.txt
+          sed -i "s/^/file '/;s/$/'/" a_list.txt
 
       - name: Start Stream
         run: |
-          ffmpeg -re -stream_loop -1 -i ready_to_stream.mp4 \
-          -c copy -f flv -flvflags no_duration_filesize \
+          ffmpeg -re -f concat -safe 0 -stream_loop -1 -i v_list.txt \
+          -re -f concat -safe 0 -stream_loop -1 -i a_list.txt \
+          -map 0:v:0 -map 1:a:0 \
+          -c:v copy -c:a aac -b:a 128k \
+          -f flv -flvflags no_duration_filesize \
           rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
