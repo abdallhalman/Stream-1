@@ -11,7 +11,6 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get install -y ffmpeg
-          pip install gdown
 
       - name: Check cache
         id: cache-media
@@ -104,7 +103,7 @@ jobs:
           while IFS= read -r file; do
             echo "file '$file'"
           done < video_playlist.txt > video_concat.txt
-          ffmpeg -f concat -safe 0 -i video_concat.txt -c copy merged_video.mp4
+          ffmpeg -fflags +genpts -f concat -safe 0 -i video_concat.txt -c copy merged_video.mp4
 
       - name: Merge audio files (random)
         run: |
@@ -116,7 +115,8 @@ jobs:
 
       - name: Start Stream
         run: |
-          ffmpeg -stream_loop -1 -re -i merged_video.mp4 \
+          ffmpeg -fflags +genpts \
+          -stream_loop -1 -re -i merged_video.mp4 \
           -stream_loop -1 -re -i merged_audio.mp3 \
           -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k \
           -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
