@@ -10,46 +10,30 @@ jobs:
 
       - name: Install tools
         run: |
-          sudo apt-get update
           sudo apt-get install -y ffmpeg
+          pip install gdown
 
-      - name: Check cache
+      - name: Cache media files
         id: cache-media
-        uses: actions/cache/restore@v4
+        uses: actions/cache@v4
         with:
           path: |
-            fixed_video1.mp4
-            fixed_video2.mp4
-            fixed_video3.mp4
-            fixed_video4.mp4
-            fixed_video5.mp4
-            audio1.mp3
-            audio2.mp3
-            audio3.mp3
-            audio4.mp3
-            audio5.mp3
-            audio6.mp3
-            audio7.mp3
-            audio8.mp3
-            audio9.mp3
-            audio10.mp3
-            audio11.mp3
-            audio12.mp3
-            audio13.mp3
-            audio14.mp3
-            audio15.mp3
-            audio16.mp3
-          key: media-files-v5
+            video_h264.mp4
+            merged_audio.mp3
+          key: media-files-v2
 
-      - name: Download files
+      - name: Download video
+        if: steps.cache-media.outputs.cache-hit != 'true'
+        run: gdown 1AOyK6tYphq81bt9LC5okcxA0JqNJdR-C -O video.mp4
+
+      - name: Convert video to H264
         if: steps.cache-media.outputs.cache-hit != 'true'
         run: |
-          pip install gdown
-          gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video1.mp4
-          gdown 1AOyK6tYphq81bt9LC5okcxA0JqNJdR-C -O video2.mp4
-          gdown 1841s1wEpXdFHGQTPV8rJaj_736EaFWVB -O video3.mp4
-          gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O video4.mp4
-          gdown 13VykZHBpj6IZRv_l1Adm27UKEYLmKLA_ -O video5.mp4
+          ffmpeg -i video.mp4 -c:v libx264 -preset veryfast -crf 23 -an video_h264.mp4
+
+      - name: Download audio files
+        if: steps.cache-media.outputs.cache-hit != 'true'
+        run: |
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
           gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
           gdown 17nqAmBYExskUmySAzB51NAxic5XJRuLj -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
@@ -67,57 +51,18 @@ jobs:
           gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O a15.tmp && ffmpeg -i a15.tmp audio15.mp3 -y
           gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
 
-          echo "🎬 تحويل الفيديوهات لصيغة موحدة..."
-          for f in video*.mp4; do
-            echo "⚙️ جاري تحويل $f ..."
-            ffmpeg -i "$f" -c:v libx264 -preset veryfast -crf 23 -an "fixed_$f" -y
-            echo "✅ تم تحويل $f"
-          done
-
-      - name: Save cache
+      - name: Create playlist and merge
         if: steps.cache-media.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            fixed_video1.mp4
-            fixed_video2.mp4
-            fixed_video3.mp4
-            fixed_video4.mp4
-            fixed_video5.mp4
-            audio1.mp3
-            audio2.mp3
-            audio3.mp3
-            audio4.mp3
-            audio5.mp3
-            audio6.mp3
-            audio7.mp3
-            audio8.mp3
-            audio9.mp3
-            audio10.mp3
-            audio11.mp3
-            audio12.mp3
-            audio13.mp3
-            audio14.mp3
-            audio15.mp3
-            audio16.mp3
-          key: media-files-v5
-
-      - name: Prepare Playlists
         run: |
-          ls fixed_video*.mp4 | shuf > v_list.txt
-          sed -i "s/^/file '/;s/$/'/" v_list.txt
-          ls audio*.mp3 | shuf > a_list.txt
-          sed -i "s/^/file '/;s/$/'/" a_list.txt
+          ls audio*.mp3 | shuf > playlist.txt
+          while IFS= read -r file; do
+            echo "file '$file'"
+          done < playlist.txt > concat.txt
+          ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3
 
       - name: Start Stream
         run: |
-          while true; do
-            ffmpeg -re -f concat -safe 0 -stream_loop -1 -i v_list.txt \
-            -re -f concat -safe 0 -stream_loop -1 -i a_list.txt \
-            -map 0:v:0 -map 1:a:0 \
-            -c:v copy \
-            -c:a aac -b:a 128k \
-            -f flv -flvflags no_duration_filesize \
-            rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }} || true
-            sleep 3
-          done
+          ffmpeg -stream_loop -1 -re -i video_h264.mp4 \
+          -stream_loop -1 -re -i merged_audio.mp3 \
+          -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k \
+          -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
