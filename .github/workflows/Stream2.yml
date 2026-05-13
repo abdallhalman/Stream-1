@@ -5,7 +5,7 @@ on:
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 345
+    timeout-minutes: 359
     steps:
 
       - name: Install tools
