@@ -18,11 +18,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            video1.mp4
-            video2.mp4
-            video3.mp4
-            video4.mp4
-            video5.mp4
+            fixed_video1.mp4
+            fixed_video2.mp4
+            fixed_video3.mp4
+            fixed_video4.mp4
+            fixed_video5.mp4
             audio1.mp3
             audio2.mp3
             audio3.mp3
@@ -39,7 +39,7 @@ jobs:
             audio14.mp3
             audio15.mp3
             audio16.mp3
-          key: media-files-v4
+          key: media-files-v5
 
       - name: Download files
         if: steps.cache-media.outputs.cache-hit != 'true'
@@ -67,16 +67,23 @@ jobs:
           gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O a15.tmp && ffmpeg -i a15.tmp audio15.mp3 -y
           gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
 
+          echo "🎬 تحويل الفيديوهات لصيغة موحدة..."
+          for f in video*.mp4; do
+            echo "⚙️ جاري تحويل $f ..."
+            ffmpeg -i "$f" -c:v libx264 -preset veryfast -crf 23 -an "fixed_$f" -y
+            echo "✅ تم تحويل $f"
+          done
+
       - name: Save cache
         if: steps.cache-media.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
-            video1.mp4
-            video2.mp4
-            video3.mp4
-            video4.mp4
-            video5.mp4
+            fixed_video1.mp4
+            fixed_video2.mp4
+            fixed_video3.mp4
+            fixed_video4.mp4
+            fixed_video5.mp4
             audio1.mp3
             audio2.mp3
             audio3.mp3
@@ -93,11 +100,11 @@ jobs:
             audio14.mp3
             audio15.mp3
             audio16.mp3
-          key: media-files-v4
+          key: media-files-v5
 
       - name: Prepare Playlists
         run: |
-          ls video*.mp4 | shuf > v_list.txt
+          ls fixed_video*.mp4 | shuf > v_list.txt
           sed -i "s/^/file '/;s/$/'/" v_list.txt
           ls audio*.mp3 | shuf > a_list.txt
           sed -i "s/^/file '/;s/$/'/" a_list.txt
@@ -108,7 +115,7 @@ jobs:
             ffmpeg -re -f concat -safe 0 -stream_loop -1 -i v_list.txt \
             -re -f concat -safe 0 -stream_loop -1 -i a_list.txt \
             -map 0:v:0 -map 1:a:0 \
-            -c:v copy -bsf:v h264_mp4toannexb \
+            -c:v copy \
             -c:a aac -b:a 128k \
             -f flv -flvflags no_duration_filesize \
             rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }} || true
