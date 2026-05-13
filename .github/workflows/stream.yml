@@ -13,26 +13,10 @@ jobs:
           sudo apt-get install -y ffmpeg
           pip install gdown
 
-      - name: Cache media files
-        id: cache-media
-        uses: actions/cache@v4
-        with:
-          path: |
-            video_h264.mp4
-            merged_audio.mp3
-          key: media-files-v2
-
       - name: Download video
-        if: steps.cache-media.outputs.cache-hit != 'true'
         run: gdown 1AOyK6tYphq81bt9LC5okcxA0JqNJdR-C -O video.mp4
 
-      - name: Convert video to H264
-        if: steps.cache-media.outputs.cache-hit != 'true'
-        run: |
-          ffmpeg -i video.mp4 -c:v libx264 -preset veryfast -crf 23 -an video_h264.mp4
-
       - name: Download audio files
-        if: steps.cache-media.outputs.cache-hit != 'true'
         run: |
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
           gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
@@ -52,7 +36,6 @@ jobs:
           gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
 
       - name: Create playlist and merge
-        if: steps.cache-media.outputs.cache-hit != 'true'
         run: |
           ls audio*.mp3 | shuf > playlist.txt
           while IFS= read -r file; do
@@ -62,7 +45,7 @@ jobs:
 
       - name: Start Stream
         run: |
-          ffmpeg -stream_loop -1 -re -i video_h264.mp4 \
+          ffmpeg -stream_loop -1 -re -i video.mp4 \
           -stream_loop -1 -re -i merged_audio.mp3 \
           -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k \
           -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
