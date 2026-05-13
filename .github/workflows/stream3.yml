@@ -1,4 +1,4 @@
-name: Stream
+name: Stream3
 on:
   workflow_dispatch:
 
@@ -13,26 +13,10 @@ jobs:
           sudo apt-get install -y ffmpeg
           pip install gdown
 
-      - name: Cache media files
-        id: cache-media
-        uses: actions/cache@v4
-        with:
-          path: |
-            video_h264.mp4
-            merged_audio.mp3
-          key: media-files-v2
-
       - name: Download video
-        if: steps.cache-media.outputs.cache-hit != 'true'
-        run: gdown 1Cr8G_0gD4LgabKztsIJOp0ddlUYqXNK2 -O video.mp4
-
-      - name: Convert video to H264
-        if: steps.cache-media.outputs.cache-hit != 'true'
-        run: |
-          ffmpeg -i video.mp4 -c:v libx264 -preset veryfast -crf 23 -an video_h264.mp4
+        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
 
       - name: Download audio files
-        if: steps.cache-media.outputs.cache-hit != 'true'
         run: |
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
           gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
@@ -45,9 +29,13 @@ jobs:
           gdown 1TXbWo89v0e8RMkwuuwkilB24LdCc0Xkn -O a9.tmp && ffmpeg -i a9.tmp audio9.mp3 -y
           gdown 1pcFXubIlecpZCyWEbVZ-ZXeJbBvemnik -O a10.tmp && ffmpeg -i a10.tmp audio10.mp3 -y
           gdown 1lI1QjxrDFraxniv2Dzvs3O9s0w_kRuqx -O a11.tmp && ffmpeg -i a11.tmp audio11.mp3 -y
+          gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O a12.tmp && ffmpeg -i a12.tmp audio12.mp3 -y
+          gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O a13.tmp && ffmpeg -i a13.tmp audio13.mp3 -y
+          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O a14.tmp && ffmpeg -i a14.tmp audio14.mp3 -y
+          gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O a15.tmp && ffmpeg -i a15.tmp audio15.mp3 -y
+          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
 
       - name: Create playlist and merge
-        if: steps.cache-media.outputs.cache-hit != 'true'
         run: |
           ls audio*.mp3 | shuf > playlist.txt
           while IFS= read -r file; do
@@ -57,7 +45,7 @@ jobs:
 
       - name: Start Stream
         run: |
-          ffmpeg -stream_loop -1 -re -i video_h264.mp4 \
+          ffmpeg -stream_loop -1 -re -i video.mp4 \
           -stream_loop -1 -re -i merged_audio.mp3 \
           -map 0:v -map 1:a -c:v copy -c:a aac -b:a 128k \
           -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
