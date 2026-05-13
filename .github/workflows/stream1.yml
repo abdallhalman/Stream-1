@@ -50,7 +50,7 @@ jobs:
           ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3
 
       - name: Download video
-        run: gdown 1AOyK6tYphq81bt9LC5okcxA0JqNJdR-C -O video.mp4
+        run: gdown 1841s1wEpXdFHGQTPV8rJaj_736EaFWVB -O video.mp4
 
       - name: Start Stream
         id: stream
