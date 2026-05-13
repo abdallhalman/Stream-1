@@ -14,7 +14,7 @@ jobs:
           pip install gdown
 
       - name: Download video
-        run: gdown 1AOyK6tYphq81bt9LC5okcxA0JqNJdR-C -O video.mp4
+        run: gdown 13VykZHBpj6IZRv_l1Adm27UKEYLmKLA_ -O video.mp4
 
       - name: Download audio files
         run: |
