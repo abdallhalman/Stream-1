@@ -1,4 +1,4 @@
-name: Stream0
+name: Stream-01
 on:
   workflow_dispatch:
 
