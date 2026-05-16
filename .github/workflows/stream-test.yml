@@ -1,4 +1,4 @@
-name: Stream-02
+name: Stream-test
 on:
   workflow_dispatch:
 
