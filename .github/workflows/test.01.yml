@@ -49,6 +49,6 @@ jobs:
          ffmpeg -stream_loop -1 -re -i video.mp4 \
          -stream_loop -1 -re -i merged_audio.mp3 \
          -map 0:v -map 1:a \
-         -vf "drawtext=font=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=15:fontcolor=white:box=1:boxcolor=red@1.0:boxborderw=6:x=10:y=10:text='LIVE',drawtext=font=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=15:fontcolor=white:box=1:boxcolor=black@1.0:boxborderw=6:x=60:y=10:text='%{eif\\:t/60\\:d\\:2}\\:%{eif\\:mod(t\\,60)\\:d\\:2}',drawtext=font=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=15:fontcolor=white:box=1:boxcolor=black@1.0:boxborderw=6:x=w-150:y=h-25:text='%{localtime\\:%d/%m/%Y}'" \
+         -vf "drawtext=font=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=15:fontcolor=white:box=1:boxcolor=red@1.0:boxborderw=8:x=10:y=10:text='LIVE',drawtext=font=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=15:fontcolor=white:box=1:boxcolor=black@1.0:boxborderw=8:x=60:y=10:text='%{eif\\:t/3600\\:d\\:2}\\:%{eif\\:mod(t/60\\,60)\\:d\\:2}',drawtext=font=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=15:fontcolor=white:box=1:boxcolor=black@1.0:boxborderw=8:x=w-150:y=h-25:text='%{localtime\\:%d/%m/%Y}'" \
          -c:v libx264 -c:a aac -b:a 128k \
          -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
