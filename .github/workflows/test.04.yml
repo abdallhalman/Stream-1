@@ -17,7 +17,7 @@ jobs:
         
       - name: Download background image
         run: |
-          gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O background.jpg
+          gdown 1dP1OyuyBVb9FH-kkbVQaCNU_W1qkaQg7 -O background.jpg
 
       - name: Download audio files
         run: |
