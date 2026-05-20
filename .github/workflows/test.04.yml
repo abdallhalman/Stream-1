@@ -8,16 +8,14 @@ jobs:
     timeout-minutes: 359
     steps:
 
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
       - name: Install tools
         run: |
           sudo apt-get update
-          # استخدام حزمة الخطوط arabeyes المضمونة والمدعومة لتجنب خطأ النظام
           sudo apt-get install -y ffmpeg fonts-arabeyes libfribidi-bin
           pip install gdown
-        
-      - name: Download background image
-        run: |
-          gdown 1dP1OyuyBVb9FH-kkbVQaCNU_W1qkaQg7 -O background.jpg
 
       - name: Download audio files
         run: |
@@ -49,37 +47,20 @@ jobs:
       - name: Start Stream
         run: |
          export TZ="Asia/Riyadh"
-         
-         # المسار الجديد للخط العربي المعتمد داخل السيرفر
          FONT_PATH="/usr/share/fonts/truetype/arabeyes/ae_AlMohanad.ttf"
          
          ffmpeg -loop 1 -re -i background.jpg \
          -stream_loop -1 -re -i merged_audio.mp3 \
          -map 0:v -map 1:a \
-         -vf "
-          drawtext=fontfile=$FONT_PATH:fontsize=24:fontcolor=white:box=1:boxcolor=red@1.0:boxborderw=8:x=40:y=40:text='LIVE',
-          
-          # 1. الساعة الرئيسية الكبيرة
-          drawtext=fontfile=$FONT_PATH:fontsize=96:fontcolor=0xF0D080:x=(w-text_w)/2:y=760:text='%{localtime\\:%H\\:%M\\:%S}',
-          
-          # 2. عناوين التوقيت
-          drawtext=fontfile=$FONT_PATH:fontsize=28:fontcolor=0xC9A84C:x=(w-text_w)/2+120:y=910:text='مكة المكرمة':text_shaping=1,
-          drawtext=fontfile=$FONT_PATH:fontsize=28:fontcolor=0xC9A84C:x=(w-text_w)/2-120:y=910:text='القاهرة':text_shaping=1,
-          
-          # 3. الساعات الحية الفرعية لكل دولة
-          drawtext=fontfile=$FONT_PATH:fontsize=38:fontcolor=0xDDDDDD:x=(w-text_w)/2+120:y=960:text='%{localtime\\:%H\\:%M}':text_shaping=1,
-          drawtext=fontfile=$FONT_PATH:fontsize=38:fontcolor=0xDDDDDD:x=(w-text_w)/2-120:y=960:text='%{localtime\\:Africa/Cairo\\:%H\\:%M}':text_shaping=1,
-          
-          # 4. النص الرئيسي
-          drawtext=fontfile=$FONT_PATH:fontsize=52:fontcolor=white:x=(w-text_w)/2:y=1080:text='بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ':text_shaping=1,
-          
-          # 5. النص الفرعي
-          drawtext=fontfile=$FONT_PATH:fontsize=34:fontcolor=0xC9A84C:x=(w-text_w)/2:y=1220:text='أهلاً بكم في بث القرآن الكريم':text_shaping=1,
-          
-          # 6. اسم القناة السفلي
-          drawtext=fontfile=$FONT_PATH:fontsize=44:fontcolor=0xC9A84C:x=(w-text_w)/2:y=1450:text='✦ بث القرآن الكريم ✦':text_shaping=1
-         " \
+         -vf "drawtext=fontfile=$FONT_PATH:fontsize=24:fontcolor=white:box=1:boxcolor=red@1.0:boxborderw=8:x=40:y=40:text='LIVE',
+              drawtext=fontfile=$FONT_PATH:fontsize=96:fontcolor=0xF0D080:x=(w-text_w)/2:y=760:text='%{localtime\\:%H\\:%M\\:%S}',
+              drawtext=fontfile=$FONT_PATH:fontsize=28:fontcolor=0xC9A84C:x=(w-text_w)/2+120:y=910:text='مكة المكرمة':text_shaping=1,
+              drawtext=fontfile=$FONT_PATH:fontsize=28:fontcolor=0xC9A84C:x=(w-text_w)/2-120:y=910:text='القاهرة':text_shaping=1,
+              drawtext=fontfile=$FONT_PATH:fontsize=38:fontcolor=0xDDDDDD:x=(w-text_w)/2+120:y=960:text='%{localtime\\:%H\\:%M}':text_shaping=1,
+              drawtext=fontfile=$FONT_PATH:fontsize=38:fontcolor=0xDDDDDD:x=(w-text_w)/2-120:y=960:text='%{localtime\\:Africa/Cairo\\:%H\\:%M}':text_shaping=1,
+              drawtext=fontfile=$FONT_PATH:fontsize=52:fontcolor=white:x=(w-text_w)/2:y=1080:text='بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ':text_shaping=1,
+              drawtext=fontfile=$FONT_PATH:fontsize=34:fontcolor=0xC9A84C:x=(w-text_w)/2:y=1220:text='أهلاً بكم في بث القرآن الكريم':text_shaping=1,
+              drawtext=fontfile=$FONT_PATH:fontsize=44:fontcolor=0xC9A84C:x=(w-text_w)/2:y=1450:text='✦ بث القرآن الكريم ✦':text_shaping=1" \
          -c:v libx264 -tune stillimage -pix_fmt yuv420p -profile:v main -level 3.1 -g 60 -b:v 2500k \
          -c:a aac -b:a 128k -ar 44100 \
          -shortest -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
-         
