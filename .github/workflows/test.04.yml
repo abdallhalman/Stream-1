@@ -49,10 +49,12 @@ jobs:
          export TZ="Asia/Riyadh"
          FONT_PATH="/usr/share/fonts/truetype/arabeyes/ae_AlMohanad.ttf"
          
-         ffmpeg -loop 1 -re -i background.jpg \
+         ffmpeg -loop 1 -re -i .github/workflows/background.jpg \
          -stream_loop -1 -re -i merged_audio.mp3 \
          -map 0:v -map 1:a \
-         -vf "drawtext=fontfile=$FONT_PATH:fontsize=24:fontcolor=white:box=1:boxcolor=red@1.0:boxborderw=8:x=40:y=40:text='LIVE',
+         -vf "scale=1080:1920,
+              drawbox=y=650:h=900:color=black@0.5:t=fill,
+              drawtext=fontfile=$FONT_PATH:fontsize=24:fontcolor=white:box=1:boxcolor=red@1.0:boxborderw=8:x=40:y=40:text='LIVE',
               drawtext=fontfile=$FONT_PATH:fontsize=96:fontcolor=0xF0D080:x=(w-text_w)/2:y=760:text='%{localtime\\:%H\\:%M\\:%S}',
               drawtext=fontfile=$FONT_PATH:fontsize=28:fontcolor=0xC9A84C:x=(w-text_w)/2+120:y=910:text='مكة المكرمة':text_shaping=1,
               drawtext=fontfile=$FONT_PATH:fontsize=28:fontcolor=0xC9A84C:x=(w-text_w)/2-120:y=910:text='القاهرة':text_shaping=1,
