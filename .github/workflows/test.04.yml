@@ -11,19 +11,32 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          # تثبيت الحزم الأساسية لدعم الخطوط العربية وتشبيك الحروف تلقائياً
-          sudo apt-get install -y ffmpeg fonts-sil-amiri libfribidi-bin
+          # استخدام حزمة الخطوط arabeyes المضمونة والمدعومة لتجنب خطأ النظام
+          sudo apt-get install -y ffmpeg fonts-arabeyes libfribidi-bin
           pip install gdown
         
       - name: Download background image
         run: |
-          # تأكد أن هذه الصورة تحتوي على الخلفية البنفسجية والخطوط الذهبية الفاصلة فقط بدون النصوص
-          gdown 1dP1OyuyBVb9FH-kkbVQaCNU_W1qkaQg7 -O background.jpg
+          gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O background.jpg
 
       - name: Download audio files
         run: |
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
-          gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O a2.tmp && ffmpeg -i a2.tmp audio10.mp3 -y
+          gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
+          gdown 17nqAmBYExskUmySAzB51NAxic5XJRuLj -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
+          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a4.tmp && ffmpeg -i a4.tmp audio4.mp3 -y
+          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O a5.tmp && ffmpeg -i a5.tmp audio5.mp3 -y
+          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O a6.tmp && ffmpeg -i a6.tmp audio6.mp3 -y
+          gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O a7.tmp && ffmpeg -i a7.tmp audio7.mp3 -y
+          gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O a8.tmp && ffmpeg -i a8.tmp audio8.mp3 -y
+          gdown 1TXbWo89v0e8RMkwuuwkilB24LdCc0Xkn -O a9.tmp && ffmpeg -i a9.tmp audio9.mp3 -y
+          gdown 1E6THGzxM3_Heaxp4Zh-KIIr5n59aqdtW -O a10.tmp && ffmpeg -i a10.tmp audio10.mp3 -y
+          gdown 1lI1QjxrDFraxniv2Dzvs3O9s0w_kRuqx -O a11.tmp && ffmpeg -i a11.tmp audio11.mp3 -y
+          gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O a12.tmp && ffmpeg -i a12.tmp audio12.mp3 -y
+          gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O a13.tmp && ffmpeg -i a13.tmp audio13.mp3 -y
+          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O a14.tmp && ffmpeg -i a14.tmp audio14.mp3 -y
+          gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O a15.tmp && ffmpeg -i a15.tmp audio15.mp3 -y
+          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
 
       - name: Create playlist and merge
         run: |
@@ -35,38 +48,36 @@ jobs:
 
       - name: Start Stream
         run: |
-         # ضبط المنطقة الزمنية الأساسية للسيرفر (مكة المكرمة)
          export TZ="Asia/Riyadh"
          
-         # مسار الخط العربي الممتاز المدمج في توزيعة الـ Ubuntu
-         FONT_PATH="/usr/share/fonts/truetype/amiri/Amiri-Regular.ttf"
-         FONT_BOLD="/usr/share/fonts/truetype/amiri/Amiri-Bold.ttf"
+         # المسار الجديد للخط العربي المعتمد داخل السيرفر
+         FONT_PATH="/usr/share/fonts/truetype/arabeyes/ae_AlMohanad.ttf"
          
          ffmpeg -loop 1 -re -i background.jpg \
          -stream_loop -1 -re -i merged_audio.mp3 \
          -map 0:v -map 1:a \
          -vf "
-          drawtext=fontfile=$FONT_BOLD:fontsize=24:fontcolor=white:box=1:boxcolor=red@1.0:boxborderw=8:x=40:y=40:text='LIVE',
+          drawtext=fontfile=$FONT_PATH:fontsize=24:fontcolor=white:box=1:boxcolor=red@1.0:boxborderw=8:x=40:y=40:text='LIVE',
           
-          # 1. الساعة الرئيسية الكبيرة (اللون الذهبي الفاتح)
-          drawtext=fontfile=$FONT_BOLD:fontsize=96:fontcolor=0xF0D080:x=(w-text_w)/2:y=760:text='%{localtime\\:%H\\:%M\\:%S}',
+          # 1. الساعة الرئيسية الكبيرة
+          drawtext=fontfile=$FONT_PATH:fontsize=96:fontcolor=0xF0D080:x=(w-text_w)/2:y=760:text='%{localtime\\:%H\\:%M\\:%S}',
           
-          # 2. عناوين التوقيت (مكة المكرمة - القاهرة)
+          # 2. عناوين التوقيت
           drawtext=fontfile=$FONT_PATH:fontsize=28:fontcolor=0xC9A84C:x=(w-text_w)/2+120:y=910:text='مكة المكرمة':text_shaping=1,
           drawtext=fontfile=$FONT_PATH:fontsize=28:fontcolor=0xC9A84C:x=(w-text_w)/2-120:y=910:text='القاهرة':text_shaping=1,
           
-          # 3. الساعات الحية الفرعية (توقيت مكة الحي وتوقيت القاهرة الحي)
-          drawtext=fontfile=$FONT_BOLD:fontsize=38:fontcolor=0xDDDDDD:x=(w-text_w)/2+120:y=960:text='%{localtime\\:%H\\:%M}':text_shaping=1,
-          drawtext=fontfile=$FONT_BOLD:fontsize=38:fontcolor=0xDDDDDD:x=(w-text_w)/2-120:y=960:text='%{localtime\\: Africa/Cairo\\:%H\\:%M}':text_shaping=1,
+          # 3. الساعات الحية الفرعية لكل دولة
+          drawtext=fontfile=$FONT_PATH:fontsize=38:fontcolor=0xDDDDDD:x=(w-text_w)/2+120:y=960:text='%{localtime\\:%H\\:%M}':text_shaping=1,
+          drawtext=fontfile=$FONT_PATH:fontsize=38:fontcolor=0xDDDDDD:x=(w-text_w)/2-120:y=960:text='%{localtime\\:Africa/Cairo\\:%H\\:%M}':text_shaping=1,
           
-          # 4. النص الرئيسي (الآية القرآنية باللون الأبيض والتشكيل)
-          drawtext=fontfile=$FONT_BOLD:fontsize=52:fontcolor=white:x=(w-text_w)/2:y=1080:text='بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ':text_shaping=1,
+          # 4. النص الرئيسي
+          drawtext=fontfile=$FONT_PATH:fontsize=52:fontcolor=white:x=(w-text_w)/2:y=1080:text='بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ':text_shaping=1,
           
-          # 5. النص الفرعي (باللون الذهبي)
+          # 5. النص الفرعي
           drawtext=fontfile=$FONT_PATH:fontsize=34:fontcolor=0xC9A84C:x=(w-text_w)/2:y=1220:text='أهلاً بكم في بث القرآن الكريم':text_shaping=1,
           
-          # 6. اسم القناة في الأسفل مع النجوم الذهبية
-          drawtext=fontfile=$FONT_BOLD:fontsize=44:fontcolor=0xC9A84C:x=(w-text_w)/2:y=1450:text='✦ بث القرآن الكريم ✦':text_shaping=1
+          # 6. اسم القناة السفلي
+          drawtext=fontfile=$FONT_PATH:fontsize=44:fontcolor=0xC9A84C:x=(w-text_w)/2:y=1450:text='✦ بث القرآن الكريم ✦':text_shaping=1
          " \
          -c:v libx264 -tune stillimage -pix_fmt yuv420p -profile:v main -level 3.1 -g 60 -b:v 2500k \
          -c:a aac -b:a 128k -ar 44100 \
