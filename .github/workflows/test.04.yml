@@ -1,4 +1,4 @@
-name: test.04
+name: test.01
 on:
   workflow_dispatch:
 
@@ -49,11 +49,10 @@ jobs:
           const HEIGHT = 720;
           const FPS = 30;
 
-          // مصفوفات ومخازن الحالات الجديدة
-          let chatEvents = [];  // للتعليقات والمتابعات فقط
-          let currentGift = null; // للهدايا الحالية في المنتصف
-          let totalLikes = 0;   // عداد رقمي إجمالي للايكات
-          let floatingHearts = []; // للقلوب المتطايرة
+          let chatEvents = [];  
+          let currentGift = null; 
+          let totalLikes = 0;   
+          let floatingHearts = []; 
 
           const ffmpeg = spawn("ffmpeg", [
             "-f", "rawvideo",
@@ -89,7 +88,6 @@ jobs:
             process.exit(code);
           });
 
-          // دالة رسم الشاشة المتطورة (تقسيم الواجهة الجديد)
           async function drawFrame() {
             const canvas = createCanvas(WIDTH, HEIGHT);
             const ctx = canvas.getContext("2d");
@@ -97,71 +95,68 @@ jobs:
 
             const now = Date.now();
 
-            // ----------------------------------------------------
-            // 1. رسم عداد اللايكات الرقمي (أعلى اليمين بشكل شيك)
-            // ----------------------------------------------------
-            ctx.globalAlpha = 0.8;
-            ctx.fillStyle = "#222222";
+            // 1. رسم عداد اللايكات المحسن (أعلى اليمين)
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = "#111111";
             ctx.beginPath();
-            ctx.roundRect(WIDTH - 260, 20, 240, 50, 25);
+            ctx.roundRect(WIDTH - 280, 20, 260, 50, 25);
             ctx.fill();
             
             ctx.globalAlpha = 1.0;
             ctx.fillStyle = "#ff4444";
             ctx.font = "bold 24px 'DejaVu Sans'";
             ctx.textAlign = "center";
-            ctx.fillText("❤️", WIDTH - 230, 53);
+            ctx.fillText("❤️", WIDTH - 250, 53);
             
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 20px 'DejaVu Sans'";
+            ctx.font = "bold 20px 'DejaVu Sans', 'Noto Sans Arabic', sans-serif";
             ctx.textAlign = "right";
             ctx.direction = "rtl";
-            ctx.fillText(`الإعجابات: ${totalLikes.toLocaleString()}`, WIDTH - 40, 52);
+            ctx.fillText(`الإعجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
 
-            // ----------------------------------------------------
-            // 2. رسم القلوب المتطايرة (تأثير بصري متحرك تصاعدي)
-            // ----------------------------------------------------
+            // 2. رسم القلوب المتطايرة
             floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
             for (let heart of floatingHearts) {
               const age = (now - heart.startTime) / heart.duration;
-              const alpha = 1 - age; // تختفي بالتدريج كلما ارتفعت
-              const x = heart.x + Math.sin(age * 5) * 20; // حركة موجية يميناً ويساراً
-              const y = heart.y - (age * 300); // ترتفع للأعلى بمقدار 300 بكسل
+              const alpha = 1 - age; 
+              const x = heart.x + Math.sin(age * 7) * 30; 
+              const y = heart.y - (age * 400); 
 
               ctx.globalAlpha = alpha;
+              ctx.fillStyle = heart.color;
               ctx.font = `${heart.size}px 'DejaVu Sans'`;
               ctx.fillText("❤️", x, y);
             }
-            ctx.globalAlpha = 1.0; // إعادة الشفافية كاملة
+            ctx.globalAlpha = 1.0; 
 
-            // ----------------------------------------------------
-            // 3. رسم قائمة الشات الممتدة (10 أسطر للتعليقات والمتابعين فقط)
-            // ----------------------------------------------------
-            chatEvents = chatEvents.filter(e => now - e.time < 6000); // زيادة مدة البقاء لـ 6 ثوانٍ
+            // 3. رسم قائمة الشات (تستوعب حتى 10 أسطر بارتفاع مرن ومتناسق)
+            chatEvents = chatEvents.filter(e => now - e.time < 8000); // زيادة مدة البقاء لـ 8 ثوانٍ لكي تلحق قراءتها
             
             for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
               const e = chatEvents[i];
-              const age = (now - e.time) / 6000;
+              const age = (now - e.time) / 8000;
               const alpha = Math.max(0, 1 - age);
-              // رفعنا المستوى إلى الأعلى لتستوعب 10 أسطر (تبدأ من إحداثي مسافة مريحة من الأسفل)
-              const y = HEIGHT - 60 - (i * 55); 
-              if (y < 40) continue;
+              
+              // ضبط توزيع دقيق للأسطر من الأسفل للأعلى دون تداخل
+              const y = HEIGHT - 50 - (i * 52); 
+              if (y < 90) continue; // منع التداخل مع عداد اللايكات العلوي
 
-              ctx.globalAlpha = alpha * 0.65;
+              ctx.globalAlpha = alpha * 0.70;
               ctx.fillStyle = "#000000";
               ctx.beginPath();
-              ctx.roundRect(15, y - 38, 580, 48, 10); 
+              ctx.roundRect(15, y - 36, 580, 44, 8); 
               ctx.fill();
 
               ctx.globalAlpha = alpha;
 
+              // رسم الصورة بأمان كامل
               if (e.avatarImage) {
                 try {
                   ctx.save();
                   ctx.beginPath();
-                  ctx.arc(42, y - 14, 16, 0, Math.PI * 2);
+                  ctx.arc(40, y - 14, 15, 0, Math.PI * 2);
                   ctx.clip();
-                  ctx.drawImage(e.avatarImage, 26, y - 30, 32, 32);
+                  ctx.drawImage(e.avatarImage, 25, y - 29, 30, 30);
                   ctx.restore();
                 } catch(err) {}
               }
@@ -173,30 +168,25 @@ jobs:
               
               let printText = e.text;
               if (printText.length > 55) printText = printText.substring(0, 52) + "...";
-              ctx.fillText(printText, 75, y - 6);
+              ctx.fillText(printText, 70, y - 7);
             }
 
-            // ----------------------------------------------------
-            // 4. رسم الهدايا الكبيرة والمتميزة (في وسط الشاشة)
-            // ----------------------------------------------------
+            // 4. رسم الهدايا الكبيرة في المنتصف
             if (currentGift && now - currentGift.startTime < 4000) {
               const gAge = (now - currentGift.startTime) / 4000;
               let gAlpha = 1;
-              
-              // تأثير دخول (أول نصف ثانية) وتأثير خروج (آخر نصف ثانية)
-              if (gAge < 0.125) gAlpha = gAge / 0.125;
-              else if (gAge > 0.875) gAlpha = (1 - gAge) / 0.125;
+              if (gAge < 0.15) gAlpha = gAge / 0.15;
+              else if (gAge > 0.85) gAlpha = (1 - gAge) / 0.15;
 
-              ctx.globalAlpha = gAlpha * 0.85;
+              ctx.globalAlpha = gAlpha * 0.90;
               
-              // خلفية فخمة ومميزة في المنتصف للهدايا
-              const boxWidth = 500;
-              const boxHeight = 120;
+              const boxWidth = 520;
+              const boxHeight = 130;
               const boxX = (WIDTH - boxWidth) / 2;
-              const boxY = (HEIGHT - boxHeight) / 2 - 50;
+              const boxY = (HEIGHT - boxHeight) / 2 - 40;
 
-              ctx.fillStyle = "#1e1035"; // لون بنفسجي غامق ملكي للهدايا
-              ctx.strokeStyle = "#FFD700"; // إطار ذهبي
+              ctx.fillStyle = "#1a0f2e"; 
+              ctx.strokeStyle = "#FFD700"; 
               ctx.lineWidth = 3;
               ctx.beginPath();
               ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 20);
@@ -205,36 +195,34 @@ jobs:
 
               ctx.globalAlpha = gAlpha;
 
-              // رسم صورة الأفاتار وصورة الهدية بحجم كبير داخل بنية الهدية
               if (currentGift.avatarImage) {
                 try {
                   ctx.save();
                   ctx.beginPath();
-                  ctx.arc(boxX + 50, boxY + 60, 35, 0, Math.PI * 2);
+                  ctx.arc(boxX + 55, boxY + 65, 35, 0, Math.PI * 2);
                   ctx.clip();
-                  ctx.drawImage(currentGift.avatarImage, boxX + 15, boxY + 25, 70, 70);
+                  ctx.drawImage(currentGift.avatarImage, boxX + 20, boxY + 30, 70, 70);
                   ctx.restore();
                 } catch(err) {}
               }
 
               if (currentGift.iconImage) {
                 try {
-                  ctx.drawImage(currentGift.iconImage, boxX + boxWidth - 100, boxY + 20, 80, 80);
+                  ctx.drawImage(currentGift.iconImage, boxX + boxWidth - 105, boxY + 25, 80, 80);
                 } catch(err) {}
               }
 
-              // نصوص التهنئة بالهدية
-              ctx.fillStyle = "#FFD700"; // اسم الداعم بالذهب
+              ctx.fillStyle = "#FFD700"; 
               ctx.font = "bold 22px 'DejaVu Sans', 'Noto Sans Arabic', sans-serif";
               ctx.textAlign = "center";
               ctx.direction = "rtl";
               ctx.fillText(currentGift.nameText, boxX + (boxWidth / 2) + 10, boxY + 50);
 
-              ctx.fillStyle = "#ffffff"; // تفاصيل الهدية والعدد باللون الأبيض
-              ctx.font = "bold 26px 'DejaVu Sans'";
+              ctx.fillStyle = "#ffffff"; 
+              ctx.font = "bold 24px 'DejaVu Sans', 'Noto Sans Arabic', sans-serif";
               ctx.fillText(currentGift.countText, boxX + (boxWidth / 2) + 10, boxY + 95);
             } else {
-              currentGift = null; // تصفير لتجهيز الهدية القادمة
+              currentGift = null;
             }
 
             ctx.globalAlpha = 1.0;
@@ -262,45 +250,56 @@ jobs:
             }
           }
 
+          // دالة تحميل صور آمنة ومحصنة بالكامل ضد الروابط الفارغة والتالفة
           async function fetchImage(url) {
-            if (!url) return null;
+            if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
             try {
-              const res = await fetch(url, { timeout: 1500 });
+              const res = await fetch(url, { timeout: 1200 });
+              if (!res.ok) return null;
               const buf = await res.buffer();
               return await loadImage(buf);
-            } catch (e) { return null; }
-          }
-
-          // إضافة حدث إلى قائمة التعليقات والمتابعات فقط
-          function addChatEvent(text, color, avatarUrl) {
-            const newEvent = {
-              time: Date.now(),
-              text,
-              color,
-              avatarImage: null
-            };
-            chatEvents.unshift(newEvent);
-            if (chatEvents.length > 20) chatEvents.pop();
-
-            if (avatarUrl) {
-              fetchImage(avatarUrl).then(img => { if(img) newEvent.avatarImage = img; });
+            } catch (e) { 
+              return null; 
             }
           }
 
-          // دالة إطلاق القلوب المتطايرة عند حدوث لايك
+          // دالة إضافة أحداث الشات محمية بالكامل لمنع سقوط السكربت
+          function addChatEvent(text, color, avatarUrl) {
+            try {
+              const newEvent = {
+                time: Date.now(),
+                text,
+                color,
+                avatarImage: null
+              };
+              chatEvents.unshift(newEvent);
+              if (chatEvents.length > 20) chatEvents.pop();
+
+              // محاولة تحميل الأفاتار بالخلفية، وإذا فشل لا يؤثر على ظهور النص
+              if (avatarUrl) {
+                fetchImage(avatarUrl)
+                  .then(img => { if(img) newEvent.avatarImage = img; })
+                  .catch(() => {});
+              }
+            } catch (err) {
+              console.error("خطأ صامت في معالجة مصفوفة الشات:", err.message);
+            }
+          }
+
           function triggerHeartEffect() {
-            // نطلق من قلوب إلى 3 قلوب دفعة واحدة في أماكن عشوائية قريبة من عداد اللايكات
-            const count = Math.floor(Math.random() * 3) + 1;
+            const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2"];
+            const count = Math.floor(Math.random() * 2) + 1;
             for(let i=0; i<count; i++) {
               floatingHearts.push({
                 startTime: Date.now(),
-                duration: 2000 + Math.random() * 1000, // مدة الطيران بين ثانيتين لـ 3 ثوانٍ
-                x: (WIDTH - 180) + (Math.random() * 100 - 50), // تنطلق من تحت العداد تقريباً
-                y: HEIGHT - 50, // تبدأ الطيران صعوداً من أسفل الشاشة جهة اليمين
-                size: Math.floor(Math.random() * 15) + 20 // أحجام قلوب متفاوتة
+                duration: 1500 + Math.random() * 1000, 
+                x: (WIDTH - 150) + (Math.random() * 120 - 60), 
+                y: HEIGHT - 40, 
+                size: Math.floor(Math.random() * 12) + 22,
+                color: colors[Math.floor(Math.random() * colors.length)]
               });
             }
-            if (floatingHearts.length > 40) floatingHearts.shift(); // حماية السيرفر من الكثرة
+            if (floatingHearts.length > 35) floatingHearts.shift();
           }
 
           if (TIKTOK_USER) {
@@ -309,61 +308,77 @@ jobs:
             function connectTikTok() {
               console.log("🔄 جاري الاتصال بـ TikTok Live...");
               tiktok.connect()
-                .then(() => console.log("✅ متصل بنجاح بالبث"))
+                .then(() => console.log("✅ متصل بنجاح بالبث واستقبال البيانات"))
                 .catch(err => {
-                  console.error("⚠️ فشل الاتصال، إعادة المحاولة:", err.message);
-                  setTimeout(connectTikTok, 20000);
+                  console.error("⚠️ فشل الاتصال، إعادة المحاولة بعد 15 ثانية:", err.message);
+                  setTimeout(connectTikTok, 15000);
                 });
             }
 
-            console.log("⏳ انتظار 15 ثانية للربط السريع...");
+            console.log("⏳ انتظار 15 ثانية للربط السريع الحاسم...");
             setTimeout(connectTikTok, 15000);
 
-            // 1. التعليقات (تذهب لليسار)
+            // استخراج وتأمين بيانات التعليق من أي هيكل مصفوفة قادم
             tiktok.on("comment", data => {
-              const userName = data.nickname || data.uniqueId || "متابع";
-              if (data.comment) {
-                addChatEvent(`💬 ${userName}: ${data.comment}`, "#ffffff", data.profilePictureUrl);
-              }
+              try {
+                const user = data.userInfo || data;
+                const userName = data.nickname || data.uniqueId || user.nickname || "متابع";
+                const text = data.comment;
+                const pfp = data.profilePictureUrl || user.profilePictureUrl;
+
+                if (text) {
+                  addChatEvent(`💬 ${userName}: ${text}`, "#ffffff", pfp);
+                }
+              } catch (err) { console.error("خطأ حدث التعليق:", err.message); }
             });
 
-            // 2. المتابعات (تشارك التعليقات نفس الصندوق الأيسر)
+            // استخراج وتأمين المتابعات
             tiktok.on("follow", data => {
-              const userName = data.nickname || data.uniqueId || "متابع جديد";
-              addChatEvent(`👤 ${userName} تابع الحساب الآن`, "#ff6b9d", data.profilePictureUrl);
+              try {
+                const user = data.userInfo || data;
+                const userName = data.nickname || data.uniqueId || user.nickname || "متابع جديد";
+                const pfp = data.profilePictureUrl || user.profilePictureUrl;
+
+                addChatEvent(`👤 ${userName} تابع الحساب الآن`, "#ff6b9d", pfp);
+              } catch (err) { console.error("خطأ حدث المتابعة:", err.message); }
             });
 
-            // 3. اللايكات المحدثة (عداد رقمي فقط + تأثير قلوب متطايرة تفاعلية)
+            // معالجة العداد المتراكم للايكات وتوليد القلوب تلقائياً
             tiktok.on("like", data => {
-              if (data.likeCount && data.likeCount > 0) {
-                totalLikes += data.likeCount; // إضافة الرقم للعداد التراكمي المباشر
-                triggerHeartEffect(); // تشغيل تأثير القلوب الطائرة على الشاشة
-              }
+              try {
+                if (data.likeCount && data.likeCount > 0) {
+                  totalLikes += Number(data.likeCount); 
+                  triggerHeartEffect(); 
+                }
+              } catch (err) { console.error("خطأ حدث اللايك:", err.message); }
             });
 
-            // 4. الهدايا المتميزة (تظهر لوحدها كبيرة في منتصف الشاشة)
+            // استخراج وتأمين الهدايا المنفصلة بالكامل في المنتصف
             tiktok.on("gift", data => {
-              if (data.repeatEnd) {
-                const userName = data.nickname || data.uniqueId || "داعم كريم";
-                
-                const giftObj = {
-                  startTime: Date.now(),
-                  nameText: `${userName}`,
-                  countText: `أرسل ${data.giftName} x${data.repeatCount}`,
-                  avatarImage: null,
-                  iconImage: null
-                };
+              try {
+                if (data.repeatEnd) {
+                  const user = data.userInfo || data;
+                  const userName = data.nickname || data.uniqueId || user.nickname || "داعم كريم";
+                  const pfp = data.profilePictureUrl || user.profilePictureUrl;
 
-                currentGift = giftObj; // وضع الهدية في الشاشة المنتصفية فوراً
+                  const giftObj = {
+                    startTime: Date.now(),
+                    nameText: `${userName}`,
+                    countText: `أرسل ${data.giftName} x${data.repeatCount}`,
+                    avatarImage: null,
+                    iconImage: null
+                  };
 
-                // تحميل صور الهدايا والداعم بسرعة
-                if (data.profilePictureUrl) {
-                  fetchImage(data.profilePictureUrl).then(img => { if(img) giftObj.avatarImage = img; });
+                  currentGift = giftObj;
+
+                  if (pfp) {
+                    fetchImage(pfp).then(img => { if(img) giftObj.avatarImage = img; }).catch(()=>{});
+                  }
+                  if (data.giftPictureUrl) {
+                    fetchImage(data.giftPictureUrl).then(img => { if(img) giftObj.iconImage = img; }).catch(()=>{});
+                  }
                 }
-                if (data.giftPictureUrl) {
-                  fetchImage(data.giftPictureUrl).then(img => { if(img) giftObj.iconImage = img; });
-                }
-              }
+              } catch (err) { console.error("خطأ حدث الهدية:", err.message); }
             });
             
           } else {
@@ -381,3 +396,4 @@ jobs:
           TIKTOK_USER: "qurankareem.11com"
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
         run: node overlay.js
+        
