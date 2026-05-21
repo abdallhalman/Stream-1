@@ -43,7 +43,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          const TIKTOK_USER = process.env.TIKTOK_USER || "gul.quran";
+          const TIKTOK_USER = process.env.TIKTOK_USER || "seham_amer";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH = 1280;
           const HEIGHT = 720;
@@ -267,6 +267,6 @@ jobs:
 
       - name: Start Stream
         env:
-          TIKTOK_USER: "gul.quran"
+          TIKTOK_USER: "seham_amer"
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
         run: node overlay.js
