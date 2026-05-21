@@ -397,20 +397,6 @@ jobs:
            } catch(e){}
           }
 
-          // تشغيل التأثير الطائر فوراً وبدون أي تأخير أو انتظار للعداد
-           tiktok.on("join", data => {
-            try {
-          const userName = data.nickname || data.uniqueId || "متابع";
-    
-            // تشغيل دالة التأثير الطائر فوراً هنا لكي تظهر فوق الشات
-          triggerFlyingJoinerEffect(userName);
-
-          if (data.profilePictureUrl) {
-            fetchAndCacheImage(data.profilePictureUrl).catch(()=>{});
-            }
-           } catch(e){}
-          });
-
           function triggerHeartEffect() {
             const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2"];
             const count = Math.floor(Math.random() * 6) + 5;
@@ -472,13 +458,16 @@ jobs:
           tiktok.on("chat", data => { handleIncomingComment(data); });
 
           tiktok.on("join", data => {
-            try {
-              const userName = data.nickname || data.uniqueId || "متابع";
-              joinQueue.push(userName);
-              if (joinQueue.length > 30) joinQueue.shift();
-              if (data.profilePictureUrl) fetchAndCacheImage(data.profilePictureUrl).catch(()=>{});
-            } catch(e){}
+           try {
+           const userName = data.nickname || data.uniqueId || "متابع";
+           triggerFlyingJoinerEffect(userName);
+
+            if (data.profilePictureUrl) {
+            fetchAndCacheImage(data.profilePictureUrl).catch(()=>{});
+            }
+           } catch(e){}
           });
+ 
 
           tiktok.on("follow", data => {
             try {
