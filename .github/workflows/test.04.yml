@@ -33,7 +33,7 @@ jobs:
 
       - name: Download audio files
         run: |
-          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
+          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
 
       - name: Create playlist and merge audio
         run: |
@@ -261,4 +261,4 @@ jobs:
         env:
           TIKTOK_USER: "gul.quran"
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
-        run: node overlay.js في
+        run: node overlay.js
