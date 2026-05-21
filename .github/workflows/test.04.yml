@@ -38,7 +38,7 @@ jobs:
 
       - name: Download single audio file
         run: |
-          gdown 1ToMytDgeII2GDspmHZ-kbAis-yuK2isp -O audio_raw.tmp && ffmpeg -i audio_raw.tmp audio.mp3 -y
+          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O audio_raw.tmp && ffmpeg -i audio_raw.tmp audio.mp3 -y
 
       - name: Create overlay script
         run: |
