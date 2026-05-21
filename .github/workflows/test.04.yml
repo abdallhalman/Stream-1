@@ -8,11 +8,12 @@ jobs:
     timeout-minutes: 359
     steps:
 
-      - name: Install system dependencies
+      - name: Install system dependencies (Fonts, Emoji & FFmpeg)
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg \
             fonts-noto-color-emoji \
+            fonts-aconstructa \
             fonts-dejavu-core \
             build-essential \
             libcairo2-dev \
@@ -21,13 +22,6 @@ jobs:
             libgif-dev \
             librsvg2-dev \
             wget
-
-      - name: Download Professional Arabic Fonts
-        run: |
-          mkdir -p ~/.local/share/fonts
-          wget -O ~/.local/share/fonts/Cairo-Bold.ttf https://github.com/google/fonts/raw/main/ofl/cairo/Cairo-%5Bwght%5D.ttf
-          wget -O ~/.local/share/fonts/Amiri-Bold.ttf https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Bold.ttf
-          fc-cache -fv
 
       - name: Install Python tools
         run: pip install gdown
@@ -38,44 +32,36 @@ jobs:
       - name: Download video
         run: gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O video.mp4
 
-      - name: Download audio files
+      - name: Download single audio file
         run: |
-          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
-          
-      - name: Create playlist and merge audio
-        run: |
-          ls audio*.mp3 | shuf > playlist.txt
-          while IFS= read -r file; do
-            echo "file '$file'"
-          done < playlist.txt > concat.txt
-          ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3 -y
+          # تحميل ملف صوتي واحد فقط للبث
+          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O audio_raw.tmp && ffmpeg -i audio_raw.tmp audio.mp3 -y
 
       - name: Create overlay script
         run: |
           cat > overlay.js << 'EOF'
           const { WebcastPushConnection } = require("tiktok-live-connector");
-          const { createCanvas, loadImage, registerFont } = require("canvas");
+          const { createCanvas, loadImage } = require("canvas");
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
+          // اسم المستخدم الجديد الخاص بك
           const TIKTOK_USER = process.env.TIKTOK_USER || "qurankareem.11com";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH = 1280;
           const HEIGHT = 720;
           const FPS = 30;
 
-          // ذاكرة الكاش الذكية للصور
           const imageCache = new Map();
-
           let chatEvents = [];  
           let currentGift = null; 
           let totalLikes = 0;   
           let viewerCount = 0;  
           let floatingHearts = []; 
-          
-          let joinQueue = [];       // طابور استقبال المنضمين لمنع الثقل
-          let flyingJoiners = [];   // تأثير حركة المنضمين
+          let joinQueue = [];       
+          let flyingJoiners = [];   
 
+          // تشغيل FFmpeg مع ملف الفيديو وملف الصوتي الواحد
           const ffmpeg = spawn("ffmpeg", [
             "-f", "rawvideo",
             "-pixel_format", "rgba",
@@ -87,7 +73,7 @@ jobs:
             "-i", "video.mp4",
             "-stream_loop", "-1",
             "-re",
-            "-i", "merged_audio.mp3",
+            "-i", "audio.mp3",
             "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
             "-map", "[v]",
             "-map", "2:a",
@@ -117,7 +103,7 @@ jobs:
 
             const now = Date.now();
 
-            // 1. عداد اللايكات الإجمالي (أعلى اليمين)
+            // 1. عداد اللايكات
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111111";
             ctx.beginPath();
@@ -125,16 +111,16 @@ jobs:
             ctx.fill();
             ctx.globalAlpha = 1.0;
             ctx.fillStyle = "#ff4444";
-            ctx.font = "bold 24px 'Noto Color Emoji', 'DejaVu Sans'";
+            ctx.font = "bold 24px 'Noto Color Emoji', sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("❤️", WIDTH - 250, 53);
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 20px 'Cairo', sans-serif";
+            ctx.font = "bold 20px sans-serif";
             ctx.textAlign = "right";
             ctx.direction = "rtl";
             ctx.fillText(`الإعجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
 
-            // 2. عداد المشاهدين المطور (أعلى اليسار)
+            // 2. عداد المشاهدين
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111111";
             ctx.beginPath();
@@ -142,16 +128,16 @@ jobs:
             ctx.fill();
             ctx.globalAlpha = 1.0;
             ctx.fillStyle = "#00ffcc";
-            ctx.font = "bold 22px 'Noto Color Emoji'";
+            ctx.font = "bold 22px 'Noto Color Emoji', sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("👁️", 50, 53);
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 20px 'Cairo', sans-serif";
+            ctx.font = "bold 20px sans-serif";
             ctx.textAlign = "left";
             ctx.direction = "ltr";
             ctx.fillText(`LIVE: ${viewerCount}`, 85, 52);
 
-            // 3. القلوب المتطايرة عند التفاعل
+            // 3. القلوب المتطايرة
             floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
             for (let heart of floatingHearts) {
               const age = (now - heart.startTime) / heart.duration;
@@ -160,25 +146,24 @@ jobs:
               const y = heart.y - (age * 400); 
               ctx.globalAlpha = alpha;
               ctx.fillStyle = heart.color;
-              ctx.font = `${heart.size}px 'Noto Color Emoji'`;
+              ctx.font = `${heart.size}px 'Noto Color Emoji', sans-serif`;
               ctx.fillText("❤️", x, y);
             }
             ctx.globalAlpha = 1.0; 
 
-            // 4. معالجة ورسم المنضمين المتطايرين بشكل تصاعدي مائل ومتوسع
+            // 4. عرض حركة المنضمين (التأثير المائل المتصاعد)
             flyingJoiners = flyingJoiners.filter(j => now - j.startTime < j.duration);
             for (let j of flyingJoiners) {
               const age = (now - j.startTime) / j.duration;
               const alpha = age < 0.15 ? age / 0.15 : (age > 0.85 ? (1 - age) / 0.15 : 1);
               
-              // حركة مائلة سلسة من الركن السفلي إلى المنطقة العلوية الوسطى
               const x = j.startX + (age * 340); 
               const y = j.startY - (age * 480); 
-              const currentSize = j.startSize + (age * 12); // التوسع التدريجي لخط الأسم
+              const currentSize = j.startSize + (age * 10); 
 
               ctx.globalAlpha = alpha * 0.75;
               ctx.fillStyle = "#111111";
-              ctx.font = `bold ${currentSize}px 'Cairo', 'Noto Color Emoji', sans-serif`;
+              ctx.font = `bold ${currentSize}px sans-serif`;
               const textWidth = ctx.measureText(j.text).width;
               
               ctx.beginPath();
@@ -193,9 +178,8 @@ jobs:
             }
             ctx.globalAlpha = 1.0;
 
-            // 5. قائمة الشات الفخمة (بالخطوط الجديدة والمستويات وبقاء 30 ثانية)
+            // 5. قائمة الشات الذكية (دعم تلقائي للغة العربية والإيموجي الملون من النظام)
             chatEvents = chatEvents.filter(e => now - e.time < 30000); 
-            
             for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
               const e = chatEvents[i];
               const age = (now - e.time) / 30000;
@@ -212,7 +196,6 @@ jobs:
 
               ctx.globalAlpha = alpha;
 
-              // طباعة الأفاتار حتماً من الكاش
               if (e.avatarUrl && imageCache.has(e.avatarUrl)) {
                 try {
                   const img = imageCache.get(e.avatarUrl);
@@ -226,7 +209,7 @@ jobs:
               }
 
               ctx.fillStyle = e.color || "#ffffff";
-              ctx.font = "bold 18px 'Cairo', 'Noto Color Emoji', sans-serif";
+              ctx.font = "bold 18px sans-serif";
               ctx.textAlign = "left"; 
               ctx.direction = "rtl";
               
@@ -235,7 +218,7 @@ jobs:
               ctx.fillText(printText, 85, y - 8);
             }
 
-            // 6. عرض لوحة الهدايا الكبرى المتميزة بوسط الشاشة
+            // 6. لوحة الهدايا الكبرى في المنتصف
             if (currentGift && now - currentGift.startTime < 4000) {
               const gAge = (now - currentGift.startTime) / 4000;
               let gAlpha = 1;
@@ -277,13 +260,13 @@ jobs:
               }
 
               ctx.fillStyle = "#FFD700"; 
-              ctx.font = "bold 22px 'Cairo', 'Noto Color Emoji', sans-serif";
+              ctx.font = "bold 22px sans-serif";
               ctx.textAlign = "center";
               ctx.direction = "rtl";
               ctx.fillText(currentGift.nameText, boxX + (boxWidth / 2) + 10, boxY + 50);
 
               ctx.fillStyle = "#ffffff"; 
-              ctx.font = "bold 24px 'Cairo', sans-serif";
+              ctx.font = "bold 24px sans-serif";
               ctx.fillText(currentGift.countText, boxX + (boxWidth / 2) + 10, boxY + 95);
             } else {
               currentGift = null;
@@ -314,7 +297,6 @@ jobs:
             }
           }
 
-          // دالة الحفظ الذكية للتحميل الحتمي للصور بدون حظر البث
           async function fetchAndCacheImage(url) {
             if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
             if (imageCache.has(url)) return imageCache.get(url);
@@ -349,7 +331,6 @@ jobs:
             } catch (err) {}
           }
 
-          // معالج إطلاق تأثير الحركة للمنضمين من الطابور المجدول
           function triggerFlyingJoinerEffect(name) {
             try {
               flyingJoiners.push({
@@ -364,7 +345,6 @@ jobs:
             } catch(e){}
           }
 
-          // محرك الطابور الذكي: يختار منضم واحد كل ثانية ويظهره بسلاسة تامة دون إرهاق السيرفر
           setInterval(() => {
             if (joinQueue.length > 0) {
               const nextName = joinQueue.shift();
@@ -392,34 +372,30 @@ jobs:
             const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
             function connectTikTok() {
-              console.log("🔄 جاري الاتصال بـ TikTok Live...");
+              console.log(`🔄 جاري الاتصال بحساب: ${TIKTOK_USER}`);
               tiktok.connect()
-                .then(() => console.log("✅ متصل بنجاح"))
+                .then(() => console.log("✅ متصل بالبث بنجاح"))
                 .catch(err => {
                   console.error("⚠️ فشل الاتصال، إعادة المحاولة:", err.message);
                   setTimeout(connectTikTok, 15000);
                 });
             }
 
-            console.log("⏳ انتظار 15 ثانية للربط...");
-            setTimeout(connectTikTok, 15000);
+            console.log("⏳ انتظار 10 ثوانٍ للربط المباشر...");
+            setTimeout(connectTikTok, 10000);
 
-            // عداد المشاهدين المباشر من الغرفة
             tiktok.on("roomUser", data => {
               if (data && data.viewerCount !== undefined) {
                 viewerCount = data.viewerCount;
               }
             });
 
-            // استخراج المستويات وقوة الدعم والرتب وعرضها فوراً
             function handleIncomingComment(data) {
               try {
-                const user = data.userInfo || data;
                 const userName = data.nickname || data.uniqueId || "متابع";
                 const text = data.comment;
                 const pfp = data.profilePictureUrl;
 
-                // استخراج مستويات الحساب والرتب والشارات بذكاء
                 let badges = "";
                 if (data.userDetails) {
                   if (data.userDetails.userLevel && data.userDetails.userLevel > 0) {
@@ -441,13 +417,11 @@ jobs:
             tiktok.on("comment", data => { handleIncomingComment(data); });
             tiktok.on("chat", data => { handleIncomingComment(data); });
 
-            // إرسال المنضمين للطابور المجدول لمعالجتهم بذكاء وتأمين ثباتهم
             tiktok.on("join", data => {
               try {
                 const userName = data.nickname || data.uniqueId || "متابع";
                 joinQueue.push(userName);
-                // تصفية الطابور إذا امتلأ جداً منعاً لامتلاء الذاكرة
-                if (joinQueue.length > 40) joinQueue.splice(0, 10);
+                if (joinQueue.length > 30) joinQueue.shift();
                 if (data.profilePictureUrl) fetchAndCacheImage(data.profilePictureUrl).catch(()=>{});
               } catch(e){}
             });
@@ -483,7 +457,7 @@ jobs:
                     iconImage: null
                   };
 
-                                    currentGift = giftObj;
+                  currentGift = giftObj;
 
                   if (pfp) fetchAndCacheImage(pfp).catch(()=>{});
                   if (data.giftPictureUrl) {
@@ -496,11 +470,11 @@ jobs:
             });
             
           } else {
-            console.log("⚠️ اسم المستخدم لم يحدد");
+            console.log("⚠️ اسم مستخدم تيك توك غير صحيح");
           }
 
           renderLoop().catch(err => {
-            console.error("خطأ عام:", err);
+            console.error("خطأ عام في النظام:", err);
             process.exit(1);
           });
           EOF
@@ -510,3 +484,4 @@ jobs:
           TIKTOK_USER: "qurankareem.11com"
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
         run: node overlay.js
+        
