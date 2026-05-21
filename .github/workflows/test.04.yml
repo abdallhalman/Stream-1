@@ -19,15 +19,14 @@ jobs:
             libjpeg-dev \
             libgif-dev \
             librsvg2-dev \
+            fonts-noto-color-emoji \
             wget
 
-      - name: Download Professional Arabic & Emoji Fonts (Direct)
+      - name: Download Professional Arabic Font (Direct Fixed)
         run: |
           mkdir -p ./fonts
-          # تحميل خط كشيدة/القاهرة العربي المضمون من جوجل مباشرة
-          wget -O ./fonts/Cairo-Bold.ttf "https://github.com/google/fonts/raw/main/ofl/cairo/Cairo%5Bwght%5D.ttf"
-          # تحميل خط الإيموجي الملون الرسمي والثابت من جوجل
-          wget -O ./fonts/NotoColorEmoji.ttf "https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf"
+          # سحب الخط العربي من خادم cdnjs المستقر عالمياً بنجاح 100%
+          wget -O ./fonts/Cairo-Bold.ttf "https://cdnjs.cloudflare.com/ajax/libs/fonts-cairo/12.0.1/fonts/Cairo-Bold.ttf"
 
 
       - name: Install Python tools
