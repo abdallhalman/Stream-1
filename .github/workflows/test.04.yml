@@ -1,4 +1,4 @@
-name: test.04
+name: test.01
 on:
   workflow_dispatch:
 
@@ -33,8 +33,8 @@ jobs:
 
       - name: Download audio files
         run: |
-          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
-          
+          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
+
       - name: Create playlist and merge audio
         run: |
           ls audio*.mp3 | shuf > playlist.txt
@@ -51,7 +51,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          const TIKTOK_USER = process.env.TIKTOK_USER || "";
+          const TIKTOK_USER = process.env.TIKTOK_USER || "gul.quran";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH = 1920;
           const HEIGHT = 1080;
@@ -192,13 +192,22 @@ jobs:
             });
           }
 
-          // TikTok
+          // TikTok - ينتظر دقيقتين بعد بدء البث ثم يتصل
           if (TIKTOK_USER) {
             const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
-            tiktok.connect()
-              .then(() => console.log("✅ متصل بـ TikTok Live"))
-              .catch(err => console.error("⚠️ TikTok:", err.message));
+            function connectTikTok() {
+              console.log("🔄 محاولة الاتصال بـ TikTok...");
+              tiktok.connect()
+                .then(() => console.log("✅ متصل بـ TikTok Live"))
+                .catch(err => {
+                  console.error("⚠️ فشل الاتصال، إعادة المحاولة بعد دقيقة:", err.message);
+                  setTimeout(connectTikTok, 60000);
+                });
+            }
+
+            console.log("⏳ انتظار دقيقتين قبل الاتصال بـ TikTok...");
+            setTimeout(connectTikTok, 120000);
 
             tiktok.on("comment", data => {
               addEvent(
@@ -250,6 +259,6 @@ jobs:
 
       - name: Start Stream
         env:
-          TIKTOK_USER: ${{ secrets.TIKTOK_USER }}
+          TIKTOK_USER: "gul.quran"
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
-        run: node overlay.js
+        run: node overlay.js في
