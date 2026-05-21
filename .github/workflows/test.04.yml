@@ -95,7 +95,7 @@ jobs:
 
             const now = Date.now();
 
-            // 1. رسم عداد اللايكات المحسن (أعلى اليمين)
+            // 1. رسم عداد اللايكات
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111111";
             ctx.beginPath();
@@ -112,9 +112,9 @@ jobs:
             ctx.font = "bold 20px 'DejaVu Sans', 'Noto Sans Arabic', sans-serif";
             ctx.textAlign = "right";
             ctx.direction = "rtl";
-            ctx.fillText(`الإعجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
+            ctx.fillText(`العجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
 
-            // 2. رسم القلوب المتطايرة
+            // 2. القلوب المتطايرة
             floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
             for (let heart of floatingHearts) {
               const age = (now - heart.startTime) / heart.duration;
@@ -129,17 +129,16 @@ jobs:
             }
             ctx.globalAlpha = 1.0; 
 
-            // 3. رسم قائمة الشات (تستوعب حتى 10 أسطر بارتفاع مرن ومتناسق)
-            chatEvents = chatEvents.filter(e => now - e.time < 8000); // زيادة مدة البقاء لـ 8 ثوانٍ لكي تلحق قراءتها
+            // 3. قائمة الشات (تستوعب حتى 10 أسطر)
+            chatEvents = chatEvents.filter(e => now - e.time < 10000); // زيادة المدة لـ 10 ثوانٍ لسهولة القراءة
             
             for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
               const e = chatEvents[i];
-              const age = (now - e.time) / 8000;
+              const age = (now - e.time) / 10000;
               const alpha = Math.max(0, 1 - age);
               
-              // ضبط توزيع دقيق للأسطر من الأسفل للأعلى دون تداخل
               const y = HEIGHT - 50 - (i * 52); 
-              if (y < 90) continue; // منع التداخل مع عداد اللايكات العلوي
+              if (y < 90) continue; 
 
               ctx.globalAlpha = alpha * 0.70;
               ctx.fillStyle = "#000000";
@@ -149,7 +148,6 @@ jobs:
 
               ctx.globalAlpha = alpha;
 
-              // رسم الصورة بأمان كامل
               if (e.avatarImage) {
                 try {
                   ctx.save();
@@ -171,7 +169,7 @@ jobs:
               ctx.fillText(printText, 70, y - 7);
             }
 
-            // 4. رسم الهدايا الكبيرة في المنتصف
+            // 4. الهدايا المتميزة في المنتصف
             if (currentGift && now - currentGift.startTime < 4000) {
               const gAge = (now - currentGift.startTime) / 4000;
               let gAlpha = 1;
@@ -250,7 +248,6 @@ jobs:
             }
           }
 
-          // دالة تحميل صور آمنة ومحصنة بالكامل ضد الروابط الفارغة والتالفة
           async function fetchImage(url) {
             if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
             try {
@@ -258,12 +255,9 @@ jobs:
               if (!res.ok) return null;
               const buf = await res.buffer();
               return await loadImage(buf);
-            } catch (e) { 
-              return null; 
-            }
+            } catch (e) { return null; }
           }
 
-          // دالة إضافة أحداث الشات محمية بالكامل لمنع سقوط السكربت
           function addChatEvent(text, color, avatarUrl) {
             try {
               const newEvent = {
@@ -275,15 +269,12 @@ jobs:
               chatEvents.unshift(newEvent);
               if (chatEvents.length > 20) chatEvents.pop();
 
-              // محاولة تحميل الأفاتار بالخلفية، وإذا فشل لا يؤثر على ظهور النص
               if (avatarUrl) {
                 fetchImage(avatarUrl)
                   .then(img => { if(img) newEvent.avatarImage = img; })
                   .catch(() => {});
               }
-            } catch (err) {
-              console.error("خطأ صامت في معالجة مصفوفة الشات:", err.message);
-            }
+            } catch (err) {}
           }
 
           function triggerHeartEffect() {
@@ -310,16 +301,16 @@ jobs:
               tiktok.connect()
                 .then(() => console.log("✅ متصل بنجاح بالبث واستقبال البيانات"))
                 .catch(err => {
-                  console.error("⚠️ فشل الاتصال، إعادة المحاولة بعد 15 ثانية:", err.message);
+                  console.error("⚠️ فشل الاتصال، إعادة المحاولة:", err.message);
                   setTimeout(connectTikTok, 15000);
                 });
             }
 
-            console.log("⏳ انتظار 15 ثانية للربط السريع الحاسم...");
+            console.log("⏳ انتظار 15 ثانية للربط...");
             setTimeout(connectTikTok, 15000);
 
-            // استخراج وتأمين بيانات التعليق من أي هيكل مصفوفة قادم
-            tiktok.on("comment", data => {
+            // دالة موحدة لمعالجة النص القادم من أي حدث كومنت
+            function handleIncomingComment(data) {
               try {
                 const user = data.userInfo || data;
                 const userName = data.nickname || data.uniqueId || user.nickname || "متابع";
@@ -329,10 +320,20 @@ jobs:
                 if (text) {
                   addChatEvent(`💬 ${userName}: ${text}`, "#ffffff", pfp);
                 }
-              } catch (err) { console.error("خطأ حدث التعليق:", err.message); }
+              } catch (err) {}
+            }
+
+            // 1. استقبال التعليقات العادية
+            tiktok.on("comment", data => {
+              handleIncomingComment(data);
             });
 
-            // استخراج وتأمين المتابعات
+            // 🔥 الإضافة الحاسمة: استقبال تعليقات الشات المفلترة والمحمية
+            tiktok.on("chat", data => {
+              handleIncomingComment(data);
+            });
+
+            // 2. استقبال المتابعات
             tiktok.on("follow", data => {
               try {
                 const user = data.userInfo || data;
@@ -340,20 +341,20 @@ jobs:
                 const pfp = data.profilePictureUrl || user.profilePictureUrl;
 
                 addChatEvent(`👤 ${userName} تابع الحساب الآن`, "#ff6b9d", pfp);
-              } catch (err) { console.error("خطأ حدث المتابعة:", err.message); }
+              } catch (err) {}
             });
 
-            // معالجة العداد المتراكم للايكات وتوليد القلوب تلقائياً
+            // 3. معالجة اللايكات والعداد التراكمي
             tiktok.on("like", data => {
               try {
                 if (data.likeCount && data.likeCount > 0) {
                   totalLikes += Number(data.likeCount); 
                   triggerHeartEffect(); 
                 }
-              } catch (err) { console.error("خطأ حدث اللايك:", err.message); }
+              } catch (err) {}
             });
 
-            // استخراج وتأمين الهدايا المنفصلة بالكامل في المنتصف
+            // 4. معالجة الهدايا
             tiktok.on("gift", data => {
               try {
                 if (data.repeatEnd) {
@@ -378,7 +379,7 @@ jobs:
                     fetchImage(data.giftPictureUrl).then(img => { if(img) giftObj.iconImage = img; }).catch(()=>{});
                   }
                 }
-              } catch (err) { console.error("خطأ حدث الهدية:", err.message); }
+              } catch (err) {}
             });
             
           } else {
