@@ -295,9 +295,33 @@ jobs:
               currentGift = null;
             }
 
-            ctx.globalAlpha = 1.0;
-            return canvas.toBuffer("raw");
-          }
+              flyingJoiners = flyingJoiners.filter(j => Date.now() - j.startTime < j.duration); 
+            for (let j of flyingJoiners) {
+            const age = (Date.now() - j.startTime) / j.duration;
+            const alpha = age < 0.15 ? age / 0.15 : (age > 0.85 ? (1 - age) / 0.15 : 1);
+            const x = j.startX + (age * 340);
+            const y = j.startY - (age * 480);
+            const currentSize = j.startSize + (age * 10);
+
+            ctx.globalAlpha = alpha * 0.75;
+            ctx.fillStyle = "#111111";
+            ctx.font = `bold ${currentSize}px 'Cairo', sans-serif`;
+            const textWidth = ctx.measureText(j.text).width;
+      
+            ctx.beginPath();
+            ctx.roundRect(x - 15, y - currentSize - 5, textWidth + 30, currentSize + 18, 15);
+            ctx.fill();
+
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = "#00ffcc";
+            ctx.textAlign = "left";
+            ctx.direction = "rtl";
+            ctx.fillText(j.text, x, y);
+           }
+
+           ctx.globalAlpha = 1.0;
+           return canvas.toBuffer("raw");
+           }
 
           async function renderLoop() {
             const interval = 1000 / FPS;
