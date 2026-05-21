@@ -8,20 +8,34 @@ jobs:
     timeout-minutes: 359
     steps:
 
-      - name: Checkout repository code
-        uses: actions/checkout@v4
-
-      - name: Install tools
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          pip install gdown
+          sudo apt-get install -y ffmpeg \
+            fonts-noto-color-emoji \
+            fonts-arabeyes \
+            fonts-arab \
+            build-essential \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libjpeg-dev \
+            libgif-dev \
+            librsvg2-dev
+
+      - name: Install Python tools
+        run: pip install gdown
+
+      - name: Install Node tools
+        run: npm install tiktok-live-connector canvas node-fetch@2
+
+      - name: Download video
+        run: gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O video.mp4
 
       - name: Download audio files
         run: |
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
-
-      - name: Create playlist and merge
+          
+      - name: Create playlist and merge audio
         run: |
           ls audio*.mp3 | shuf > playlist.txt
           while IFS= read -r file; do
@@ -29,12 +43,213 @@ jobs:
           done < playlist.txt > concat.txt
           ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3
 
-      - name: Start Stream
+      - name: Create overlay script
         run: |
-         ffmpeg -loop 1 -re -i .github/workflows/background.jpg \
-         -stream_loop -1 -re -i merged_audio.mp3 \
-         -map 0:v -map 1:a \
-         -vf "scale=1080:1920" \
-         -c:v libx264 -tune stillimage -pix_fmt yuv420p -profile:v main -level 3.1 -g 60 -b:v 2500k \
-         -c:a aac -b:a 128k -ar 44100 \
-         -shortest -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
+          cat > overlay.js << 'EOF'
+          const { WebcastPushConnection } = require("tiktok-live-connector");
+          const { createCanvas, loadImage } = require("canvas");
+          const { spawn } = require("child_process");
+          const fetch = require("node-fetch");
+
+          const TIKTOK_USER = process.env.TIKTOK_USER || "";
+          const STREAM_KEY = process.env.STREAM_KEY;
+          const WIDTH = 1920;
+          const HEIGHT = 1080;
+          const FPS = 30;
+
+          let events = [];
+
+          // ffmpeg: يدمج overlay فوق الفيديو ويبث
+          const ffmpeg = spawn("ffmpeg", [
+            // مدخل 0: overlay frames من node
+            "-f", "rawvideo",
+            "-pixel_format", "rgba",
+            "-video_size", `${WIDTH}x${HEIGHT}`,
+            "-framerate", `${FPS}`,
+            "-i", "pipe:0",
+            // مدخل 1: الفيديو الأصلي
+            "-stream_loop", "-1",
+            "-re",
+            "-i", "video.mp4",
+            // مدخل 2: الصوت
+            "-stream_loop", "-1",
+            "-re",
+            "-i", "merged_audio.mp3",
+            // دمج الفيديو مع الـ overlay
+            "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
+            "-map", "[v]",
+            "-map", "2:a",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-b:v", "2500k",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            "-f", "flv",
+            `rtmp://live.restream.io/live/${STREAM_KEY}`
+          ]);
+
+          ffmpeg.stderr.on("data", d => process.stderr.write(d));
+          ffmpeg.on("exit", code => {
+            console.error("ffmpeg خرج بكود:", code);
+            process.exit(code);
+          });
+
+          // رسم frame
+          async function drawFrame() {
+            const canvas = createCanvas(WIDTH, HEIGHT);
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+            const now = Date.now();
+            events = events.filter(e => now - e.time < 4000);
+
+            for (let i = 0; i < Math.min(events.length, 8); i++) {
+              const e = events[i];
+              const age = (now - e.time) / 4000;
+              const alpha = 1 - age;
+              const y = HEIGHT - 80 - (i * 65);
+              if (y < 60) continue;
+
+              // خلفية
+              ctx.globalAlpha = alpha * 0.7;
+              ctx.fillStyle = "#000000";
+              ctx.beginPath();
+              ctx.roundRect(15, y - 38, 520, 52, 10);
+              ctx.fill();
+
+              ctx.globalAlpha = alpha;
+
+              // صورة المستخدم
+              if (e.avatar) {
+                try {
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.arc(50, y - 12, 18, 0, Math.PI * 2);
+                  ctx.clip();
+                  ctx.drawImage(e.avatar, 32, y - 30, 36, 36);
+                  ctx.restore();
+                } catch {}
+              }
+
+              // صورة الهدية
+              if (e.icon) {
+                try {
+                  ctx.drawImage(e.icon, 80, y - 28, 30, 30);
+                } catch {}
+              }
+
+              // النص
+              ctx.fillStyle = e.color || "#ffffff";
+              ctx.font = "bold 18px 'Noto Sans Arabic', sans-serif";
+              ctx.textAlign = "right";
+              ctx.direction = "rtl";
+              ctx.fillText(e.text, 525, y - 5);
+            }
+
+            ctx.globalAlpha = 1;
+            return canvas.toBuffer("raw");
+          }
+
+          // حلقة الرسم
+          async function renderLoop() {
+            const interval = 1000 / FPS;
+            while (true) {
+              const start = Date.now();
+              try {
+                const frame = await drawFrame();
+                await new Promise((resolve, reject) => {
+                  ffmpeg.stdin.write(frame, err => {
+                    if (err) reject(err);
+                    else resolve();
+                  });
+                });
+              } catch (err) {
+                console.error("خطأ في الرسم:", err.message);
+              }
+              const elapsed = Date.now() - start;
+              const wait = Math.max(0, interval - elapsed);
+              await new Promise(r => setTimeout(r, wait));
+            }
+          }
+
+          // تحميل صورة
+          async function fetchImage(url) {
+            try {
+              if (!url) return null;
+              const res = await fetch(url, { timeout: 3000 });
+              const buf = await res.buffer();
+              return await loadImage(buf);
+            } catch { return null; }
+          }
+
+          // إضافة تفاعل
+          function addEvent(text, color, avatarUrl, iconUrl) {
+            fetchImage(avatarUrl).then(avatar => {
+              fetchImage(iconUrl).then(icon => {
+                events.unshift({ time: Date.now(), text, color, avatar, icon });
+                if (events.length > 20) events.pop();
+              });
+            });
+          }
+
+          // TikTok
+          if (TIKTOK_USER) {
+            const tiktok = new WebcastPushConnection(TIKTOK_USER);
+
+            tiktok.connect()
+              .then(() => console.log("✅ متصل بـ TikTok Live"))
+              .catch(err => console.error("⚠️ TikTok:", err.message));
+
+            tiktok.on("comment", data => {
+              addEvent(
+                `${data.uniqueId}: ${data.comment}`,
+                "#ffffff",
+                data.profilePictureUrl,
+                null
+              );
+            });
+
+            tiktok.on("gift", data => {
+              if (data.giftType === 1 && data.repeatEnd) {
+                addEvent(
+                  `${data.uniqueId} أرسل ${data.giftName} x${data.repeatCount}`,
+                  "#FFD700",
+                  data.profilePictureUrl,
+                  data.giftPictureUrl
+                );
+              }
+            });
+
+            tiktok.on("follow", data => {
+              addEvent(
+                `${data.uniqueId} تابعك`,
+                "#ff6b9d",
+                data.profilePictureUrl,
+                null
+              );
+            });
+
+            tiktok.on("like", data => {
+              addEvent(
+                `${data.uniqueId} أرسل ${data.likeCount} إعجاب`,
+                "#ff4444",
+                data.profilePictureUrl,
+                null
+              );
+            });
+          } else {
+            console.log("⚠️ TIKTOK_USER غير محدد - البث بدون تفاعلات");
+          }
+
+          // ابدأ
+          renderLoop().catch(err => {
+            console.error("خطأ عام:", err);
+            process.exit(1);
+          });
+          EOF
+
+      - name: Start Stream
+        env:
+          TIKTOK_USER: ${{ secrets.TIKTOK_USER }}
+          STREAM_KEY: ${{ secrets.STREAM_KEY }}
+        run: node overlay.js
