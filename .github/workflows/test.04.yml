@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 350
     steps:
 
-      - name: Install system dependencies
+      - name: Install system dependencies (FFmpeg, Fonts & Core)
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg \
@@ -20,12 +20,8 @@ jobs:
             libgif-dev \
             librsvg2-dev \
             fonts-noto-color-emoji \
+            fonts-cairo \
             wget
-
-      - name: Download Cairo Font Local
-        run: |
-          mkdir -p ./fonts
-          wget -q -O ./fonts/Cairo-Bold.ttf "https://github.com/google/fonts/raw/main/ofl/cairo/Cairo%5Bwght%5D.ttf"
 
       - name: Install Python tools
         run: pip install gdown
@@ -49,9 +45,10 @@ jobs:
           const fetch = require("node-fetch");
           const path = require("path");
 
+          // نظام أوبونتو يقوم بحفظ الخطوط المثبتة رسميًا في هذا المسار التلقائي
           try {
-            registerFont(path.join(__dirname, "fonts", "Cairo-Bold.ttf"), { family: "Cairo" });
-            console.log("Cairo font registered successfully");
+            registerFont("/usr/share/fonts/truetype/cairo/Cairo-Bold.ttf", { family: "Cairo" });
+            console.log("Cairo font registered successfully from system");
           } catch (err) {
             console.error("Font registration warning:", err.message);
           }
