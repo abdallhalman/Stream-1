@@ -1,0 +1,466 @@
+const { WebcastPushConnection } = require("tiktok-live-connector");
+const { createCanvas, loadImage } = require("canvas");
+const { spawn } = require("child_process");
+const fetch = require("node-fetch");
+
+// إعدادات الحساب والبث المستقر
+const TIKTOK_USER = "qurankareem.11com"; 
+const STREAM_KEY = process.env.STREAM_KEY;
+const WIDTH = 1280;
+const HEIGHT = 720;
+const FPS = 30;
+
+// الذاكرة المؤقتة (Cache) السرية التي تجعل الشارات تظهر فوراً في 0 ثانية بعد أول تعليق
+const imageCache = new Map();
+
+let chatEvents = [];  
+let currentGift = null; 
+let totalLikes = 0;   
+let viewerCount = 0;  
+let floatingHearts = []; 
+let joinQueue = [];       
+let flyingJoiners = [];   
+
+// تشغيل FFmpeg لدمج الـ Overlay فوق الفيديو والصوت المستقر
+const ffmpeg = spawn("ffmpeg", [
+  "-f", "rawvideo",
+  "-pixel_format", "rgba",
+  "-video_size", `${WIDTH}x${HEIGHT}`,
+  "-framerate", `${FPS}`,
+  "-i", "pipe:0",
+  "-stream_loop", "-1",
+  "-re",
+  "-i", "video.mp4",
+  "-stream_loop", "-1",
+  "-re",
+  "-i", "audio.mp3",
+  "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
+  "-map", "[v]",
+  "-map", "2:a",
+  "-c:v", "libx264",
+  "-preset", "veryfast",
+  "-b:v", "2500k",
+  "-maxrate", "2500k",
+  "-bufsize", "5000k",
+  "-g", "60",
+  "-c:a", "aac",
+  "-b:a", "128k",
+  "-ar", "44100",
+  "-f", "flv",
+  `rtmp://live.restream.io/live/${STREAM_KEY}`
+]);
+
+ffmpeg.stderr.on("data", d => process.stderr.write(d));
+ffmpeg.on("exit", code => {
+  console.error("FFmpeg توقف بكود:", code);
+  process.exit(code);
+});
+
+// حلقة الرسم الاحترافية للشارات الرسمية والمستويات كصور
+async function drawFrame() {
+  const canvas = createCanvas(WIDTH, HEIGHT);
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+  const now = Date.now();
+
+  // عداد اللايكات
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = "#111111";
+  ctx.beginPath();
+  ctx.roundRect(WIDTH - 280, 20, 260, 50, 25);
+  ctx.fill();
+  ctx.globalAlpha = 1.0;
+  ctx.fillStyle = "#ff4444";
+  ctx.font = "bold 24px 'Noto Color Emoji', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("❤️", WIDTH - 250, 53);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px sans-serif";
+  ctx.textAlign = "right";
+  ctx.direction = "rtl";
+  ctx.fillText(`الإعجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
+
+  // عداد المشاهدين
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = "#111111";
+  ctx.beginPath();
+  ctx.roundRect(20, 20, 220, 50, 25);
+  ctx.fill();
+  ctx.globalAlpha = 1.0;
+  ctx.fillStyle = "#00ffcc";
+  ctx.font = "bold 22px 'Noto Color Emoji', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("👁️", 50, 53);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px sans-serif";
+  ctx.textAlign = "left";
+  ctx.direction = "ltr";
+  ctx.fillText(`LIVE: ${viewerCount}`, 85, 52);
+
+  // القلوب المتطايرة
+  floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
+  for (let heart of floatingHearts) {
+    const age = (now - heart.startTime) / heart.duration;
+    const alpha = 1 - age;
+    const x = heart.x + Math.sin(age * 7) * 30;
+    const y = heart.y - (age * 400);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = heart.color;
+    ctx.font = `${heart.size}px 'Noto Color Emoji', sans-serif`;
+    ctx.fillText("❤️", x, y);
+  }
+  ctx.globalAlpha = 1.0;
+
+  // حركة المنضمين
+  flyingJoiners = flyingJoiners.filter(j => now - j.startTime < j.duration);
+  for (let j of flyingJoiners) {
+    const age = (now - j.startTime) / j.duration;
+    const alpha = age < 0.15 ? age / 0.15 : (age > 0.85 ? (1 - age) / 0.15 : 1);
+    const x = j.startX + (age * 340);
+    const y = j.startY - (age * 480);
+    const currentSize = j.startSize + (age * 10);
+
+    ctx.globalAlpha = alpha * 0.75;
+    ctx.fillStyle = "#111111";
+    ctx.font = `bold ${currentSize}px 'Noto Color Emoji', sans-serif`;
+    const textWidth = ctx.measureText(j.text).width;
+    
+    ctx.beginPath();
+    ctx.roundRect(x - 15, y - currentSize - 5, textWidth + 30, currentSize + 18, 15);
+    ctx.fill();
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#00ffcc";
+    ctx.textAlign = "left";
+    ctx.direction = "rtl";
+    ctx.fillText(j.text, x, y);
+  }
+  ctx.globalAlpha = 1.0;
+
+  // قائمة الشات والتعليقات وعرض الشارات الرسمية المصممة (Badges) كصور
+  chatEvents = chatEvents.filter(e => now - e.time < 30000);
+  for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
+    const e = chatEvents[i];
+    const age = (now - e.time) / 30000;
+    const alpha = Math.max(0, 1 - age);
+    
+    const y = HEIGHT - 180 - (i * 54);
+    if (y < 90) continue;
+
+    ctx.globalAlpha = alpha * 0.75;
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.roundRect(25, y - 38, 640, 46, 8);
+    ctx.fill();
+
+    ctx.globalAlpha = alpha;
+
+    // أ) رسم الأفاتار الشخصي الدائري
+    if (e.avatarUrl && imageCache.has(e.avatarUrl)) {
+      try {
+        const img = imageCache.get(e.avatarUrl);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(50, y - 15, 16, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, 34, y - 31, 32, 32);
+        ctx.restore();
+      } catch(err) {}
+    }
+
+    // ب) رسم شارات تيك توك الملونة الرسمية (Badges) كصور أصلية متتالية بعد الأفاتار
+    let currentXOffset = 78; 
+    if (e.badgeUrls && e.badgeUrls.length > 0) {
+      for (const badgeUrl of e.badgeUrls) {
+        if (imageCache.has(badgeUrl)) {
+          try {
+            const badgeImg = imageCache.get(badgeUrl);
+            // رسم الشارة وتعديل أبعادها لتظهر متناسقة تماماً مثل البث الذي أرسلته
+            ctx.drawImage(badgeImg, currentXOffset, y - 29, 36, 18); 
+            currentXOffset += 42; 
+          } catch(err) {}
+        }
+      }
+    }
+
+    // ج) كتابة نص التعليق والاسم بالخط العربي المتصل ودعم الإيموجي
+    ctx.fillStyle = e.color || "#ffffff";
+    ctx.font = "bold 18px 'Noto Color Emoji', 'DejaVu Sans', sans-serif";
+    ctx.textAlign = "left";
+    ctx.direction = "rtl";
+    
+    let printText = e.text;
+    if (printText.length > 55) printText = printText.substring(0, 52) + "...";
+    
+    // ترك مسافة أوتوماتيكية بعد رسم الصور لعدم تداخل الخطوط مع الشارات
+    ctx.fillText(printText, currentXOffset + 5, y - 8);
+  }
+
+  // لوحة الهدايا الكبرى
+  if (currentGift && now - currentGift.startTime < 4000) {
+    const gAge = (now - currentGift.startTime) / 4000;
+    let gAlpha = 1;
+    if (gAge < 0.15) gAlpha = gAge / 0.15;
+    else if (gAge > 0.85) gAlpha = (1 - gAge) / 0.15;
+
+    ctx.globalAlpha = gAlpha * 0.90;
+    const boxWidth = 540;
+    const boxHeight = 130;
+    const boxX = (WIDTH - boxWidth) / 2;
+    const boxY = (HEIGHT - boxHeight) / 2 - 40;
+
+    ctx.fillStyle = "#1a0f2e";
+    ctx.strokeStyle = "#FFD700";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 20);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.globalAlpha = gAlpha;
+
+    if (currentGift.avatarUrl && imageCache.has(currentGift.avatarUrl)) {
+      try {
+        const img = imageCache.get(currentGift.avatarUrl);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(boxX + 55, boxY + 65, 35, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, boxX + 20, boxY + 30, 70, 70);
+        ctx.restore();
+      } catch(err) {}
+    }
+
+    if (currentGift.iconImage) {
+      try {
+        ctx.drawImage(currentGift.iconImage, boxX + boxWidth - 105, boxY + 25, 80, 80);
+      } catch(err) {}
+    }
+
+    ctx.fillStyle = "#FFD700";
+    ctx.font = "bold 22px 'Noto Color Emoji', sans-serif";
+    ctx.textAlign = "center";
+    ctx.direction = "rtl";
+    ctx.fillText(currentGift.nameText, boxX + (boxWidth / 2) + 10, boxY + 50);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px 'Noto Color Emoji', sans-serif";
+    ctx.fillText(currentGift.countText, boxX + (boxWidth / 2) + 10, boxY + 95);
+  } else {
+    currentGift = null;
+  }
+
+  ctx.globalAlpha = 1.0;
+  return canvas.toBuffer("raw");
+}
+
+// hلقة تشغيل الإطارات المستمرة وثبات الـ FPS
+async function renderLoop() {
+  const interval = 1000 / FPS;
+  while (true) {
+    const start = Date.now();
+    try {
+      const frame = await drawFrame();
+      await new Promise((resolve, reject) => {
+        ffmpeg.stdin.write(frame, err => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    } catch (err) {
+      console.error("خطأ حلقة المعالجة:", err.message);
+    }
+    const elapsed = Date.now() - start;
+    const wait = Math.max(0, interval - elapsed);
+    await new Promise(r => setTimeout(r, wait));
+  }
+}
+
+// دالة جلب وحفظ الصور الاحترافية فائقة السرعة
+async function fetchAndCacheImage(url) {
+  if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
+  if (imageCache.has(url)) return imageCache.get(url);
+  try {
+    const res = await fetch(url, { timeout: 2000 });
+    if (!res.ok) return null;
+    const buf = await res.buffer();
+    const img = await loadImage(buf);
+    imageCache.set(url, img);
+    
+    if (imageCache.size > 300) {
+      const firstKey = imageCache.keys().next().value;
+      imageCache.delete(firstKey);
+    }
+    return img;
+  } catch (e) { return null; }
+}
+
+// إضافة حدث شات فوري غير معطل (Non-blocking) يعرض النص أولاً ثم يسحب صور الشارات في الخلفية
+function addChatEvent(text, color, avatarUrl, badgeUrls = []) {
+  try {
+    const newEvent = {
+      time: Date.now(),
+      text,
+      color,
+      avatarUrl: avatarUrl || null,
+      badgeUrls: badgeUrls
+    };
+    chatEvents.unshift(newEvent);
+    if (chatEvents.length > 25) chatEvents.pop();
+
+    // السيرفر يبدأ التحميل المتوازي في نفس اللحظة دون تعطيل النص
+    if (avatarUrl) fetchAndCacheImage(avatarUrl).catch(() => {});
+    if (badgeUrls && badgeUrls.length > 0) {
+      badgeUrls.forEach(bUrl => {
+        fetchAndCacheImage(bUrl).catch(() => {});
+      });
+    }
+  } catch (err) {}
+}
+
+function triggerFlyingJoinerEffect(name) {
+  try {
+    flyingJoiners.push({
+      startTime: Date.now(),
+      duration: 4000,
+      startX: 40,
+      startY: HEIGHT - 60,
+      startSize: 15,
+      text: `👤 انضم ${name}`
+    });
+    if (flyingJoiners.length > 8) flyingJoiners.shift();
+  } catch(e){}
+}
+
+// طابور المنضمين
+setInterval(() => {
+  if (joinQueue.length > 0) {
+    const nextName = joinQueue.shift();
+    triggerFlyingJoinerEffect(nextName);
+  }
+}, 1200);
+
+function triggerHeartEffect() {
+  const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2"];
+  const count = Math.floor(Math.random() * 2) + 1;
+  for(let i=0; i<count; i++) {
+    floatingHearts.push({
+      startTime: Date.now(),
+      duration: 1500 + Math.random() * 1000,
+      x: (WIDTH - 150) + (Math.random() * 120 - 60),
+      y: HEIGHT - 40,
+      size: Math.floor(Math.random() * 12) + 22,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    });
+  }
+  if (floatingHearts.length > 35) floatingHearts.shift();
+}
+
+// الاتصال المباشر والاعتمادي بالأصل الناجح
+const tiktok = new WebcastPushConnection(TIKTOK_USER);
+
+function connectTikTok() {
+  console.log(`🔄 جاري بناء الربط المستقر مع الحساب: ${TIKTOK_USER}`);
+  tiktok.connect()
+    .then(() => console.log("✅ متصل الآن! ويتم استقبال الشارات والمستويات كصور رسمية!"))
+    .catch(err => {
+      console.error("⚠️ فشل الربط المؤقت، إعادة المحاولة التلقائية بعد 20 ثانية:", err.message);
+      setTimeout(connectTikTok, 20000);
+    });
+}
+
+console.log("⏳ انتظار 45 ثانية لتهيئة خوادم البث قبل بدء ربط شارات تيك توك...");
+setTimeout(connectTikTok, 45000);
+
+// تحديث العدادات
+tiktok.on("roomUser", data => {
+  if (data && data.viewerCount !== undefined) {
+    viewerCount = data.viewerCount;
+  }
+});
+
+// معالجة واستخراج الرموز والشارات المصممة كـ صور (Badges URL) من تيك توك
+function handleIncomingComment(data) {
+  try {
+    const userName = data.nickname || data.uniqueId || "متابع";
+    const text = data.comment;
+    const pfp = data.profilePictureUrl;
+
+    // استخراج مصفوفة روابط الشارات الرسمية المصممة (Badges) من تيك توك مباشرة
+    let badgeUrls = [];
+    if (data.badges && data.badges.length > 0) {
+      data.badges.forEach(badge => {
+        // فحص واستخراج رابط الصورة الملونة للشارة (سواء مستوى، رتبة، أو داعم)
+        if (badge.url || (badge.image && badge.image.url)) {
+          const actualUrl = badge.url || badge.image.url;
+          badgeUrls.push(actualUrl);
+        }
+      });
+    }
+
+    if (text) {
+      addChatEvent(`${userName}: ${text}`, "#ffffff", pfp, badgeUrls);
+    }
+  } catch (err) {}
+}
+
+tiktok.on("comment", data => { handleIncomingComment(data); });
+tiktok.on("chat", data => { handleIncomingComment(data); });
+
+tiktok.on("join", data => {
+  try {
+    const userName = data.nickname || data.uniqueId || "متابع";
+    joinQueue.push(userName);
+    if (joinQueue.length > 30) joinQueue.shift();
+    if (data.profilePictureUrl) fetchAndCacheImage(data.profilePictureUrl).catch(()=>{});
+  } catch(e){}
+});
+
+tiktok.on("follow", data => {
+  try {
+    const userName = data.nickname || data.uniqueId || "متابع جديد";
+    const pfp = data.profilePictureUrl;
+    addChatEvent(`👤 ${userName} تابع الحساب الآن ✨`, "#ff6b9d", pfp, []);
+  } catch (err) {}
+});
+
+tiktok.on("like", data => {
+  try {
+    if (data.likeCount && data.likeCount > 0) {
+      totalLikes += Number(data.likeCount);
+      triggerHeartEffect();
+    }
+  } catch (err) {}
+});
+
+tiktok.on("gift", data => {
+  try {
+    if (data.repeatEnd) {
+      const userName = data.nickname || data.uniqueId || "داعم كريم";
+      const pfp = data.profilePictureUrl;
+
+      const giftObj = {
+        startTime: Date.now(),
+        nameText: `👑 الداعم: ${userName}`,
+        countText: `أرسل ${data.giftName} x${data.repeatCount} 🎁`,
+        avatarUrl: pfp || null,
+        iconImage: null
+      };
+
+      currentGift = giftObj;
+
+      if (pfp) fetchAndCacheImage(pfp).catch(()=>{});
+      if (data.giftPictureUrl) {
+        fetch(data.giftPictureUrl).then(res => res.buffer()).then(buf => loadImage(buf)).then(img => {
+          if(img) giftObj.iconImage = img;
+        }).catch(()=>{});
+      }
+    }
+  } catch (err) {}
+});
+
+renderLoop().catch(err => {
+  console.error("خطأ حرج عام:", err);
+  process.exit(1);
+});
