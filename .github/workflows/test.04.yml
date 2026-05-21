@@ -296,11 +296,12 @@ jobs:
             }
 
               flyingJoiners = flyingJoiners.filter(j => Date.now() - j.startTime < j.duration); 
-            for (let j of flyingJoiners) {
-            const age = (Date.now() - j.startTime) / j.duration;
-            const alpha = age < 0.15 ? age / 0.15 : (age > 0.85 ? (1 - age) / 0.15 : 1);
-            const x = j.startX + (age * 340);
-            const y = j.startY - (age * 480);
+              for (let j of flyingJoiners) {
+              const age = (Date.now() - j.startTime) / j.duration;
+              const alpha = age < 0.15 ? age / 0.15 : (age > 0.85 ? (1 - age) / 0.15 : 1);
+              const x = j.startX; 
+              const y = j.startY - (age * 220); 
+
             const currentSize = j.startSize + (age * 10);
 
             ctx.globalAlpha = alpha * 0.75;
@@ -384,18 +385,19 @@ jobs:
           }
 
           function triggerFlyingJoinerEffect(name) {
-          try {
+           try {
            flyingJoiners.push({
-            startTime: Date.now(),
-            duration: 4000, // المدة 4 ثوانٍ
-            startX: 40,     // تبدأ من اليسار فوق الشات
-            startY: HEIGHT - 180, // ترتفع لتكون فوق صناديق الشات تماماً ولا تختفي خلفها
-            startSize: 18,  // حجم الخط مناسب لخط القاهرة
-            text: `👥 انضم الآن: ${name}`
+           startTime: Date.now(),
+           duration: 5000,
+           startX: 40,
+           startY: HEIGHT - 150,
+           startSize: 22,
+           text: `👥 انضم الآن: ${name}`
            });
-           if (flyingJoiners.length > 8) flyingJoiners.shift();
+           if (flyingJoiners.length > 5) flyingJoiners.shift();
            } catch(e){}
-          }
+           }
+
 
           function triggerHeartEffect() {
             const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2"];
