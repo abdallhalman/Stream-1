@@ -384,18 +384,19 @@ jobs:
           }
 
           function triggerFlyingJoinerEffect(name) {
-            try {
-              flyingJoiners.push({
-                startTime: Date.now(),
-                duration: 4000,
-                startX: 40,
-                startY: HEIGHT - 60,
-                startSize: 15,
-                text: `👤 انضم ${name}`
-              });
-              if (flyingJoiners.length > 8) flyingJoiners.shift();
-            } catch(e){}
+          try {
+           flyingJoiners.push({
+            startTime: Date.now(),
+            duration: 4000, // المدة 4 ثوانٍ
+            startX: 40,     // تبدأ من اليسار فوق الشات
+            startY: HEIGHT - 180, // ترتفع لتكون فوق صناديق الشات تماماً ولا تختفي خلفها
+            startSize: 18,  // حجم الخط مناسب لخط القاهرة
+            text: `👥 انضم الآن: ${name}`
+           });
+           if (flyingJoiners.length > 8) flyingJoiners.shift();
+           } catch(e){}
           }
+
 
           setInterval(() => {
             if (joinQueue.length > 0) {
@@ -411,7 +412,7 @@ jobs:
               floatingHearts.push({
                 startTime: Date.now(),
                 duration: 1500 + Math.random() * 1000,
-                x: (WIDTH - 150) + (Math.random() * 120 - 60),
+                x: (WIDTH - 200) + (Math.random() * 300 - 150),
                 y: HEIGHT - 40,
                 size: Math.floor(Math.random() * 12) + 22,
                 color: colors[Math.floor(Math.random() * colors.length)]
