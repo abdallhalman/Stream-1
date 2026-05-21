@@ -57,7 +57,7 @@ jobs:
             console.error("Font registration warning:", err.message);
           }
 
-          const TIKTOK_USER = "alarabytv"; 
+          const TIKTOK_USER = "xm2uae1"; 
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH = 1280;
           const HEIGHT = 720;
