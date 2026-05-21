@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 350
     steps:
 
-      - name: Install system dependencies (FFmpeg, Fonts & Core)
+      - name: Install system dependencies (FFmpeg & Canvas Core)
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg \
@@ -20,8 +20,12 @@ jobs:
             libgif-dev \
             librsvg2-dev \
             fonts-noto-color-emoji \
-            fonts-cairo \
-            wget
+            curl
+
+      - name: Download Pure Cairo Font
+        run: |
+          mkdir -p ./fonts
+          curl -L -o ./fonts/Cairo-Bold.ttf "https://fonts.gstatic.com/s/cairo/v28/SLX_1OqSg_vXv31i376m3S96M8_86A.ttf"
 
       - name: Install Python tools
         run: pip install gdown
