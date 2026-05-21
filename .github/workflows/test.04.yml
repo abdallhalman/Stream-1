@@ -34,7 +34,7 @@ jobs:
         run: npm install tiktok-live-connector canvas node-fetch@2
 
       - name: Download Video
-        run: gdown 1QMlr8fj3-qDR7EgVcTsXLoFyHADK4fk -O video.mp4
+        run: gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O video.mp4
 
       - name: Download single audio file
         run: |
