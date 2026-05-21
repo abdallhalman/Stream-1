@@ -30,10 +30,17 @@ jobs:
       - name: Download video
         run: gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O video.mp4
 
-      - name: Download single audio file
+      - name: Download audio files
         run: |
-          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O audio_temp.tmp
-          ffmpeg -i audio_temp.tmp -c:a libmp3lame -q:a 2 single_audio.mp3 -y
+          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
+          
+      - name: Create playlist and merge audio
+        run: |
+          ls audio*.mp3 | shuf > playlist.txt
+          while IFS= read -r file; do
+            echo "file '$file'"
+          done < playlist.txt > concat.txt
+          ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3 -y
 
       - name: Create overlay script
         run: |
@@ -52,7 +59,9 @@ jobs:
           let chatEvents = [];  
           let currentGift = null; 
           let totalLikes = 0;   
+          let viewerCount = 0;  // عداد المشاهدين الحية
           let floatingHearts = []; 
+          let flyingJoiners = []; // تأثير متطاير للمنضمين الجدد
 
           const ffmpeg = spawn("ffmpeg", [
             "-f", "rawvideo",
@@ -65,7 +74,7 @@ jobs:
             "-i", "video.mp4",
             "-stream_loop", "-1",
             "-re",
-            "-i", "single_audio.mp3",
+            "-i", "merged_audio.mp3",
             "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
             "-map", "[v]",
             "-map", "2:a",
@@ -95,33 +104,47 @@ jobs:
 
             const now = Date.now();
 
-            // 1. رسم عداد اللايكات
+            // 1. رسم عداد اللايكات (أعلى اليمين)
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111111";
             ctx.beginPath();
             ctx.roundRect(WIDTH - 280, 20, 260, 50, 25);
             ctx.fill();
-            
             ctx.globalAlpha = 1.0;
             ctx.fillStyle = "#ff4444";
             ctx.font = "bold 24px 'DejaVu Sans'";
             ctx.textAlign = "center";
             ctx.fillText("❤️", WIDTH - 250, 53);
-            
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 20px 'DejaVu Sans', 'Noto Sans Arabic', sans-serif";
             ctx.textAlign = "right";
             ctx.direction = "rtl";
-            ctx.fillText(`العجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
+            ctx.fillText(`الإعجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
 
-            // 2. القلوب المتطايرة
+            // 2. 🔥 رسم عداد المشاهدين المطور (أعلى اليسار - مثل ريستريم)
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = "#111111";
+            ctx.beginPath();
+            ctx.roundRect(20, 20, 220, 50, 25);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = "#00ffcc";
+            ctx.font = "bold 22px 'DejaVu Sans'";
+            ctx.textAlign = "center";
+            ctx.fillText("👁️", 50, 53);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 20px 'DejaVu Sans', 'Noto Sans Arabic', sans-serif";
+            ctx.textAlign = "left";
+            ctx.direction = "ltr"; // أرقام المشاهدين من اليسار لليمن بشكل صحيح
+            ctx.fillText(`LIVE: ${viewerCount}`, 85, 52);
+
+            // 3. رسم القلوب المتطايرة
             floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
             for (let heart of floatingHearts) {
               const age = (now - heart.startTime) / heart.duration;
               const alpha = 1 - age; 
               const x = heart.x + Math.sin(age * 7) * 30; 
               const y = heart.y - (age * 400); 
-
               ctx.globalAlpha = alpha;
               ctx.fillStyle = heart.color;
               ctx.font = `${heart.size}px 'DejaVu Sans'`;
@@ -129,47 +152,77 @@ jobs:
             }
             ctx.globalAlpha = 1.0; 
 
-            // 3. قائمة الشات (تستوعب حتى 10 أسطر)
-            chatEvents = chatEvents.filter(e => now - e.time < 10000); // زيادة المدة لـ 10 ثوانٍ لسهولة القراءة
+            // 4. 🔥 رسم أسماء المنضمين المتطايرة من الزاوية السفلية صعوداً وتوسعاً لأعلى
+            flyingJoiners = flyingJoiners.filter(j => now - j.startTime < j.duration);
+            for (let j of flyingJoiners) {
+              const age = (now - j.startTime) / j.duration;
+              const alpha = age < 0.2 ? age / 0.2 : (age > 0.8 ? (1 - age) / 0.2 : 1);
+              
+              // مسار صعودي مائل: يبدأ من الزاوية اليسرى السفلية ويتجه لمنتصف الشاشة العلوي
+              const x = j.startX + (age * 250); 
+              const y = j.startY - (age * 450); 
+              // حجم يتوسع تدريجياً مع حركته للأعلى
+              const currentSize = j.startSize + (age * 12); 
+
+              ctx.globalAlpha = alpha * 0.8;
+              ctx.fillStyle = "rgba(0,0,0,0.6)";
+              ctx.font = `bold ${currentSize}px 'DejaVu Sans', 'Noto Sans Arabic', sans-serif`;
+              const textWidth = ctx.measureText(j.text).width;
+              
+              ctx.beginPath();
+              ctx.roundRect(x - 15, y - currentSize, textWidth + 30, currentSize + 15, 12);
+              ctx.fill();
+
+              ctx.globalAlpha = alpha;
+              ctx.fillStyle = "#00ffcc"; // لون مميز للمنضمين الجدد
+              ctx.textAlign = "left";
+              ctx.direction = "rtl";
+              ctx.fillText(j.text, x, y);
+            }
+            ctx.globalAlpha = 1.0;
+
+            // 5. قائمة الشات المختصرة والنظيفة (تأخذ مساحة أمان وتبقى 20 ثانية)
+            chatEvents = chatEvents.filter(e => now - e.time < 20000); 
             
             for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
               const e = chatEvents[i];
-              const age = (now - e.time) / 10000;
+              const age = (now - e.time) / 20000;
               const alpha = Math.max(0, 1 - age);
               
-              const y = HEIGHT - 50 - (i * 52); 
+              const y = HEIGHT - 180 - (i * 52); 
               if (y < 90) continue; 
 
-              ctx.globalAlpha = alpha * 0.70;
+              ctx.globalAlpha = alpha * 0.75; 
               ctx.fillStyle = "#000000";
               ctx.beginPath();
-              ctx.roundRect(15, y - 36, 580, 44, 8); 
+              ctx.roundRect(25, y - 36, 580, 44, 8); 
               ctx.fill();
 
               ctx.globalAlpha = alpha;
 
+              // الأفاتار يظهر الآن بشكل حتمي بمجرد اكتمال تحميله في الخلفية
               if (e.avatarImage) {
                 try {
                   ctx.save();
                   ctx.beginPath();
-                  ctx.arc(40, y - 14, 15, 0, Math.PI * 2);
+                  ctx.arc(50, y - 14, 15, 0, Math.PI * 2);
                   ctx.clip();
-                  ctx.drawImage(e.avatarImage, 25, y - 29, 30, 30);
+                  ctx.drawImage(e.avatarImage, 35, y - 29, 30, 30);
                   ctx.restore();
                 } catch(err) {}
               }
 
               ctx.fillStyle = e.color || "#ffffff";
-              ctx.font = "bold 18px 'DejaVu Sans', 'Noto Sans Arabic', sans-serif";
+              ctx.font = "bold 19px 'DejaVu Sans', 'Noto Sans Arabic', sans-serif";
               ctx.textAlign = "left"; 
               ctx.direction = "rtl";
               
               let printText = e.text;
               if (printText.length > 55) printText = printText.substring(0, 52) + "...";
-              ctx.fillText(printText, 70, y - 7);
+              ctx.fillText(printText, 80, y - 7);
             }
 
-            // 4. الهدايا المتميزة في المنتصف
+            // 6. رسم الهدايا المنفصلة بالمنتصف
             if (currentGift && now - currentGift.startTime < 4000) {
               const gAge = (now - currentGift.startTime) / 4000;
               let gAlpha = 1;
@@ -177,7 +230,6 @@ jobs:
               else if (gAge > 0.85) gAlpha = (1 - gAge) / 0.15;
 
               ctx.globalAlpha = gAlpha * 0.90;
-              
               const boxWidth = 520;
               const boxHeight = 130;
               const boxX = (WIDTH - boxWidth) / 2;
@@ -240,7 +292,7 @@ jobs:
                   });
                 });
               } catch (err) {
-                console.error("خطأ في حلقة الرسم:", err.message);
+                console.error("خطأ حلقة الرسم:", err.message);
               }
               const elapsed = Date.now() - start;
               const wait = Math.max(0, interval - elapsed);
@@ -251,13 +303,14 @@ jobs:
           async function fetchImage(url) {
             if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
             try {
-              const res = await fetch(url, { timeout: 1200 });
+              const res = await fetch(url, { timeout: 1500 });
               if (!res.ok) return null;
               const buf = await res.buffer();
               return await loadImage(buf);
             } catch (e) { return null; }
           }
 
+          // تم تعديل دالة الإضافة لتسجيل الحدث فوراً، وتحميل الصورة بالخلفية لضمان عدم السقوط
           function addChatEvent(text, color, avatarUrl) {
             try {
               const newEvent = {
@@ -275,6 +328,21 @@ jobs:
                   .catch(() => {});
               }
             } catch (err) {}
+          }
+
+          // دالة توليد تأثير المتطاير الحركي للمنضمين الجدد
+          function addFlyingJoiner(name) {
+            try {
+              flyingJoiners.push({
+                startTime: Date.now(),
+                duration: 3500, // البقاء حركياً لمدة 3 ثوانٍ ونصف
+                startX: 30,     // تبدأ الحركة من الحافة السفلية اليسرى
+                startY: HEIGHT - 50,
+                startSize: 16,  // الحجم المبدئي الصغير
+                text: `👤 انضم ${name}`
+              });
+              if (flyingJoiners.length > 15) flyingJoiners.shift();
+            } catch(e){}
           }
 
           function triggerHeartEffect() {
@@ -309,42 +377,47 @@ jobs:
             console.log("⏳ انتظار 15 ثانية للربط...");
             setTimeout(connectTikTok, 15000);
 
-            // دالة موحدة لمعالجة النص القادم من أي حدث كومنت
+            // تحديث عدد المشاهدين الحية بشكل آمن وتلقائي
+            tiktok.on("roomUser", data => {
+              if (data && data.viewerCount !== undefined) {
+                viewerCount = data.viewerCount;
+              }
+            });
+
             function handleIncomingComment(data) {
               try {
-                const user = data.userInfo || data;
-                const userName = data.nickname || data.uniqueId || user.nickname || "متابع";
+                // استخراج الاسم الحقيقي أو المعرف بذكاء واختصار تام دون نصوص إضافية
+                const userName = data.nickname || data.uniqueId || "متابع";
                 const text = data.comment;
-                const pfp = data.profilePictureUrl || user.profilePictureUrl;
+                const pfp = data.profilePictureUrl;
 
                 if (text) {
-                  addChatEvent(`💬 ${userName}: ${text}`, "#ffffff", pfp);
+                  addChatEvent(`${userName}: ${text}`, "#ffffff", pfp);
                 }
               } catch (err) {}
             }
 
-            // 1. استقبال التعليقات العادية
-            tiktok.on("comment", data => {
-              handleIncomingComment(data);
+            tiktok.on("comment", data => { handleIncomingComment(data); });
+            tiktok.on("chat", data => { handleIncomingComment(data); });
+
+            // 🔥 تفعيل الدخول المتطاير بشكل أنيق ومستقل ومختصر بالكامل للعربية
+            tiktok.on("join", data => {
+              try {
+                const userName = data.nickname || data.uniqueId || "متابع";
+                addFlyingJoiner(userName);
+              } catch(e){}
             });
 
-            // 🔥 الإضافة الحاسمة: استقبال تعليقات الشات المفلترة والمحمية
-            tiktok.on("chat", data => {
-              handleIncomingComment(data);
-            });
-
-            // 2. استقبال المتابعات
+            // استقبال المتابعات بشكل نظيف ومختصر
             tiktok.on("follow", data => {
               try {
-                const user = data.userInfo || data;
-                const userName = data.nickname || data.uniqueId || user.nickname || "متابع جديد";
-                const pfp = data.profilePictureUrl || user.profilePictureUrl;
-
+                const userName = data.nickname || data.uniqueId || "متابع جديد";
+                const pfp = data.profilePictureUrl;
                 addChatEvent(`👤 ${userName} تابع الحساب الآن`, "#ff6b9d", pfp);
               } catch (err) {}
             });
 
-            // 3. معالجة اللايكات والعداد التراكمي
+            // معالجة اللايكات والعداد التراكمي للقلوب
             tiktok.on("like", data => {
               try {
                 if (data.likeCount && data.likeCount > 0) {
@@ -354,13 +427,12 @@ jobs:
               } catch (err) {}
             });
 
-            // 4. معالجة الهدايا
+            // معالجة الهدايا
             tiktok.on("gift", data => {
               try {
                 if (data.repeatEnd) {
-                  const user = data.userInfo || data;
-                  const userName = data.nickname || data.uniqueId || user.nickname || "داعم كريم";
-                  const pfp = data.profilePictureUrl || user.profilePictureUrl;
+                  const userName = data.nickname || data.uniqueId || "داعم كريم";
+                  const pfp = data.profilePictureUrl;
 
                   const giftObj = {
                     startTime: Date.now(),
