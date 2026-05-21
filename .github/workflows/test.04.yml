@@ -52,8 +52,8 @@ jobs:
 
           const TIKTOK_USER = process.env.TIKTOK_USER || "seham_amer";
           const STREAM_KEY = process.env.STREAM_KEY;
-          const WIDTH = 1920;
-          const HEIGHT = 1080;
+          const WIDTH = 1280;
+          const HEIGHT = 720;
           const FPS = 30;
 
           let events = [];
