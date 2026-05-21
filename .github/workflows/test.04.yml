@@ -417,23 +417,22 @@ jobs:
           });
 
           function handleIncomingComment(data) {
-            try {
-              const userName = data.nickname || data.uniqueId || "متابع";
-              const text = data.comment;
-              const pfp = data.profilePictureUrl;
+           try {
+             const userName = data.nickname || data.uniqueId || "متابع";
+             const text = data.comment;
+             const pfp = data.profilePictureUrl;
 
-              let badgeUrls = [];
-              if (data.badges && data.badges.length > 0) {
-                data.badges.forEach(badge => {
-                  if (badge.url || (badge.image && badge.image.url)) {
-                    const actualUrl = badge.url || badge.image.url;
-                    badgeUrls.push(actualUrl);
-                  }
-                });
-              }
+             // جلب روابط شارات تيك توك وتخزينها
+             let badgeUrls = [];
+             if (data.badges && data.badges.length > 0) {
+              data.badges.forEach(badge => {
+               const actualUrl = badge.url || (badge.image && badge.image.url);
+                if (actualUrl) badgeUrls.push(actualUrl);
+               });
+             }
 
-              if (text) {
-                addChatEvent(`${userName}: ${text}`, "#ffffff", pfp, badgeUrls);
+             if (text) {
+               addChatEvent(`${userName}: ${text}`, "#ffffff", pfp, badgeUrls);
               }
             } catch (err) {}
           }
