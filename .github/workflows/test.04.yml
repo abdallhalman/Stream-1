@@ -57,7 +57,7 @@ jobs:
             console.error("Font registration warning:", err.message);
           }
 
-          const TIKTOK_USER = "xm2uae1"; 
+          const TIKTOK_USER = "alarabiya"; 
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH = 1280;
           const HEIGHT = 720;
@@ -140,7 +140,7 @@ jobs:
             ctx.fillStyle = "#00ffcc";
             ctx.font = "bold 22px 'Noto Color Emoji', 'Cairo', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("👁️", 50, 53);
+            ctx.fillText("🔴", 50, 53);
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 20px 'Cairo', sans-serif";
             ctx.textAlign = "left";
@@ -397,13 +397,19 @@ jobs:
            } catch(e){}
           }
 
+          // تشغيل التأثير الطائر فوراً وبدون أي تأخير أو انتظار للعداد
+           tiktok.on("join", data => {
+            try {
+          const userName = data.nickname || data.uniqueId || "متابع";
+    
+            // تشغيل دالة التأثير الطائر فوراً هنا لكي تظهر فوق الشات
+          triggerFlyingJoinerEffect(userName);
 
-          setInterval(() => {
-            if (joinQueue.length > 0) {
-              const nextName = joinQueue.shift();
-              triggerFlyingJoinerEffect(nextName);
+          if (data.profilePictureUrl) {
+            fetchAndCacheImage(data.profilePictureUrl).catch(()=>{});
             }
-          }, 1200);
+           } catch(e){}
+          });
 
           function triggerHeartEffect() {
             const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2"];
