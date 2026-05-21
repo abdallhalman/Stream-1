@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 350
     steps:
 
-      - name: Install system dependencies (FFmpeg & Canvas Core)
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg \
@@ -22,12 +22,10 @@ jobs:
             fonts-noto-color-emoji \
             wget
 
-      - name: Download Professional Arabic Font (Direct Fixed)
+      - name: Download Cairo Font Local
         run: |
           mkdir -p ./fonts
-          # سحب الخط العربي من خادم cdnjs المستقر عالمياً بنجاح 100%
-          wget -O ./fonts/Cairo-Bold.ttf "https://cdnjs.cloudflare.com/ajax/libs/fonts-cairo/12.0.1/fonts/Cairo-Bold.ttf"
-
+          wget -q -O ./fonts/Cairo-Bold.ttf "https://github.com/google/fonts/raw/main/ofl/cairo/Cairo%5Bwght%5D.ttf"
 
       - name: Install Python tools
         run: pip install gdown
@@ -46,9 +44,17 @@ jobs:
         run: |
           cat > overlay.js << 'EOF'
           const { WebcastPushConnection } = require("tiktok-live-connector");
-          const { createCanvas, loadImage } = require("canvas");
+          const { createCanvas, loadImage, registerFont } = require("canvas");
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
+          const path = require("path");
+
+          try {
+            registerFont(path.join(__dirname, "fonts", "Cairo-Bold.ttf"), { family: "Cairo" });
+            console.log("Cairo font registered successfully");
+          } catch (err) {
+            console.error("Font registration warning:", err.message);
+          }
 
           const TIKTOK_USER = "qurankareem.11com"; 
           const STREAM_KEY = process.env.STREAM_KEY;
@@ -57,7 +63,6 @@ jobs:
           const FPS = 30;
 
           const imageCache = new Map();
-
           let chatEvents = [];  
           let currentGift = null; 
           let totalLikes = 0;   
@@ -96,7 +101,7 @@ jobs:
 
           ffmpeg.stderr.on("data", d => process.stderr.write(d));
           ffmpeg.on("exit", code => {
-            console.error("FFmpeg توقف بكود:", code);
+            console.error("FFmpeg exited with code:", code);
             process.exit(code);
           });
 
@@ -107,7 +112,7 @@ jobs:
 
             const now = Date.now();
 
-            // عداد اللايكات
+            // Likes Counter
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111111";
             ctx.beginPath();
@@ -115,16 +120,16 @@ jobs:
             ctx.fill();
             ctx.globalAlpha = 1.0;
             ctx.fillStyle = "#ff4444";
-            ctx.font = "bold 24px 'Noto Color Emoji', sans-serif";
+            ctx.font = "bold 24px 'Noto Color Emoji', 'Cairo', sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("❤️", WIDTH - 250, 53);
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 20px sans-serif";
+            ctx.font = "bold 20px 'Cairo', sans-serif";
             ctx.textAlign = "right";
             ctx.direction = "rtl";
             ctx.fillText(`الإعجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
 
-            // عداد المشاهدين
+            // Viewers Counter
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111111";
             ctx.beginPath();
@@ -132,16 +137,16 @@ jobs:
             ctx.fill();
             ctx.globalAlpha = 1.0;
             ctx.fillStyle = "#00ffcc";
-            ctx.font = "bold 22px 'Noto Color Emoji', sans-serif";
+            ctx.font = "bold 22px 'Noto Color Emoji', 'Cairo', sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("👁️", 50, 53);
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 20px sans-serif";
+            ctx.font = "bold 20px 'Cairo', sans-serif";
             ctx.textAlign = "left";
             ctx.direction = "ltr";
             ctx.fillText(`LIVE: ${viewerCount}`, 85, 52);
 
-            // القلوب المتطايرة
+            // Floating Hearts
             floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
             for (let heart of floatingHearts) {
               const age = (now - heart.startTime) / heart.duration;
@@ -155,7 +160,7 @@ jobs:
             }
             ctx.globalAlpha = 1.0;
 
-            // حركة المنضمين
+            // Join Section Animation
             flyingJoiners = flyingJoiners.filter(j => now - j.startTime < j.duration);
             for (let j of flyingJoiners) {
               const age = (now - j.startTime) / j.duration;
@@ -166,7 +171,7 @@ jobs:
 
               ctx.globalAlpha = alpha * 0.75;
               ctx.fillStyle = "#111111";
-              ctx.font = `bold ${currentSize}px 'Noto Color Emoji', sans-serif`;
+              ctx.font = `bold ${currentSize}px 'Cairo', 'Noto Color Emoji', sans-serif`;
               const textWidth = ctx.measureText(j.text).width;
               
               ctx.beginPath();
@@ -181,7 +186,7 @@ jobs:
             }
             ctx.globalAlpha = 1.0;
 
-            // قائمة الشات والتعليقات وعرض الشارات الرسمية المصممة كصور
+            // Chat Messages rendering
             chatEvents = chatEvents.filter(e => now - e.time < 30000);
             for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
               const e = chatEvents[i];
@@ -225,7 +230,7 @@ jobs:
               }
 
               ctx.fillStyle = e.color || "#ffffff";
-              ctx.font = "bold 18px 'Noto Color Emoji', 'DejaVu Sans', sans-serif";
+              ctx.font = "bold 18px 'Cairo', 'Noto Color Emoji', sans-serif";
               ctx.textAlign = "left";
               ctx.direction = "rtl";
               
@@ -235,7 +240,7 @@ jobs:
               ctx.fillText(printText, currentXOffset + 5, y - 8);
             }
 
-            // لوحة الهدايا الكبرى
+            // Big Gifts Display Panel
             if (currentGift && now - currentGift.startTime < 4000) {
               const gAge = (now - currentGift.startTime) / 4000;
               let gAlpha = 1;
@@ -277,13 +282,13 @@ jobs:
               }
 
               ctx.fillStyle = "#FFD700";
-              ctx.font = "bold 22px 'Noto Color Emoji', sans-serif";
+              ctx.font = "bold 22px 'Cairo', 'Noto Color Emoji', sans-serif";
               ctx.textAlign = "center";
               ctx.direction = "rtl";
               ctx.fillText(currentGift.nameText, boxX + (boxWidth / 2) + 10, boxY + 50);
 
               ctx.fillStyle = "#ffffff";
-              ctx.font = "bold 24px 'Noto Color Emoji', sans-serif";
+              ctx.font = "bold 24px 'Cairo', 'Noto Color Emoji', sans-serif";
               ctx.fillText(currentGift.countText, boxX + (boxWidth / 2) + 10, boxY + 95);
             } else {
               currentGift = null;
@@ -306,7 +311,7 @@ jobs:
                   });
                 });
               } catch (err) {
-                console.error("خطأ حلقة المعالجة:", err.message);
+                console.error("Render loop error:", err.message);
               }
               const elapsed = Date.now() - start;
               const wait = Math.max(0, interval - elapsed);
@@ -393,16 +398,15 @@ jobs:
           const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
           function connectTikTok() {
-            console.log(`🔄 جاري بناء الربط المستقر مع الحساب: ${TIKTOK_USER}`);
+            console.log(`Connecting to: ${TIKTOK_USER}`);
             tiktok.connect()
-              .then(() => console.log("✅ متصل الآن بـ تيك توك بنجاح!"))
+              .then(() => console.log("Connected successfully to TikTok!"))
               .catch(err => {
-                console.error("⚠️ فشل الربط المؤقت، إعادة المحاولة التلقائية بعد 20 ثانية:", err.message);
+                console.error("Connection failed, retrying in 20s:", err.message);
                 setTimeout(connectTikTok, 20000);
               });
           }
 
-          console.log("⏳ انتظار 45 ثانية لتهيئة خوادم البث قبل بدء ربط شارات تيك توك...");
           setTimeout(connectTikTok, 45000);
 
           tiktok.on("roomUser", data => {
@@ -489,7 +493,7 @@ jobs:
           });
 
           renderLoop().catch(err => {
-            console.error("خطأ حرج عام:", err);
+            console.error("Critical error:", err);
             process.exit(1);
           });
           EOF
