@@ -8,13 +8,14 @@ jobs:
     timeout-minutes: 359
     steps:
 
-      - name: Install system dependencies (Fonts, Emoji & FFmpeg)
+      - name: Install Official System Dependencies (Fonts, Emoji & FFmpeg)
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg \
+            fonts-noto-core \
             fonts-noto-color-emoji \
-            fonts-aconstructa \
-            fonts-dejavu-core \
+            fonts-sil-scheherazade \
+            fonts-arabeyes \
             build-essential \
             libcairo2-dev \
             libpango1.0-dev \
@@ -34,7 +35,6 @@ jobs:
 
       - name: Download single audio file
         run: |
-          # تحميل ملف صوتي واحد فقط للبث
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O audio_raw.tmp && ffmpeg -i audio_raw.tmp audio.mp3 -y
 
       - name: Create overlay script
@@ -45,7 +45,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          // اسم المستخدم الجديد الخاص بك
+          // إعدادات الحساب والبث الأساسية
           const TIKTOK_USER = process.env.TIKTOK_USER || "qurankareem.11com";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH = 1280;
@@ -61,7 +61,7 @@ jobs:
           let joinQueue = [];       
           let flyingJoiners = [];   
 
-          // تشغيل FFmpeg مع ملف الفيديو وملف الصوتي الواحد
+          // إطلاق FFmpeg لدمج الـ Overlay الرقمي فوق الفيديو والصوت الواحد بشكل مستمر
           const ffmpeg = spawn("ffmpeg", [
             "-f", "rawvideo",
             "-pixel_format", "rgba",
@@ -92,10 +92,11 @@ jobs:
 
           ffmpeg.stderr.on("data", d => process.stderr.write(d));
           ffmpeg.on("exit", code => {
-            console.error("ffmpeg خرج بكود:", code);
+            console.error("FFmpeg خرج بكود وتوقف البث:", code);
             process.exit(code);
           });
 
+          // دالة الرسم المتقدمة والاعتمادية لكل إطار (Frame)
           async function drawFrame() {
             const canvas = createCanvas(WIDTH, HEIGHT);
             const ctx = canvas.getContext("2d");
@@ -103,7 +104,7 @@ jobs:
 
             const now = Date.now();
 
-            // 1. عداد اللايكات
+            // 1. شريط عداد الإعجابات الافتراضي (أعلى اليمين)
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111111";
             ctx.beginPath();
@@ -120,7 +121,7 @@ jobs:
             ctx.direction = "rtl";
             ctx.fillText(`الإعجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
 
-            // 2. عداد المشاهدين
+            // 2. شريط عداد المشاهدين الحاليين (أعلى اليسار)
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111111";
             ctx.beginPath();
@@ -137,7 +138,7 @@ jobs:
             ctx.direction = "ltr";
             ctx.fillText(`LIVE: ${viewerCount}`, 85, 52);
 
-            // 3. القلوب المتطايرة
+            // 3. القلوب المتطايرة عند الدعم أو الضغط المتكرر
             floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
             for (let heart of floatingHearts) {
               const age = (now - heart.startTime) / heart.duration;
@@ -151,7 +152,7 @@ jobs:
             }
             ctx.globalAlpha = 1.0; 
 
-            // 4. عرض حركة المنضمين (التأثير المائل المتصاعد)
+            // 4. إشعارات انضمام المتابعين بشكل متصاعد واحترافي
             flyingJoiners = flyingJoiners.filter(j => now - j.startTime < j.duration);
             for (let j of flyingJoiners) {
               const age = (now - j.startTime) / j.duration;
@@ -178,7 +179,7 @@ jobs:
             }
             ctx.globalAlpha = 1.0;
 
-            // 5. قائمة الشات الذكية (دعم تلقائي للغة العربية والإيموجي الملون من النظام)
+            // 5. شريط دردشة البث المباشر (يدعم الخط العربي المتصل والإيموجي الملون من النظام تلقائياً)
             chatEvents = chatEvents.filter(e => now - e.time < 30000); 
             for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
               const e = chatEvents[i];
@@ -196,6 +197,7 @@ jobs:
 
               ctx.globalAlpha = alpha;
 
+              // رسم الصورة الشخصية للمتابع إذا كانت متوفرة في الكاش
               if (e.avatarUrl && imageCache.has(e.avatarUrl)) {
                 try {
                   const img = imageCache.get(e.avatarUrl);
@@ -209,7 +211,8 @@ jobs:
               }
 
               ctx.fillStyle = e.color || "#ffffff";
-              ctx.font = "bold 18px sans-serif";
+              // 'Noto Color Emoji' مدمج تلقائياً مع الخط الافتراضي لضمان تلوين الرموز
+              ctx.font = "bold 18px 'Noto Color Emoji', sans-serif";
               ctx.textAlign = "left"; 
               ctx.direction = "rtl";
               
@@ -218,7 +221,7 @@ jobs:
               ctx.fillText(printText, 85, y - 8);
             }
 
-            // 6. لوحة الهدايا الكبرى في المنتصف
+            // 6. لوحة إشعارات الهدايا الكبرى في منتصف الشاشة عند استلام دعم
             if (currentGift && now - currentGift.startTime < 4000) {
               const gAge = (now - currentGift.startTime) / 4000;
               let gAlpha = 1;
@@ -266,7 +269,7 @@ jobs:
               ctx.fillText(currentGift.nameText, boxX + (boxWidth / 2) + 10, boxY + 50);
 
               ctx.fillStyle = "#ffffff"; 
-              ctx.font = "bold 24px sans-serif";
+              ctx.font = "bold 24px 'Noto Color Emoji', sans-serif";
               ctx.fillText(currentGift.countText, boxX + (boxWidth / 2) + 10, boxY + 95);
             } else {
               currentGift = null;
@@ -276,6 +279,7 @@ jobs:
             return canvas.toBuffer("raw");
           }
 
+          // حلقة العرض المستمر المبنية على التوقيت الزمني الدقيق لثبات الإطارات
           async function renderLoop() {
             const interval = 1000 / FPS;
             while (true) {
@@ -289,7 +293,7 @@ jobs:
                   });
                 });
               } catch (err) {
-                console.error("خطأ حلقة الرسم:", err.message);
+                console.error("خطأ حلقة المعالجة:", err.message);
               }
               const elapsed = Date.now() - start;
               const wait = Math.max(0, interval - elapsed);
@@ -297,6 +301,7 @@ jobs:
             }
           }
 
+          // نظام تخزين وحفظ الصور لتجنب تحميلها مراراً وتكراراً لحماية ذاكرة السيرفر
           async function fetchAndCacheImage(url) {
             if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
             if (imageCache.has(url)) return imageCache.get(url);
@@ -345,6 +350,7 @@ jobs:
             } catch(e){}
           }
 
+          // تنظيم تتابع ظهور المنضمين لحماية الشاشة من التكدس
           setInterval(() => {
             if (joinQueue.length > 0) {
               const nextName = joinQueue.shift();
@@ -368,28 +374,31 @@ jobs:
             if (floatingHearts.length > 35) floatingHearts.shift();
           }
 
+          // الربط والاتصال الذكي والمستقر مع تيك توك لايف كونيكتور
           if (TIKTOK_USER) {
             const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
             function connectTikTok() {
-              console.log(`🔄 جاري الاتصال بحساب: ${TIKTOK_USER}`);
+              console.log(`🔄 جاري بناء الاتصال المستقر مع الحساب: ${TIKTOK_USER}`);
               tiktok.connect()
-                .then(() => console.log("✅ متصل بالبث بنجاح"))
+                .then(() => console.log("✅ تم الاتصال بنجاح واستقبال البيانات الحية!"))
                 .catch(err => {
-                  console.error("⚠️ فشل الاتصال، إعادة المحاولة:", err.message);
+                  console.error("⚠️ فشل الربط المؤقت، إعادة المحاولة التلقائية بعد 15 ثانية:", err.message);
                   setTimeout(connectTikTok, 15000);
                 });
             }
 
-            console.log("⏳ انتظار 10 ثوانٍ للربط المباشر...");
+            console.log("⏳ انتظار 10 ثوانٍ لتهيئة بث السيرفر بالكامل قبل الربط المباشر...");
             setTimeout(connectTikTok, 10000);
 
+            // جلب تحديث عدد المشاهدين الإجمالي
             tiktok.on("roomUser", data => {
               if (data && data.viewerCount !== undefined) {
                 viewerCount = data.viewerCount;
               }
             });
 
+            // معالجة ونمذجة التعليقات والمستويات والرتب الواردة
             function handleIncomingComment(data) {
               try {
                 const userName = data.nickname || data.uniqueId || "متابع";
@@ -398,9 +407,11 @@ jobs:
 
                 let badges = "";
                 if (data.userDetails) {
+                  // قراءة وعرض مستوى المتابع (User Level) مباشرة من السيرفر المعتمد
                   if (data.userDetails.userLevel && data.userDetails.userLevel > 0) {
-                    badges += `[🌟Lvl ${data.userDetails.userLevel}] `;
+                    badges += `[🌟Lv.${data.userDetails.userLevel}] `;
                   }
+                  // التحقق من الرتب والقوة (مشرف أو مشترك)
                   if (data.userDetails.isModerator) {
                     badges += `[👑مشرف] `;
                   } else if (data.userDetails.isSubscriber) {
@@ -430,7 +441,7 @@ jobs:
               try {
                 const userName = data.nickname || data.uniqueId || "متابع جديد";
                 const pfp = data.profilePictureUrl;
-                addChatEvent(`👤 ${userName} تابع الحساب الآن`, "#ff6b9d", pfp);
+                addChatEvent(`👤 ${userName} قام بمتابعة الحساب الآن ✨`, "#ff6b9d", pfp);
               } catch (err) {}
             });
 
@@ -451,8 +462,8 @@ jobs:
 
                   const giftObj = {
                     startTime: Date.now(),
-                    nameText: `👑 الداعم: ${userName}`,
-                    countText: `أرسل ${data.giftName} x${data.repeatCount}`,
+                    nameText: `👑 الداعم الكريم: ${userName}`,
+                    countText: `أرسل هدية: ${data.giftName} x${data.repeatCount} 🎁`,
                     avatarUrl: pfp || null,
                     iconImage: null
                   };
@@ -470,11 +481,12 @@ jobs:
             });
             
           } else {
-            console.log("⚠️ اسم مستخدم تيك توك غير صحيح");
+            console.log("⚠️ اسم مستخدم تيك توك غير معرف بشكل صحيح");
           }
 
+          // بدء تشغيل النظام بالكامل
           renderLoop().catch(err => {
-            console.error("خطأ عام في النظام:", err);
+            console.error("خطأ عام وحرج في النظام التفاعلي للبث:", err);
             process.exit(1);
           });
           EOF
@@ -484,4 +496,3 @@ jobs:
           TIKTOK_USER: "qurankareem.11com"
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
         run: node overlay.js
-        
