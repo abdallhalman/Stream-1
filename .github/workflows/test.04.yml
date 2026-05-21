@@ -390,30 +390,35 @@ jobs:
            startTime: Date.now(),
            duration: 5000,
            startX: 40,
-           startY: HEIGHT - 150,
-           startSize: 22,
+           startY: HEIGHT - 90,
+           startSize: 20,
            text: `👥 انضم الآن: ${name}`
            });
-           if (flyingJoiners.length > 5) flyingJoiners.shift();
+           if (flyingJoiners.length > 3) flyingJoiners.shift();
            } catch(e){}
            }
 
 
           function triggerHeartEffect() {
-            const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2"];
-            const count = Math.floor(Math.random() * 6) + 5;
-            for(let i=0; i<count; i++) {
-              floatingHearts.push({
-                startTime: Date.now(),
-                duration: 1500 + Math.random() * 1000,
-                x: (WIDTH - 200) + (Math.random() * 300 - 150),
-                y: HEIGHT - 40,
-                size: Math.floor(Math.random() * 12) + 22,
-                color: colors[Math.floor(Math.random() * colors.length)]
-              });
-            }
-            if (floatingHearts.length > 35) floatingHearts.shift();
+          const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2", "#ff3366", "#00ffcc", "#ffff00", "#ff00ff"];
+          const count = Math.floor(Math.random() * 11) + 15; 
+  
+          for(let i=0; i<count; i++) {
+          floatingHearts.push({
+          startTime: Date.now(),
+          duration: 1000 + Math.random() * 800,
+           x: (WIDTH - 180) + (Math.random() * 360 - 180), 
+           y: HEIGHT - 30,
+          size: Math.floor(Math.random() * 16) + 18, 
+          color: colors[Math.floor(Math.random() * colors.length)]
+          });
           }
+
+          if (floatingHearts.length > 400) {
+          floatingHearts.splice(0, count);
+          } 
+          }
+
 
           const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
@@ -441,7 +446,7 @@ jobs:
              const text = data.comment;
              const pfp = data.profilePictureUrl;
 
-             // جلب روابط شارات تيك توك وتخزينها
+            
              let badgeUrls = [];
              if (data.badges && data.badges.length > 0) {
               data.badges.forEach(badge => {
