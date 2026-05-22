@@ -444,8 +444,8 @@ jobs:
                 const pfp  = data.profilePictureUrl;
                 const giftObj = {
                   startTime: Date.now(),
-                  nameText:  `★ الداعم: \${name}`,
-                  countText: `\${data.giftName} x\${data.repeatCount}`,
+                  nameText:  `★ الداعم: ${name}`,
+                  countText: `${data.giftName} x${data.repeatCount}`,
                   avatarUrl: pfp || null,
                   iconImage: null
                 };
@@ -454,4 +454,18 @@ jobs:
                 if (pfp) fetchImg(pfp).catch(() => {});
                 if (data.giftPictureUrl) {
                   fetch(data.giftPictureUrl).then(r => r.buffer())
-                    .then(b => loadImage(b)).then(img => { if (img) giftObj.iconImage =
+                    .then(b => loadImage(b)).then(img => { if (img) giftObj.iconImage = img; })
+                    .catch(() => {});
+                }
+              }
+            } catch(e) {}
+          });
+
+          setTimeout(connectTikTok, 45000);
+          renderLoop().catch(err => { console.error("Critical:", err); process.exit(1); });
+          EOF
+
+      - name: Start Stream
+        env:
+          STREAM_KEY: ${{ secrets.STREAM_KEY }}
+        run: node overlay.js
