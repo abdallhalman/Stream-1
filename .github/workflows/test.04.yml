@@ -49,7 +49,7 @@ jobs:
           const fetch = require("node-fetch");
           const path = require("path");
 
-          // نظام أوبونتو يقوم بحفظ الخطوط المثبتة رسميًا في هذا المسار التلقائي
+           نظام أوبونتو يقوم بحفظ الخطوط المثبتة رسميًا في هذا المسار التلقائي
           try {
             registerFont("/usr/share/fonts/truetype/cairo/Cairo-Bold.ttf", { family: "Cairo" });
             console.log("Cairo font registered successfully from system");
@@ -364,25 +364,26 @@ jobs:
           }
 
           function addChatEvent(text, color, avatarUrl, badgeUrls = []) {
-            try {
-              const newEvent = {
-                time: Date.now(),
-                text,
-                color,
-                avatarUrl: avatarUrl || null,
-                badgeUrls: badgeUrls
-              };
-              chatEvents.unshift(newEvent);
-              if (chatEvents.length > 25) chatEvents.pop();
+          try {
+           const newEvent = {
+           time: Date.now(),
+           text,
+           color,
+           avatarUrl: avatarUrl || null,
+           badgeUrls: badgeUrls
+           };
+          chatEvents.unshift(newEvent);
+          if (chatEvents.length > 8) chatEvents.pop();
 
-              if (avatarUrl) fetchAndCacheImage(avatarUrl).catch(() => {});
-              if (badgeUrls && badgeUrls.length > 0) {
-                badgeUrls.forEach(bUrl => {
-                  fetchAndCacheImage(bUrl).catch(() => {});
-                });
-              }
-            } catch (err) {}
+          if (avatarUrl) fetchAndCacheImage(avatarUrl).catch(() => {});
+          if (badgeUrls && badgeUrls.length > 0) {
+          badgeUrls.forEach(bUrl => {
+          fetchAndCacheImage(bUrl).catch(() => {});
+          });
           }
+          } catch (err) {}
+          }
+
 
           function triggerFlyingJoinerEffect(name) {
            try {
@@ -467,13 +468,12 @@ jobs:
           tiktok.on("join", data => {
            try {
            const userName = data.nickname || data.uniqueId || "متابع";
-           triggerFlyingJoinerEffect(userName);
+           const pfp = data.profilePictureUrl || null;
+    
+           addChatEvent(`✨ دخل البث الآن: ${userName}`, "#d580ff", pfp, []);
+           } catch (e) {}
+           });
 
-            if (data.profilePictureUrl) {
-            fetchAndCacheImage(data.profilePictureUrl).catch(()=>{});
-            }
-           } catch(e){}
-          });
  
 
           tiktok.on("follow", data => {
