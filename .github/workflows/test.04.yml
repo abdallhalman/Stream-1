@@ -437,6 +437,16 @@ jobs:
  
 
              setTimeout(connectTikTok, 45000);
+                             tiktok.on("join", data => {
+            try {
+                const name = data.nickname || data.uniqueId || "Guest";
+                const pfp = data.profilePictureUrl || null;
+                addChatEvent(`✨ Entered the live: ${name}`, "#d580ff", pfp, []);
+                triggerFlyingJoinerEffect(name);
+            } catch (e) {}
+          });
+
+        
 
            tiktok.on("roomUser", data => {
             if (data && data.viewerCount !== undefined) {
@@ -467,17 +477,6 @@ jobs:
 
           tiktok.on("comment", data => { handleIncomingComment(data); });
           tiktok.on("chat", data => { handleIncomingComment(data); });
-
-          tiktok.on("join", data => {
-           try {
-           const userName = data.nickname || data.uniqueId || "متابع";
-           const pfp = data.profilePictureUrl || null;
-    
-           addChatEvent(`✨ دخل البث الآن: ${userName}`, "#d580ff", pfp, []);
-           } catch (e) {}
-           });
-
- 
 
           tiktok.on("follow", data => {
             try {
