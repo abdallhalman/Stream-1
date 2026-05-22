@@ -450,8 +450,11 @@ jobs:
           function connectTikTok() {
             console.log(`Connecting to: ${TIKTOK_USER}`);
             tiktok.connect()
-              .then(() => console.log("Connected!"))
-              .catch(err => { console.error("Retry in 20s:", err.message); setTimeout(connectTikTok, 20000); });
+                .then(() => console.log("Connected successfully to TikTok!"))
+                .catch(err => {
+                    console.error("Connection failed, retrying in 20s:", err.message);
+                    setTimeout(connectTikTok, 20000);
+                });
           }
 
           tiktok.on("join", data => {
@@ -527,7 +530,7 @@ jobs:
           });
 
           setTimeout(connectTikTok, 45000);
-          renderLoop().catch(err => { console.error("Critical:", err); process.exit(1); });
+                          renderLoop().catch(err => { console.error("Critical:", err); process.exit(1); });
           EOF
 
       - name: Start Stream
