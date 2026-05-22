@@ -43,7 +43,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          const TIKTOK_USER = "alarabiya";
+          const TIKTOK_USER = "username12170432";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH  = 1280;
           const HEIGHT = 720;
@@ -131,16 +131,15 @@ jobs:
             ctx.fillStyle = "#ff0000";
             ctx.font = "bold 19px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
-            ctx.fillText("●", 38, 50);
+            ctx.fillText("● ", 38, 50);
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 19px sans-serif";
-            ctx.fillText(`LIVE: ${viewerCount.toLocaleString()}`, 58, 52);
+            ctx.fillText(`LIVE  ${viewerCount.toLocaleString()}`, 58, 52);
 
             ctx.globalAlpha = 0.88;
             ctx.fillStyle = "#111111";
             rr(ctx, WIDTH - 280, 20, 260, 50, 25); ctx.fill();
             ctx.globalAlpha = 1;
-            ctx.fillStyle = "#ffffff";
             ctx.font = "bold 18px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
             ctx.fillText("💛", WIDTH - 260, 52);
@@ -264,8 +263,8 @@ jobs:
 
             ctx.globalAlpha = 1;
 
-            if (currentGift && now - currentGift.startTime < 4500) {
-              const gAge = (now - currentGift.startTime) / 4500;
+            if (currentGift && now - currentGift.startTime < 9999) {
+              const gAge = (now - currentGift.startTime) / 9999;
               const gA   = gAge < 0.15 ? gAge / 0.15 : gAge > 0.85 ? (1 - gAge) / 0.15 : 1;
               const bW = 540, bH = 130;
               const bX = (WIDTH - bW) / 2, bY = (HEIGHT - bH) / 2 - 40;
@@ -279,12 +278,12 @@ jobs:
               if (currentGift.iconImage) {
                 try { ctx.drawImage(currentGift.iconImage, bX + bW - 105, bY + 25, 80, 80); } catch(e) {}
               }
-              ctx.fillStyle = "#FFD700";
+              ctx.fillStyle = "#ffa500";
               ctx.font = "bold 22px sans-serif";
               ctx.textAlign = "center"; ctx.direction = "rtl";
               ctx.fillText(currentGift.nameText, bX + bW / 2 + 10, bY + 52);
-              ctx.fillStyle = "#ffffff";
-              ctx.font = "bold 24px sans-serif";
+              ctx.fillStyle = "#00ffff";
+              ctx.font = "bold 28px sans-serif";
               ctx.fillText(currentGift.countText, bX + bW / 2 + 10, bY + 95);
             } else { currentGift = null; }
 
@@ -303,19 +302,19 @@ jobs:
               ctx.globalAlpha = fA;
               if (followBanner.avatarUrl && imageCache.has(followBanner.avatarUrl))
                 drawAvatar(ctx, imageCache.get(followBanner.avatarUrl), bX + 36, bY + 34, 22);
-              ctx.fillStyle = "#240046";
+              ctx.fillStyle = "#ffa500";
               ctx.font = "bold 18px sans-serif";
               ctx.textAlign = "left"; ctx.direction = "ltr";
-              ctx.fillText("Follow:", bX + 66, bY + 26);
+              ctx.fillText("Follow 👤", bX + 66, bY + 26);
               ctx.font = "bold 20px sans-serif";
-              ctx.fillStyle = "#0d1b2a";
+              ctx.fillStyle = "#1e90ff";
               let fn = followBanner.name;
               if (fn.length > 20) fn = fn.substring(0, 18) + "..";
               ctx.fillText(fn, bX + 66, bY + 52);
-              ctx.fillStyle = "#00ffcc";
+              ctx.fillStyle = "#00ffff";
               ctx.font = "bold 20px sans-serif";
               ctx.textAlign = "right"; ctx.direction = "ltr";
-              ctx.fillText(`👤 ${followBanner.followerCount.toLocaleString()}`, bX + bW - 20, bY + 42);
+              ctx.fillText(`👥 ${followBanner.followerCount.toLocaleString()}`, bX + bW - 20, bY + 42);
             } else { followBanner = null; }
 
             ctx.globalAlpha = 1;
