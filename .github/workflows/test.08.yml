@@ -128,8 +128,8 @@ jobs:
             ctx.fillStyle = "#111111";
             rr(ctx, 20, 20, 220, 50, 25); ctx.fill();
             ctx.globalAlpha = 1;
-            ctx.fillStyle = "#00ffcc";
-            ctx.font = "bold 14px sans-serif";
+            ctx.fillStyle = "#ff0000";
+            ctx.font = "bold 19px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
             ctx.fillText("●", 38, 52);
             ctx.fillStyle = "#ffffff";
@@ -143,11 +143,13 @@ jobs:
             ctx.fillStyle = "#ff4444";
             ctx.font = "bold 18px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
-            ctx.fillText("❤️", WIDTH - 258, 52);
+            ctx.fillText("💙", WIDTH - 260, 52);
+            ctx.fillText("❤️", WIDTH - 238, 52);
+            ctx.fillText("💛", WIDTH - 216, 52);
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 19px sans-serif";
-            ctx.textAlign = "right"; ctx.direction = "rtl";
-            ctx.fillText(`LIKES: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
+            ctx.textAlign = "left"; ctx.direction = "ltr";
+            ctx.fillText(`LIKES: ${totalLikes.toLocaleString()}`, WIDTH - 185, 52);
 
             floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
             for (const h of floatingHearts) {
@@ -169,7 +171,7 @@ jobs:
 
             const rankBg    = ["#2d1200","#141414","#0d1a0d"];
             const rankText  = ["#FFD700","#c084fc","#00ffcc"];
-            const rankLabel = ["★ TOP 1","★ TOP 2","★ TOP 3"];
+            const rankLabel = ["🥇 TOP 1","🥈 TOP 2","🥉 TOP 3"];
 
             for (let i = 0; i < 3; i++) {
               const s  = topSupporters[i];
