@@ -400,25 +400,7 @@ jobs:
            }
 
 
-          function triggerHeartEffect() {
-          const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2", "#ff3366", "#00ffcc", "#ffff00", "#ff00ff"];
-          const count = Math.floor(Math.random() * 11) + 15; 
-  
-          for(let i=0; i<count; i++) {
-          floatingHearts.push({
-          startTime: Date.now(),
-          duration: 1000 + Math.random() * 800,
-           x: (WIDTH - 180) + (Math.random() * 360 - 180), 
-           y: HEIGHT - 30,
-          size: Math.floor(Math.random() * 16) + 18, 
-          color: colors[Math.floor(Math.random() * colors.length)]
-          });
-          }
-
-          if (floatingHearts.length > 400) {
-          floatingHearts.splice(0, count);
-          } 
-          }
+          
 
 
           const tiktok = new WebcastPushConnection(TIKTOK_USER);
@@ -429,13 +411,34 @@ jobs:
               .then(() => console.log("Connected successfully to TikTok!"))
               .catch(err => {
                 console.error("Connection failed, retrying in 20s:", err.message);
-                setTimeout(connectTikTok, 20000);
+                setTimeoufunction triggerHeartEffect() {
+              const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2", "#ff3366", "#00ffcc", "#ffff00", "#ff00ff", "#00ff00", "#00e5ff"];
+              const count = Math.floor(Math.random() * 21) + 40; 
+  
+             for(let i=0; i<count; i++) {
+             const delay = i * (60 + Math.random() * 80); 
+    
+             floatingHearts.push({
+             startTime: Date.now() + delay,
+             duration: 1500 + Math.random() * 1000,
+             x: (WIDTH - 220) + (Math.random() * 400 - 200), 
+             y: HEIGHT - 30,
+             size: Math.floor(Math.random() * 16) + 18, 
+             color: colors[Math.floor(Math.random() * colors.length)]
+            });
+            }
+
+             if (floatingHearts.length > 600) {
+             floatingHearts.splice(0, count);
+             }
+             }
+             t(connectTikTok, 20000);
               });
-          }
+             }
 
-          setTimeout(connectTikTok, 45000);
+             setTimeout(connectTikTok, 45000);
 
-          tiktok.on("roomUser", data => {
+           tiktok.on("roomUser", data => {
             if (data && data.viewerCount !== undefined) {
               viewerCount = data.viewerCount;
             }
