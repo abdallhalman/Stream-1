@@ -401,39 +401,40 @@ jobs:
 
           
 
-
           const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
           function connectTikTok() {
             console.log(`Connecting to: ${TIKTOK_USER}`);
             tiktok.connect()
-              .then(() => console.log("Connected successfully to TikTok!"))
-              .catch(err => {
-                console.error("Connection failed, retrying in 20s:", err.message);
-                setTimeoufunction triggerHeartEffect() {
-              const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2", "#ff3366", "#00ffcc", "#ffff00", "#ff00ff", "#00ff00", "#00e5ff"];
-              const count = Math.floor(Math.random() * 21) + 40; 
-  
-             for(let i=0; i<count; i++) {
-             const delay = i * (60 + Math.random() * 80); 
-    
-             floatingHearts.push({
-             startTime: Date.now() + delay,
-             duration: 1500 + Math.random() * 1000,
-             x: (WIDTH - 220) + (Math.random() * 400 - 200), 
-             y: HEIGHT - 30,
-             size: Math.floor(Math.random() * 16) + 18, 
-             color: colors[Math.floor(Math.random() * colors.length)]
-            });
+                .then(() => console.log("Connected successfully to TikTok!"))
+                .catch(err => {
+                    console.error("Connection failed, retrying in 20s:", err.message);
+                    setTimeout(connectTikTok, 20000);
+                });
+          }
+
+          function triggerHeartEffect() {
+            const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2", "#ff3366", "#00ffcc", "#ffff00", "#ff00ff", "#00ff00", "#00e5ff"];
+            const count = Math.floor(Math.random() * 21) + 40; 
+            
+            for(let i=0; i<count; i++) {
+                const delay = i * (60 + Math.random() * 80); 
+                
+                floatingHearts.push({
+                    startTime: Date.now() + delay,
+                    duration: 1500 + Math.random() * 1000,
+                    x: (WIDTH - 220) + (Math.random() * 400 - 200), 
+                    y: HEIGHT - 30,
+                    size: Math.floor(Math.random() * 16) + 18, 
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
             }
 
-             if (floatingHearts.length > 600) {
-             floatingHearts.splice(0, count);
-             }
-             }
-             t(connectTikTok, 20000);
-              });
-             }
+            if (floatingHearts.length > 600) {
+                floatingHearts.splice(0, count);
+            }
+          }
+ 
 
              setTimeout(connectTikTok, 45000);
 
