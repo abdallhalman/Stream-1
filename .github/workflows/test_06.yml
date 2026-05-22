@@ -43,7 +43,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          const TIKTOK_USER = "alarabiya";
+          const TIKTOK_USER = "qurankareem.11com";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH = 1280;
           const HEIGHT = 720;
@@ -403,7 +403,7 @@ jobs:
             for (let i = 0; i < count; i++) {
               floatingHearts.push({
                 startTime: Date.now() + i * (60 + Math.random() * 80),
-                duration:  1500 + Math.random() * 1000,
+                duration:  2500 + Math.random() * 1500,
                 x: (WIDTH - 220) + (Math.random() * 400 - 200),
                 y: HEIGHT - 30,
                 size:  Math.floor(Math.random() * 16) + 18,
