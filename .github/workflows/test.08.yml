@@ -294,8 +294,8 @@ jobs:
               const bX = (WIDTH - bW) / 2;
               const bY = HEIGHT - 95;
               const grad = ctx.createLinearGradient(bX, bY, bX + bW, bY);
-              grad.addColorStop(0, "#120024");
-              grad.addColorStop(1, "#1a0f2e");
+              grad.addColorStop(0, "#2c2c2c");
+              grad.addColorStop(1, "#333333");
               ctx.globalAlpha = fA * 0.92;
               ctx.fillStyle = grad;
               rr(ctx, bX, bY, bW, bH, 18); ctx.fill();
@@ -447,7 +447,7 @@ jobs:
                 const pfp  = data.profilePictureUrl;
                 const giftObj = {
                   startTime: Date.now(),
-                  nameText:  `★ Supporter: ${name}`,
+                  nameText:  `★شكراً لك: ${name}`,
                   countText: `${data.giftName} x${data.repeatCount}`,
                   avatarUrl: pfp || null,
                   iconImage: null
