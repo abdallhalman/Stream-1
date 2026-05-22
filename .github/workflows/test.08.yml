@@ -67,7 +67,7 @@ jobs:
 
           const ffmpeg = spawn("ffmpeg", [
             "-f", "rawvideo",
-            "-pixel_format", "rgba",
+            "-pixel_format", "bgra",
             "-video_size", `${WIDTH}x${HEIGHT}`,
             "-framerate", `${FPS}`,
             "-i", "pipe:0",
@@ -143,7 +143,7 @@ jobs:
             ctx.fillStyle = "#ff4444";
             ctx.font = "bold 18px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
-            ctx.fillText("♥", WIDTH - 258, 52);
+            ctx.fillText("❤️", WIDTH - 258, 52);
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 19px sans-serif";
             ctx.textAlign = "right"; ctx.direction = "rtl";
@@ -157,7 +157,7 @@ jobs:
               ctx.fillStyle = h.color;
               ctx.font = `${h.size}px sans-serif`;
               ctx.textAlign = "left";
-              ctx.fillText("♥", h.x + Math.sin(age * 7) * 30, h.y - age * 400);
+              ctx.fillText("❤️", h.x + Math.sin(age * 7) * 30, h.y - age * 800);
             }
             ctx.globalAlpha = 1;
 
@@ -232,7 +232,7 @@ jobs:
               if (yCursor < 80) break;
 
               const bgColor = HEART_COLORS[i % HEART_COLORS.length];
-              ctx.globalAlpha = alpha * 0.25;
+              ctx.globalAlpha = alpha * 0.50;
               ctx.fillStyle = bgColor;
               rr(ctx, CHAT_X, yCursor, CHAT_W, boxH, 8); ctx.fill();
               ctx.globalAlpha = alpha * 0.6;
