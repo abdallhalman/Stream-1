@@ -140,15 +140,15 @@ jobs:
             ctx.fillStyle = "#111111";
             rr(ctx, WIDTH - 280, 20, 260, 50, 25); ctx.fill();
             ctx.globalAlpha = 1;
+            ctx.fillStyle = "#ffffff";
             ctx.font = "bold 18px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
-            ctx.fillText("💛", WIDTH - 260, 52);
-            ctx.fillText("❤️", WIDTH - 238, 52);
-            ctx.fillText("💙", WIDTH - 216, 52);
-            ctx.fillStyle = "#ffffff";
+            ctx.fillStyle = "#00ffff"; ctx.fillText("♥", WIDTH - 260, 52);
+            ctx.fillStyle = "#ff4444"; ctx.fillText("♥", WIDTH - 238, 52);
+            ctx.fillStyle = "#ffa500"; ctx.fillText("♥", WIDTH - 216, 52);
             ctx.font = "bold 19px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
-            ctx.fillText(`LIKES: ${totalLikes.toLocaleString()}`, WIDTH - 185, 52);
+            ctx.fillText(`LIKES ${totalLikes.toLocaleString()}`, WIDTH - 185, 52);
 
             floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
             for (const h of floatingHearts) {
@@ -294,8 +294,8 @@ jobs:
               const bX = (WIDTH - bW) / 2;
               const bY = HEIGHT - 95;
               const grad = ctx.createLinearGradient(bX, bY, bX + bW, bY);
-              grad.addColorStop(0, "#c084fc");
-              grad.addColorStop(1, "#ff6b9d");
+              grad.addColorStop(0, "#120024");
+              grad.addColorStop(1, "#1a0f2e");
               ctx.globalAlpha = fA * 0.92;
               ctx.fillStyle = grad;
               rr(ctx, bX, bY, bW, bH, 18); ctx.fill();
