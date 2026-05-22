@@ -140,12 +140,12 @@ jobs:
             ctx.fillStyle = "#111111";
             rr(ctx, WIDTH - 280, 20, 260, 50, 25); ctx.fill();
             ctx.globalAlpha = 1;
-            ctx.fillStyle = "#ff4444";//
+            ctx.fillStyle = "#ffffff";
             ctx.font = "bold 18px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
-            ctx.fillText("💙", WIDTH - 260, 52);
+            ctx.fillText("💛", WIDTH - 260, 52);
             ctx.fillText("❤️", WIDTH - 238, 52);
-            ctx.fillText("💛", WIDTH - 216, 52);
+            ctx.fillText("💙", WIDTH - 216, 52);
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 19px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
@@ -288,8 +288,8 @@ jobs:
               ctx.fillText(currentGift.countText, bX + bW / 2 + 10, bY + 95);
             } else { currentGift = null; }
 
-            if (followBanner && now - followBanner.startTime < 5000) {
-              const fAge = (now - followBanner.startTime) / 5000;
+            if (followBanner && now - followBanner.startTime < 9000) {
+              const fAge = (now - followBanner.startTime) / 9000;
               const fA   = fAge < 0.15 ? fAge / 0.15 : fAge > 0.85 ? (1 - fAge) / 0.15 : 1;
               const bW = 480, bH = 68;
               const bX = (WIDTH - bW) / 2;
@@ -313,9 +313,9 @@ jobs:
               if (fn.length > 20) fn = fn.substring(0, 18) + "..";
               ctx.fillText(fn, bX + 66, bY + 52);
               ctx.fillStyle = "#00ffcc";
-              ctx.font = "bold 18px sans-serif";
+              ctx.font = "bold 20px sans-serif";
               ctx.textAlign = "right"; ctx.direction = "ltr";
-              ctx.fillText(`👤: ${followBanner.followerCount.toLocaleString()}`, bX + bW - 14, bY + 42);
+              ctx.fillText(`👤 ${followBanner.followerCount.toLocaleString()}`, bX + bW - 20, bY + 42);
             } else { followBanner = null; }
 
             ctx.globalAlpha = 1;
