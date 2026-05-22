@@ -1,0 +1,610 @@
+name: test.05
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+
+      - name: Install system dependencies (FFmpeg & Canvas Core)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg \
+            build-essential \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libjpeg-dev \
+            libgif-dev \
+            librsvg2-dev \
+            fonts-noto-color-emoji \
+            curl
+
+      - name: Download Pure Cairo Font
+        run: |
+          mkdir -p ./fonts
+          curl -L -o ./fonts/Cairo-Bold.ttf "https://fonts.gstatic.com/s/cairo/v28/SLX_1OqSg_vXv31i376m3S96M8_86A.ttf"
+
+      - name: Install Python tools
+        run: pip install gdown
+
+      - name: Install Node tools
+        run: npm install tiktok-live-connector canvas node-fetch@2
+
+      - name: Download Video
+        run: gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O video.mp4
+
+      - name: Download single audio file
+        run: |
+          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O audio_raw.tmp && ffmpeg -i audio_raw.tmp audio.mp3 -y
+
+      - name: Create overlay script
+        run: |
+          cat > overlay.js << 'EOF'
+          const { WebcastPushConnection } = require("tiktok-live-connector");
+          const { createCanvas, loadImage, registerFont } = require("canvas");
+          const { spawn } = require("child_process");
+          const fetch = require("node-fetch");
+          const path = require("path");
+
+          // FIX 1: مسار الخط الصحيح
+          try {
+            registerFont("./fonts/Cairo-Bold.ttf", { family: "Cairo" });
+            console.log("Cairo font registered successfully");
+          } catch (err) {
+            console.error("Font registration warning:", err.message);
+          }
+
+          const TIKTOK_USER = "alarabiya"; 
+          const STREAM_KEY = process.env.STREAM_KEY;
+          const WIDTH = 1280;
+          const HEIGHT = 720;
+          const FPS = 30;
+
+          const imageCache = new Map();
+          let chatEvents = [];  
+          let currentGift = null; 
+          let totalLikes = 0;   
+          let viewerCount = 0;  
+          let floatingHearts = []; 
+          let joinQueue = [];       
+          let flyingJoiners = [];
+
+          // قائمة الداعمين: { name, giftName, count, avatarUrl, time }
+          let topSupporters = [];
+
+          const ffmpeg = spawn("ffmpeg", [
+            "-f", "rawvideo",
+            "-pixel_format", "rgba",
+            "-video_size", `${WIDTH}x${HEIGHT}`,
+            "-framerate", `${FPS}`,
+            "-i", "pipe:0",
+            "-stream_loop", "-1",
+            "-re",
+            "-i", "video.mp4",
+            "-stream_loop", "-1",
+            "-re",
+            "-i", "audio.mp3",
+            "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
+            "-map", "[v]",
+            "-map", "2:a",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-b:v", "2500k",
+            "-maxrate", "2500k",
+            "-bufsize", "5000k",
+            "-g", "60",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            "-ar", "44100",
+            "-f", "flv",
+            `rtmp://live.restream.io/live/${STREAM_KEY}`
+          ]);
+
+          ffmpeg.stderr.on("data", d => process.stderr.write(d));
+          ffmpeg.on("exit", code => {
+            console.error("FFmpeg exited with code:", code);
+            process.exit(code);
+          });
+
+          async function drawFrame() {
+            const canvas = createCanvas(WIDTH, HEIGHT);
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+            const now = Date.now();
+
+            // Likes Counter
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = "#111111";
+            ctx.beginPath();
+            ctx.roundRect(WIDTH - 280, 20, 260, 50, 25);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = "#ff4444";
+            ctx.font = "bold 24px 'Noto Color Emoji', 'Cairo', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("❤️", WIDTH - 250, 53);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 20px 'Cairo', sans-serif";
+            ctx.textAlign = "right";
+            ctx.direction = "rtl";
+            ctx.fillText(`الإعجابات: ${totalLikes.toLocaleString()}`, WIDTH - 30, 52);
+
+            // Viewers Counter
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = "#111111";
+            ctx.beginPath();
+            ctx.roundRect(20, 20, 220, 50, 25);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = "#00ffcc";
+            ctx.font = "bold 22px 'Noto Color Emoji', 'Cairo', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🔴", 50, 53);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 20px 'Cairo', sans-serif";
+            ctx.textAlign = "left";
+            ctx.direction = "ltr";
+            ctx.fillText(`LIVE: ${viewerCount}`, 85, 52);
+
+            // Floating Hearts
+            floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
+            for (let heart of floatingHearts) {
+              const age = (now - heart.startTime) / heart.duration;
+              const alpha = 1 - age;
+              const x = heart.x + Math.sin(age * 7) * 30;
+              const y = heart.y - (age * 400);
+              ctx.globalAlpha = alpha;
+              ctx.fillStyle = heart.color;
+              ctx.font = `${heart.size}px 'Noto Color Emoji', sans-serif`;
+              ctx.fillText("❤️", x, y);
+            }
+            ctx.globalAlpha = 1.0;
+
+            // FIX 2: flyingJoiners مرة واحدة فقط (حذف النسخة المكررة)
+            flyingJoiners = flyingJoiners.filter(j => now - j.startTime < j.duration);
+            for (let j of flyingJoiners) {
+              const age = (now - j.startTime) / j.duration;
+              const alpha = age < 0.15 ? age / 0.15 : (age > 0.85 ? (1 - age) / 0.15 : 1);
+              const x = j.startX + (age * 340);
+              const y = j.startY - (age * 480);
+              const currentSize = j.startSize + (age * 10);
+
+              ctx.globalAlpha = alpha * 0.75;
+              ctx.fillStyle = "#111111";
+              ctx.font = `bold ${currentSize}px 'Cairo', 'Noto Color Emoji', sans-serif`;
+              const textWidth = ctx.measureText(j.text).width;
+              
+              ctx.beginPath();
+              ctx.roundRect(x - 15, y - currentSize - 5, textWidth + 30, currentSize + 18, 15);
+              ctx.fill();
+
+              ctx.globalAlpha = alpha;
+              ctx.fillStyle = "#00ffcc";
+              ctx.textAlign = "left";
+              ctx.direction = "rtl";
+              ctx.fillText(j.text, x, y);
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Chat Messages rendering
+            chatEvents = chatEvents.filter(e => now - e.time < 30000);
+            for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
+              const e = chatEvents[i];
+              const age = (now - e.time) / 30000;
+              const alpha = Math.max(0, 1 - age);
+              
+              const y = HEIGHT - 180 - (i * 54);
+              if (y < 90) continue;
+
+              ctx.globalAlpha = alpha * 0.75;
+              ctx.fillStyle = "#000000";
+              ctx.beginPath();
+              ctx.roundRect(25, y - 38, 640, 46, 8);
+              ctx.fill();
+
+              ctx.globalAlpha = alpha;
+
+              if (e.avatarUrl && imageCache.has(e.avatarUrl)) {
+                try {
+                  const img = imageCache.get(e.avatarUrl);
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.arc(50, y - 15, 16, 0, Math.PI * 2);
+                  ctx.clip();
+                  ctx.drawImage(img, 34, y - 31, 32, 32);
+                  ctx.restore();
+                } catch(err) {}
+              }
+
+              let currentXOffset = 78; 
+              if (e.badgeUrls && e.badgeUrls.length > 0) {
+                for (const badgeUrl of e.badgeUrls) {
+                  if (imageCache.has(badgeUrl)) {
+                    try {
+                      const badgeImg = imageCache.get(badgeUrl);
+                      ctx.drawImage(badgeImg, currentXOffset, y - 29, 36, 18); 
+                      currentXOffset += 42; 
+                    } catch(err) {}
+                  }
+                }
+              }
+
+              ctx.fillStyle = e.color || "#ffffff";
+              ctx.font = "bold 18px 'Cairo', 'Noto Color Emoji', sans-serif";
+              ctx.textAlign = "left";
+              ctx.direction = "rtl";
+              
+              let printText = e.text;
+              if (printText.length > 55) printText = printText.substring(0, 52) + "...";
+              
+              ctx.fillText(printText, currentXOffset + 5, y - 8);
+            }
+
+            // Big Gifts Display Panel
+            if (currentGift && now - currentGift.startTime < 4000) {
+              const gAge = (now - currentGift.startTime) / 4000;
+              let gAlpha = 1;
+              if (gAge < 0.15) gAlpha = gAge / 0.15;
+              else if (gAge > 0.85) gAlpha = (1 - gAge) / 0.15;
+
+              ctx.globalAlpha = gAlpha * 0.90;
+              const boxWidth = 540;
+              const boxHeight = 130;
+              const boxX = (WIDTH - boxWidth) / 2;
+              const boxY = (HEIGHT - boxHeight) / 2 - 40;
+
+              ctx.fillStyle = "#1a0f2e";
+              ctx.strokeStyle = "#FFD700";
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+              ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 20);
+              ctx.fill();
+              ctx.stroke();
+
+              ctx.globalAlpha = gAlpha;
+
+              if (currentGift.avatarUrl && imageCache.has(currentGift.avatarUrl)) {
+                try {
+                  const img = imageCache.get(currentGift.avatarUrl);
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.arc(boxX + 55, boxY + 65, 35, 0, Math.PI * 2);
+                  ctx.clip();
+                  ctx.drawImage(img, boxX + 20, boxY + 30, 70, 70);
+                  ctx.restore();
+                } catch(err) {}
+              }
+
+              if (currentGift.iconImage) {
+                try {
+                  ctx.drawImage(currentGift.iconImage, boxX + boxWidth - 105, boxY + 25, 80, 80);
+                } catch(err) {}
+              }
+
+              ctx.fillStyle = "#FFD700";
+              ctx.font = "bold 22px 'Cairo', 'Noto Color Emoji', sans-serif";
+              ctx.textAlign = "center";
+              ctx.direction = "rtl";
+              ctx.fillText(currentGift.nameText, boxX + (boxWidth / 2) + 10, boxY + 50);
+
+              ctx.fillStyle = "#ffffff";
+              ctx.font = "bold 24px 'Cairo', 'Noto Color Emoji', sans-serif";
+              ctx.fillText(currentGift.countText, boxX + (boxWidth / 2) + 10, boxY + 95);
+            } else {
+              currentGift = null;
+            }
+
+            // NEW: قائمة الداعمين على اليمين
+            if (topSupporters.length > 0) {
+              const listX = WIDTH - 270;
+              const listY = 90;
+              const rowH = 52;
+              const listW = 250;
+              const listCount = Math.min(topSupporters.length, 5);
+              const listH = 38 + (listCount * rowH);
+
+              // خلفية القائمة
+              ctx.globalAlpha = 0.82;
+              ctx.fillStyle = "#0d0d1a";
+              ctx.strokeStyle = "#FFD700";
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.roundRect(listX - 10, listY - 10, listW + 20, listH, 14);
+              ctx.fill();
+              ctx.stroke();
+              ctx.globalAlpha = 1.0;
+
+              // عنوان القائمة
+              ctx.fillStyle = "#FFD700";
+              ctx.font = "bold 17px 'Cairo', sans-serif";
+              ctx.textAlign = "center";
+              ctx.direction = "rtl";
+              ctx.fillText("الداعمون", listX + listW / 2, listY + 16);
+
+              // خط فاصل
+              ctx.strokeStyle = "#FFD700";
+              ctx.lineWidth = 1;
+              ctx.globalAlpha = 0.4;
+              ctx.beginPath();
+              ctx.moveTo(listX - 10, listY + 26);
+              ctx.lineTo(listX + listW + 10, listY + 26);
+              ctx.stroke();
+              ctx.globalAlpha = 1.0;
+
+              // صفوف الداعمين
+              for (let i = 0; i < listCount; i++) {
+                const s = topSupporters[i];
+                const rowY = listY + 38 + (i * rowH);
+
+                // أيقونة ترتيب
+                const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32", "#aaaaaa", "#aaaaaa"];
+                ctx.fillStyle = rankColors[i] || "#aaaaaa";
+                ctx.font = "bold 15px 'Cairo', sans-serif";
+                ctx.textAlign = "left";
+                ctx.direction = "ltr";
+                ctx.fillText(`${i + 1}`, listX, rowY + 4);
+
+                // أفاتار
+                if (s.avatarUrl && imageCache.has(s.avatarUrl)) {
+                  try {
+                    const img = imageCache.get(s.avatarUrl);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(listX + 22, rowY - 4, 14, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.drawImage(img, listX + 8, rowY - 18, 28, 28);
+                    ctx.restore();
+                  } catch(e) {}
+                }
+
+                // اسم الداعم
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 15px 'Cairo', sans-serif";
+                ctx.textAlign = "right";
+                ctx.direction = "rtl";
+                let dispName = s.name.length > 12 ? s.name.substring(0, 11) + ".." : s.name;
+                ctx.fillText(dispName, listX + listW, rowY + 4);
+
+                // اسم الهدية وعددها
+                ctx.fillStyle = "#aaddff";
+                ctx.font = "13px 'Cairo', sans-serif";
+                let dispGift = `${s.giftName} x${s.count}`;
+                if (dispGift.length > 18) dispGift = dispGift.substring(0, 16) + "..";
+                ctx.fillText(dispGift, listX + listW, rowY + 22);
+              }
+            }
+
+            ctx.globalAlpha = 1.0;
+            return canvas.toBuffer("raw");
+          }
+
+          async function renderLoop() {
+            const interval = 1000 / FPS;
+            while (true) {
+              const start = Date.now();
+              try {
+                const frame = await drawFrame();
+                await new Promise((resolve, reject) => {
+                  ffmpeg.stdin.write(frame, err => {
+                    if (err) reject(err);
+                    else resolve();
+                  });
+                });
+              } catch (err) {
+                console.error("Render loop error:", err.message);
+              }
+              const elapsed = Date.now() - start;
+              const wait = Math.max(0, interval - elapsed);
+              await new Promise(r => setTimeout(r, wait));
+            }
+          }
+
+          async function fetchAndCacheImage(url) {
+            if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
+            if (imageCache.has(url)) return imageCache.get(url);
+            try {
+              const res = await fetch(url, { timeout: 2000 });
+              if (!res.ok) return null;
+              const buf = await res.buffer();
+              const img = await loadImage(buf);
+              imageCache.set(url, img);
+              
+              if (imageCache.size > 300) {
+                const firstKey = imageCache.keys().next().value;
+                imageCache.delete(firstKey);
+              }
+              return img;
+            } catch (e) { return null; }
+          }
+
+          function addChatEvent(text, color, avatarUrl, badgeUrls = []) {
+            try {
+              const newEvent = {
+                time: Date.now(),
+                text,
+                color,
+                avatarUrl: avatarUrl || null,
+                badgeUrls: badgeUrls
+              };
+              chatEvents.unshift(newEvent);
+              if (chatEvents.length > 8) chatEvents.pop();
+
+              if (avatarUrl) fetchAndCacheImage(avatarUrl).catch(() => {});
+              if (badgeUrls && badgeUrls.length > 0) {
+                badgeUrls.forEach(bUrl => {
+                  fetchAndCacheImage(bUrl).catch(() => {});
+                });
+              }
+            } catch (err) {}
+          }
+
+          function triggerFlyingJoinerEffect(name) {
+            try {
+              flyingJoiners.push({
+                startTime: Date.now(),
+                duration: 5000,
+                startX: 40,
+                startY: HEIGHT - 90,
+                startSize: 20,
+                text: `انضم الآن: ${name}`
+              });
+              if (flyingJoiners.length > 3) flyingJoiners.shift();
+            } catch(e) {}
+          }
+
+          // NEW: تحديث قائمة الداعمين
+          function updateTopSupporters(name, giftName, count, avatarUrl) {
+            try {
+              const existing = topSupporters.find(s => s.name === name);
+              if (existing) {
+                existing.count += count;
+                existing.giftName = giftName;
+                existing.time = Date.now();
+                if (avatarUrl) existing.avatarUrl = avatarUrl;
+              } else {
+                topSupporters.push({ name, giftName, count, avatarUrl: avatarUrl || null, time: Date.now() });
+              }
+              // ترتيب حسب العدد
+              topSupporters.sort((a, b) => b.count - a.count);
+              // الاحتفاظ بأعلى 5
+              if (topSupporters.length > 5) topSupporters = topSupporters.slice(0, 5);
+
+              // تحميل الأفاتار إن لم يكن محملاً
+              if (avatarUrl) fetchAndCacheImage(avatarUrl).catch(() => {});
+            } catch(e) {}
+          }
+
+          const tiktok = new WebcastPushConnection(TIKTOK_USER);
+
+          function connectTikTok() {
+            console.log(`Connecting to: ${TIKTOK_USER}`);
+            tiktok.connect()
+                .then(() => console.log("Connected successfully to TikTok!"))
+                .catch(err => {
+                    console.error("Connection failed, retrying in 20s:", err.message);
+                    setTimeout(connectTikTok, 20000);
+                });
+          }
+
+          function triggerHeartEffect() {
+            const colors = ["#ff4444", "#ff6b9d", "#ff0055", "#ff85a2", "#ff3366", "#00ffcc", "#ffff00", "#ff00ff", "#00ff00", "#00e5ff"];
+            const count = Math.floor(Math.random() * 21) + 40; 
+            
+            for(let i=0; i<count; i++) {
+                const delay = i * (60 + Math.random() * 80); 
+                
+                floatingHearts.push({
+                    startTime: Date.now() + delay,
+                    duration: 1500 + Math.random() * 1000,
+                    x: (WIDTH - 220) + (Math.random() * 400 - 200), 
+                    y: HEIGHT - 30,
+                    size: Math.floor(Math.random() * 16) + 18, 
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+
+            if (floatingHearts.length > 600) {
+                floatingHearts.splice(0, count);
+            }
+          }
+
+          setTimeout(connectTikTok, 45000);
+
+          tiktok.on("join", data => {
+            try {
+                const name = data.nickname || data.uniqueId || "Guest";
+                const pfp = data.profilePictureUrl || null;
+                addChatEvent(`✨ Entered the live: ${name}`, "#d580ff", pfp, []);
+                triggerFlyingJoinerEffect(name);
+            } catch (e) {}
+          });
+
+          tiktok.on("roomUser", data => {
+            if (data && data.viewerCount !== undefined) {
+              viewerCount = data.viewerCount;
+            }
+          });
+
+          function handleIncomingComment(data) {
+            try {
+              const userName = data.nickname || data.uniqueId || "متابع";
+              const text = data.comment;
+              const pfp = data.profilePictureUrl;
+
+              let badgeUrls = [];
+              if (data.badges && data.badges.length > 0) {
+                data.badges.forEach(badge => {
+                  const actualUrl = badge.url || (badge.image && badge.image.url);
+                  if (actualUrl) badgeUrls.push(actualUrl);
+                });
+              }
+
+              if (text) {
+                addChatEvent(`${userName}: ${text}`, "#ffffff", pfp, badgeUrls);
+              }
+            } catch (err) {}
+          }
+
+          tiktok.on("comment", data => { handleIncomingComment(data); });
+          tiktok.on("chat", data => { handleIncomingComment(data); });
+
+          tiktok.on("follow", data => {
+            try {
+              const userName = data.nickname || data.uniqueId || "متابع جديد";
+              const pfp = data.profilePictureUrl;
+              addChatEvent(`👤 ${userName} تابع الحساب الآن ✨`, "#ff6b9d", pfp, []);
+            } catch (err) {}
+          });
+
+          tiktok.on("like", data => {
+            try {
+              if (data.likeCount && data.likeCount > 0) {
+                totalLikes += Number(data.likeCount);
+                triggerHeartEffect();
+              }
+            } catch (err) {}
+          });
+
+          tiktok.on("gift", data => {
+            try {
+              if (data.repeatEnd) {
+                const userName = data.nickname || data.uniqueId || "داعم كريم";
+                const pfp = data.profilePictureUrl;
+
+                const giftObj = {
+                  startTime: Date.now(),
+                  nameText: `👑 الداعم: ${userName}`,
+                  countText: `أرسل ${data.giftName} x${data.repeatCount} 🎁`,
+                  avatarUrl: pfp || null,
+                  iconImage: null
+                };
+
+                currentGift = giftObj;
+
+                // NEW: تحديث قائمة الداعمين
+                updateTopSupporters(userName, data.giftName, data.repeatCount || 1, pfp);
+
+                if (pfp) fetchAndCacheImage(pfp).catch(()=>{});
+                if (data.giftPictureUrl) {
+                  fetch(data.giftPictureUrl).then(res => res.buffer()).then(buf => loadImage(buf)).then(img => {
+                    if(img) giftObj.iconImage = img;
+                  }).catch(()=>{});
+                }
+              }
+            } catch (err) {}
+          });
+
+          renderLoop().catch(err => {
+            console.error("Critical error:", err);
+            process.exit(1);
+          });
+          EOF
+
+      - name: Start Stream
+        env:
+          STREAM_KEY: ${{ secrets.STREAM_KEY }}
+        run: node overlay.js
