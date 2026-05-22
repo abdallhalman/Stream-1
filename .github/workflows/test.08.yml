@@ -131,7 +131,7 @@ jobs:
             ctx.fillStyle = "#ff0000";
             ctx.font = "bold 19px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
-            ctx.fillText("●", 38, 52);
+            ctx.fillText("●", 38, 50);
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 19px sans-serif";
             ctx.fillText(`LIVE: ${viewerCount.toLocaleString()}`, 58, 52);
@@ -140,7 +140,7 @@ jobs:
             ctx.fillStyle = "#111111";
             rr(ctx, WIDTH - 280, 20, 260, 50, 25); ctx.fill();
             ctx.globalAlpha = 1;
-            ctx.fillStyle = "#ff4444";
+            ctx.fillStyle = "#ff4444";//
             ctx.font = "bold 18px sans-serif";
             ctx.textAlign = "left"; ctx.direction = "ltr";
             ctx.fillText("💙", WIDTH - 260, 52);
@@ -189,19 +189,19 @@ jobs:
                 drawAvatar(ctx, imageCache.get(s.avatarUrl), bx + 18, SUP_Y + SUP_H / 2, 14);
 
               ctx.fillStyle = rankText[i];
-              ctx.font = "bold 11px sans-serif";
+              ctx.font = "bold 14px sans-serif";
               ctx.textAlign = "left"; ctx.direction = "ltr";
               ctx.fillText(rankLabel[i], bx + 36, SUP_Y + 18);
 
               ctx.fillStyle = "#ffffff";
-              ctx.font = "bold 14px sans-serif";
+              ctx.font = "bold 16px sans-serif";
               let nm = s ? s.name : "---";
               if (nm.length > 13) nm = nm.substring(0, 12) + ".";
               ctx.fillText(nm, bx + 36, SUP_Y + 38);
 
               if (s) {
                 ctx.fillStyle = rankText[i];
-                ctx.font = "11px sans-serif";
+                ctx.font = "14px sans-serif";
                 let gTxt = `${s.giftName} x${s.count}`;
                 if (gTxt.length > 15) gTxt = gTxt.substring(0, 14) + ".";
                 ctx.fillText(gTxt, bx + 36, SUP_Y + 54);
@@ -303,19 +303,19 @@ jobs:
               ctx.globalAlpha = fA;
               if (followBanner.avatarUrl && imageCache.has(followBanner.avatarUrl))
                 drawAvatar(ctx, imageCache.get(followBanner.avatarUrl), bX + 36, bY + 34, 22);
-              ctx.fillStyle = "#ffffff";
-              ctx.font = "bold 15px sans-serif";
+              ctx.fillStyle = "#240046";
+              ctx.font = "bold 18px sans-serif";
               ctx.textAlign = "left"; ctx.direction = "ltr";
               ctx.fillText("Follow:", bX + 66, bY + 26);
               ctx.font = "bold 20px sans-serif";
-              ctx.fillStyle = "#ffff00";
+              ctx.fillStyle = "#0d1b2a";
               let fn = followBanner.name;
               if (fn.length > 20) fn = fn.substring(0, 18) + "..";
               ctx.fillText(fn, bX + 66, bY + 52);
               ctx.fillStyle = "#00ffcc";
-              ctx.font = "bold 13px sans-serif";
+              ctx.font = "bold 18px sans-serif";
               ctx.textAlign = "right"; ctx.direction = "ltr";
-              ctx.fillText(`Followers: ${followBanner.followerCount.toLocaleString()}`, bX + bW - 14, bY + 42);
+              ctx.fillText(`👤: ${followBanner.followerCount.toLocaleString()}`, bX + bW - 14, bY + 42);
             } else { followBanner = null; }
 
             ctx.globalAlpha = 1;
