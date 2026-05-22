@@ -49,7 +49,6 @@ jobs:
           const fetch = require("node-fetch");
           const path = require("path");
 
-           نظام أوبونتو يقوم بحفظ الخطوط المثبتة رسميًا في هذا المسار التلقائي
           try {
             registerFont("/usr/share/fonts/truetype/cairo/Cairo-Bold.ttf", { family: "Cairo" });
             console.log("Cairo font registered successfully from system");
