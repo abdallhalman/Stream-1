@@ -228,7 +228,6 @@ jobs:
               }
             }
 
-            chatEvents = chatEvents.filter(e => now - e.time < 60000);
             const CHAT_X      = SUP_X;
             const CHAT_W      = SUP_W;
             const CHAT_BOTTOM = SUP_Y - 8;
@@ -242,9 +241,7 @@ jobs:
 
             for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
               const e     = chatEvents[i];
-              const age   = (now - e.time) / 60000;
-              const alpha = Math.max(0, 1 - age);
-
+              const alpha = 1;
               const fullText = e.text;
               ctx.font = "bold 16px sans-serif";
               const lines = wrapText(ctx, fullText, msgMaxW);
@@ -254,7 +251,7 @@ jobs:
               if (yCursor < 80) break;
 
               const bgColor = HEART_COLORS[i % HEART_COLORS.length];
-              ctx.globalAlpha = alpha * 0.50;
+              ctx.globalAlpha = alpha * 0.80;
               ctx.fillStyle = bgColor;
               rr(ctx, CHAT_X, yCursor, CHAT_W, boxH, 8); ctx.fill();
               ctx.globalAlpha = alpha * 0.6;
