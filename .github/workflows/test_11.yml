@@ -1,0 +1,494 @@
+name: test.11
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg \
+            build-essential \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libjpeg-dev \
+            libgif-dev \
+            librsvg2-dev \
+            fonts-noto-color-emoji \
+            curl
+
+      - name: Install Python tools
+        run: pip install gdown
+
+      - name: Install Node tools
+        run: npm install tiktok-live-connector canvas node-fetch@2
+
+      - name: Download Video
+        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
+
+      - name: Download single audio file
+        run: |
+          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
+          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
+          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
+          gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O a4.tmp && ffmpeg -i a4.tmp audio4.mp3 -y
+          gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O a5.tmp && ffmpeg -i a5.tmp audio5.mp3 -y
+
+      - name: Create playlist and merge
+        run: |
+          ls audio*.mp3 | shuf > playlist.txt
+          while IFS= read -r file; do
+          echo "file '$file'"
+          done < playlist.txt > concat.txt
+          ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3 -y
+
+      - name: Create overlay script
+        run: |
+          cat << 'EOF' > overlay.js
+          const { WebcastPushConnection } = require("tiktok-live-connector");
+          const { createCanvas, loadImage } = require("canvas");
+          const { spawn } = require("child_process");
+          const fetch = require("node-fetch");
+
+          const TIKTOK_USER = "sl42t";
+          const STREAM_KEY = process.env.STREAM_KEY;
+          const WIDTH  = 1280;
+          const HEIGHT = 720;
+          const FPS    = 30;
+
+          const HEART_COLORS = [
+            "#ff4444","#ff6b9d","#ff0055","#ff85a2",
+            "#00ffcc","#ffff00","#ff00ff","#00ff00",
+            "#00e5ff","#c084fc"
+          ];
+
+          const imageCache = new Map();
+          let chatEvents     = [];
+          let currentGift    = null;
+          let totalLikes     = 0;
+          let viewerCount    = 0;
+          let floatingHearts = [];
+          let followBanner   = null;
+
+          let topSupporters = [];
+
+          // ── قيم عشوائية لكسر البصمة المرئية ──────────────────
+          const rndCrop   = Math.floor(Math.random() * 20);
+          const rndX      = Math.floor(Math.random() * (rndCrop + 1));
+          const rndY      = Math.floor(Math.random() * (rndCrop + 1));
+          const rndBright = ((Math.random() * 0.06) - 0.03).toFixed(3);
+          const rndSpeed  = (27 + Math.random() * 6).toFixed(2);
+
+          const ffmpeg = spawn("ffmpeg", [
+            "-f", "rawvideo",
+            "-pixel_format", "bgra",
+            "-video_size", `${WIDTH}x${HEIGHT}`,
+            "-framerate", `${FPS}`,
+            "-i", "pipe:0",
+            "-stream_loop", "-1", "-re", "-i", "video.mp4",
+            "-stream_loop", "-1", "-re", "-i", "merged_audio.mp3",
+            "-filter_complex", `[1:v]crop=${WIDTH-rndCrop}:${HEIGHT-rndCrop}:${rndX}:${rndY},scale=${WIDTH}:${HEIGHT},eq=brightness=${rndBright}:contrast=1.0[v1];[v1][0:v]overlay=0:0[v]`,
+            "-map", "[v]", "-map", "2:a",
+            "-c:v", "libx264", "-preset", "veryfast",
+            "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
+            "-g", "60", "-r", rndSpeed,
+            "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+            "-f", "flv",
+            `rtmp://live.restream.io/live/${STREAM_KEY}`
+          ]);
+          ffmpeg.stderr.on("data", d => process.stderr.write(d));
+          ffmpeg.on("exit", code => { console.error("FFmpeg exit:", code); process.exit(code); });
+
+                   function rr(ctx, x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.roundRect(x, y, w, h, r);
+          }
+
+          function drawAvatar(ctx, img, cx, cy, r) {
+          try {
+            ctx.save();
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+            ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2);
+            ctx.restore();
+          } catch(e) {}
+          }
+          function wrapText(ctx, text, maxWidth) {
+            const words = text.split(" ");
+            let line1 = "", line2 = "";
+            for (const w of words) {
+              const test = line1 ? line1 + " " + w : w;
+              if (ctx.measureText(test).width <= maxWidth) {
+                line1 = test;
+              } else {
+                if (!line2) line2 = w;
+                else line2 += " " + w;
+              }
+            }
+            if (ctx.measureText(line2).width > maxWidth) {
+              while (line2.length > 0 && ctx.measureText(line2 + "…").width > maxWidth)
+                line2 = line2.slice(0, -1);
+              line2 += "…";
+            }
+            return line2 ? [line1, line2] : [line1];
+          }
+
+          async function drawFrame() {
+            const canvas = createCanvas(WIDTH, HEIGHT);
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+            const now = Date.now();
+
+            ctx.globalAlpha = 0.88;
+            ctx.fillStyle = "#111111";
+            rr(ctx, 20, 20, 220, 50, 25); ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = "#ff0000";
+            ctx.font = "bold 19px sans-serif";
+            ctx.textAlign = "left"; ctx.direction = "ltr";
+            ctx.fillText("● ", 38, 50);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 19px sans-serif";
+            ctx.fillText(`LIVE  ${viewerCount.toLocaleString()}`, 58, 52);
+
+            ctx.globalAlpha = 0.88;
+            ctx.fillStyle = "#111111";
+            rr(ctx, WIDTH - 280, 20, 260, 50, 25); ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 18px sans-serif";
+            ctx.textAlign = "left"; ctx.direction = "ltr";
+            ctx.fillStyle = "#00ffff"; ctx.fillText("♥", WIDTH - 260, 52);
+            ctx.fillStyle = "#ff4444"; ctx.fillText("♥", WIDTH - 238, 52);
+            ctx.fillStyle = "#ffa500"; ctx.fillText("♥", WIDTH - 216, 52);
+            ctx.font = "bold 19px sans-serif";
+            ctx.textAlign = "left"; ctx.direction = "ltr";
+            ctx.fillText(`LIKES ${totalLikes.toLocaleString()}`, WIDTH - 185, 52);
+
+            floatingHearts = floatingHearts.filter(h => now - h.startTime < h.duration);
+            for (const h of floatingHearts) {
+              const age = (now - h.startTime) / h.duration;
+              if (age < 0) continue;
+              ctx.globalAlpha = 1 - age;
+              ctx.fillStyle = h.color;
+              ctx.font = `${h.size}px sans-serif`;
+              ctx.textAlign = "left";
+              ctx.fillText("❤️", h.x + Math.sin(age * 7) * 30, h.y - age * 800);
+            }
+            ctx.globalAlpha = 1;
+
+            const SUP_Y    = HEIGHT - 78;
+            const SUP_H    = 62;
+            const SUP_W    = 420;
+            const COL_W    = SUP_W / 3;
+            const SUP_X    = 20;
+
+            const rankBg    = ["#2d1200","#141414","#0d1a0d"];
+            const rankText  = ["#FFD700","#c084fc","#00ffcc"];
+            const rankLabel = ["🥇 TOP 1","🥈 TOP 2","🥉 TOP 3"];
+
+            for (let i = 0; i < 3; i++) {
+              const s  = topSupporters[i];
+              const bx = SUP_X + i * COL_W;
+
+              ctx.globalAlpha = 0.88;
+              ctx.fillStyle = rankBg[i];
+              ctx.strokeStyle = rankText[i];
+              ctx.lineWidth = 1.5;
+              rr(ctx, bx + 2, SUP_Y, COL_W - 4, SUP_H, 10);
+              ctx.fill(); ctx.stroke();
+              ctx.globalAlpha = 1;
+
+              if (s && s.avatarUrl && imageCache.has(s.avatarUrl))
+                drawAvatar(ctx, imageCache.get(s.avatarUrl), bx + 18, SUP_Y + SUP_H / 2, 14);
+
+              ctx.fillStyle = rankText[i];
+              ctx.font = "bold 14px sans-serif";
+              ctx.textAlign = "left"; ctx.direction = "ltr";
+              ctx.fillText(rankLabel[i], bx + 36, SUP_Y + 18);
+
+              ctx.fillStyle = "#ffffff";
+              ctx.font = "bold 16px sans-serif";
+              let nm = s ? s.name : "---";
+              if (nm.length > 13) nm = nm.substring(0, 12) + ".";
+              ctx.fillText(nm, bx + 36, SUP_Y + 38);
+
+              if (s) {
+                ctx.fillStyle = rankText[i];
+                ctx.font = "14px sans-serif";
+                let gTxt = `${s.giftName} x${s.count}`;
+                if (gTxt.length > 15) gTxt = gTxt.substring(0, 14) + ".";
+                ctx.fillText(gTxt, bx + 36, SUP_Y + 54);
+              }
+            }
+
+            chatEvents = chatEvents.filter(e => now - e.time < 60000);
+            const CHAT_X      = SUP_X;
+            const CHAT_W      = SUP_W;
+            const CHAT_BOTTOM = SUP_Y - 8;
+            const LINE_H      = 22;
+            const PAD         = 10;
+
+            ctx.font = "bold 16px sans-serif";
+            const msgMaxW = CHAT_W - 80;
+
+            let yCursor = CHAT_BOTTOM;
+
+            for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
+              const e     = chatEvents[i];
+              const age   = (now - e.time) / 60000;
+              const alpha = Math.max(0, 1 - age);
+
+              const fullText = e.text;
+              ctx.font = "bold 16px sans-serif";
+              const lines = wrapText(ctx, fullText, msgMaxW);
+              const boxH  = PAD * 2 + lines.length * LINE_H;
+
+              yCursor -= boxH + 4;
+              if (yCursor < 80) break;
+
+              const bgColor = HEART_COLORS[i % HEART_COLORS.length];
+              ctx.globalAlpha = alpha * 0.50;
+              ctx.fillStyle = bgColor;
+              rr(ctx, CHAT_X, yCursor, CHAT_W, boxH, 8); ctx.fill();
+              ctx.globalAlpha = alpha * 0.6;
+              ctx.strokeStyle = bgColor;
+              ctx.lineWidth = 1;
+              rr(ctx, CHAT_X, yCursor, CHAT_W, boxH, 8); ctx.stroke();
+              ctx.globalAlpha = alpha;
+
+              if (e.avatarUrl && imageCache.has(e.avatarUrl))
+                drawAvatar(ctx, imageCache.get(e.avatarUrl), CHAT_X + 18, yCursor + boxH / 2, 13);
+
+              let xOff = CHAT_X + 38;
+              for (const bUrl of (e.badgeUrls || [])) {
+                if (imageCache.has(bUrl)) {
+                  try { ctx.drawImage(imageCache.get(bUrl), xOff, yCursor + PAD, 30, 15); } catch(er) {}
+                  xOff += 34;
+                }
+              }
+
+              ctx.fillStyle = e.color || "#ffffff";
+              ctx.font = "bold 16px sans-serif";
+              ctx.textAlign = "left"; ctx.direction = "ltr";
+              for (let li = 0; li < lines.length; li++) {
+                ctx.fillText(lines[li], xOff + 4, yCursor + PAD + LINE_H * (li + 1) - 4);
+              }
+            }
+
+            ctx.globalAlpha = 1;
+
+            if (currentGift && now - currentGift.startTime < 9999) {
+              const gAge = (now - currentGift.startTime) / 9999;
+              const gA   = gAge < 0.15 ? gAge / 0.15 : gAge > 0.85 ? (1 - gAge) / 0.15 : 1;
+              const bW = 540, bH = 130;
+              const bX = (WIDTH - bW) / 2, bY = (HEIGHT - bH) / 2 - 40;
+              ctx.globalAlpha = gA * 0.92;
+              ctx.fillStyle = "#1a0f2e";
+              ctx.strokeStyle = "#FFD700"; ctx.lineWidth = 3;
+              rr(ctx, bX, bY, bW, bH, 20); ctx.fill(); ctx.stroke();
+              ctx.globalAlpha = gA;
+              if (currentGift.avatarUrl && imageCache.has(currentGift.avatarUrl))
+                drawAvatar(ctx, imageCache.get(currentGift.avatarUrl), bX + 55, bY + 65, 35);
+              if (currentGift.iconImage) {
+                try { ctx.drawImage(currentGift.iconImage, bX + bW - 105, bY + 25, 80, 80); } catch(e) {}
+              }
+              ctx.fillStyle = "#ffa500";
+              ctx.font = "bold 22px sans-serif";
+              ctx.textAlign = "center"; ctx.direction = "rtl";
+              ctx.fillText(currentGift.nameText, bX + bW / 2 + 10, bY + 52);
+              ctx.fillStyle = "#00ffff";
+              ctx.font = "bold 28px sans-serif";
+              ctx.fillText(currentGift.countText, bX + bW / 2 + 10, bY + 95);
+            } else { currentGift = null; }
+
+            if (followBanner && now - followBanner.startTime < 9000) {
+              const fAge = (now - followBanner.startTime) / 9000;
+              const fA   = fAge < 0.15 ? fAge / 0.15 : fAge > 0.85 ? (1 - fAge) / 0.15 : 1;
+              const bW = 480, bH = 68;
+              const bX = (WIDTH - bW) / 2;
+              const bY = HEIGHT - 95;
+              const grad = ctx.createLinearGradient(bX, bY, bX + bW, bY);
+              grad.addColorStop(0, "#2c2c2c");
+              grad.addColorStop(1, "#333333");
+              ctx.globalAlpha = fA * 0.92;
+              ctx.fillStyle = grad;
+              rr(ctx, bX, bY, bW, bH, 18); ctx.fill();
+              ctx.globalAlpha = fA;
+              if (followBanner.avatarUrl && imageCache.has(followBanner.avatarUrl))
+                drawAvatar(ctx, imageCache.get(followBanner.avatarUrl), bX + 36, bY + 34, 22);
+              ctx.fillStyle = "#ffa500";
+              ctx.font = "bold 18px sans-serif";
+              ctx.textAlign = "left"; ctx.direction = "ltr";
+              ctx.fillText("Follow 👤", bX + 66, bY + 26);
+              ctx.font = "bold 20px sans-serif";
+              ctx.fillStyle = "#1e90ff";
+              let fn = followBanner.name;
+              if (fn.length > 20) fn = fn.substring(0, 18) + "..";
+              ctx.fillText(fn, bX + 66, bY + 52);
+              ctx.fillStyle = "#00ffff";
+              ctx.font = "bold 20px sans-serif";
+              ctx.textAlign = "right"; ctx.direction = "ltr";
+              ctx.fillText(`👥 ${followBanner.followerCount.toLocaleString()}`, bX + bW - 20, bY + 42);
+            } else { followBanner = null; }
+
+            ctx.globalAlpha = 1;
+            return canvas.toBuffer("raw");
+          }
+
+          async function renderLoop() {
+            const interval = 1000 / FPS;
+            while (true) {
+              const start = Date.now();
+              try {
+                const frame = await drawFrame();
+                await new Promise((res, rej) => {
+                  ffmpeg.stdin.write(frame, err => err ? rej(err) : res());
+                });
+              } catch(err) { console.error("Render error:", err.message); }
+              const wait = Math.max(0, interval - (Date.now() - start));
+              await new Promise(r => setTimeout(r, wait));
+            }
+          }
+
+          async function fetchImg(url) {
+            if (!url || !url.startsWith("http")) return null;
+            if (imageCache.has(url)) return imageCache.get(url);
+            try {
+              const res = await fetch(url, { timeout: 2000 });
+              if (!res.ok) return null;
+              const img = await loadImage(await res.buffer());
+              imageCache.set(url, img);
+              if (imageCache.size > 300) imageCache.delete(imageCache.keys().next().value);
+              return img;
+            } catch(e) { return null; }
+          }
+
+          function addChat(text, color, avatarUrl, badgeUrls = []) {
+            try {
+              chatEvents.unshift({ time: Date.now(), text, color, avatarUrl: avatarUrl || null, badgeUrls });
+              if (chatEvents.length > 10) chatEvents.pop();
+              if (avatarUrl) fetchImg(avatarUrl).catch(() => {});
+              badgeUrls.forEach(b => fetchImg(b).catch(() => {}));
+            } catch(e) {}
+          }
+
+          function triggerHearts() {
+            const count = Math.floor(Math.random() * 21) + 40;
+            for (let i = 0; i < count; i++) {
+              floatingHearts.push({
+                startTime: Date.now() + i * (60 + Math.random() * 80),
+                duration:  1500 + Math.random() * 1000,
+                x: (WIDTH - 220) + (Math.random() * 400 - 200),
+                y: HEIGHT - 30,
+                size:  Math.floor(Math.random() * 16) + 18,
+                color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]
+              });
+            }
+            if (floatingHearts.length > 600) floatingHearts.splice(0, count);
+          }
+
+          function updateSupporters(name, giftName, count, avatarUrl) {
+            try {
+              const ex = topSupporters.find(s => s.name === name);
+              if (ex) { ex.count += count; ex.giftName = giftName; if (avatarUrl) ex.avatarUrl = avatarUrl; }
+              else topSupporters.push({ name, giftName, count, avatarUrl: avatarUrl || null });
+              topSupporters.sort((a, b) => b.count - a.count);
+              if (topSupporters.length > 3) topSupporters = topSupporters.slice(0, 3);
+              if (avatarUrl) fetchImg(avatarUrl).catch(() => {});
+            } catch(e) {}
+          }
+
+          const tiktok = new WebcastPushConnection(TIKTOK_USER);
+
+          function connectTikTok() {
+            console.log(`Connecting to: ${TIKTOK_USER}`);
+            tiktok.connect()
+              .then(() => console.log("Connected successfully to TikTok!"))
+              .catch(err => {
+                console.error("Connection failed, retrying in 20s:", err.message);
+                setTimeout(connectTikTok, 20000);
+              });
+          }
+
+          tiktok.on("roomUser", data => {
+            if (data?.viewerCount !== undefined) viewerCount = data.viewerCount;
+          });
+
+          function handleComment(data) {
+            try {
+              const name = data.nickname || data.uniqueId || "User";
+              const text = data.comment ? data.comment.replace(/\[heart\]/g, "❤️") : "";
+              const pfp  = data.profilePictureUrl;
+              let badges = [];
+              if (data.badges?.length)
+                data.badges.forEach(b => { const u = b.url || b.image?.url; if (u) badges.push(u); });
+              if (text) addChat(`${name}: ${text}`, "#ffffff", pfp, badges);
+            } catch(e) {}
+          }
+
+          tiktok.on("comment", handleComment);
+          tiktok.on("chat",    handleComment);
+
+          tiktok.on("join", data => {
+            try {
+              const name = data.nickname || data.uniqueId || "دخل";
+              const pfp  = data.profilePictureUrl || null;
+              addChat(`✨دخل البث ${name} `, "#00ffcc", pfp, []);
+
+            } catch(e) {}
+          });
+
+          tiktok.on("follow", data => {
+            try {
+              const name  = data.nickname || data.uniqueId || "New Follower";
+              const pfp   = data.profilePictureUrl || null;
+              const count = data.followCount || 0;
+              addChat(`${name} يتابعك 👤`, "#ff9f43", pfp, []);
+              followBanner = { name, followerCount: count, avatarUrl: pfp, startTime: Date.now() };
+              if (pfp) fetchImg(pfp).catch(() => {});
+            } catch(e) {}
+          });
+
+          tiktok.on("like", data => {
+            try {
+              if (data.likeCount > 0) { totalLikes += Number(data.likeCount); triggerHearts(); }
+            } catch(e) {}
+          });
+
+          tiktok.on("gift", data => {
+            try {
+              if (data.repeatEnd) {
+                const name = data.nickname || data.uniqueId || "Supporter";
+                const pfp  = data.profilePictureUrl;
+                const giftObj = {
+                  startTime: Date.now(),
+                  nameText:  `🤍شكراً لك: ${name}`,
+                  countText: `${data.giftName} x${data.repeatCount}`,
+                  avatarUrl: pfp || null,
+                  iconImage: null
+                };
+                currentGift = giftObj;
+                updateSupporters(name, data.giftName, data.repeatCount || 1, pfp);
+                if (pfp) fetchImg(pfp).catch(() => {});
+                if (data.giftPictureUrl) {
+                  fetch(data.giftPictureUrl).then(r => r.buffer())
+                    .then(b => loadImage(b)).then(img => { if (img) giftObj.iconImage = img; })
+                    .catch(() => {});
+                }
+              }
+            } catch(e) {}
+          });
+
+          setTimeout(connectTikTok, 45000);
+          renderLoop().catch(err => { console.error("Critical:", err); process.exit(1); });
+          EOF
+
+      - name: Start Stream
+        env:
+          STREAM_KEY: ${{ secrets.STREAM_KEY }}
+        run: node overlay.js
