@@ -415,7 +415,7 @@ jobs:
           function handleComment(data) {
             try {
               const name = data.nickname || data.uniqueId || "User";
-              const text = data.comment;
+              const text = data.comment ? data.comment.replace(/\[heart\]/g, "❤️") : "";
               const pfp  = data.profilePictureUrl;
               let badges = [];
               if (data.badges?.length)
@@ -429,9 +429,10 @@ jobs:
 
           tiktok.on("join", data => {
             try {
-              const name = data.nickname || data.uniqueId || "Guest";
+              const name = data.nickname || data.uniqueId || "دخل";
               const pfp  = data.profilePictureUrl || null;
-              addChat(`+ ${name} joined`, "#00ffcc", pfp, []);
+              addChat(`✨دخل البث ${name} `, "#00ffcc", pfp, []);
+
             } catch(e) {}
           });
 
@@ -440,7 +441,7 @@ jobs:
               const name  = data.nickname || data.uniqueId || "New Follower";
               const pfp   = data.profilePictureUrl || null;
               const count = data.followCount || 0;
-              addChat(`${name} followed the host`, "#ff6b9d", pfp, []);
+              addChat(`${name} يتابعك 👤`, "#ff9f43", pfp, []);
               followBanner = { name, followerCount: count, avatarUrl: pfp, startTime: Date.now() };
               if (pfp) fetchImg(pfp).catch(() => {});
             } catch(e) {}
@@ -459,7 +460,7 @@ jobs:
                 const pfp  = data.profilePictureUrl;
                 const giftObj = {
                   startTime: Date.now(),
-                  nameText:  `★شكراً لك: ${name}`,
+                  nameText:  `🤍شكراً لك: ${name}`,
                   countText: `${data.giftName} x${data.repeatCount}`,
                   avatarUrl: pfp || null,
                   iconImage: null
