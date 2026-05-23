@@ -29,7 +29,7 @@ jobs:
         run: npm install tiktok-live-connector canvas node-fetch@2
 
       - name: Download Video
-        run: gdown 1N1u0TMftlUQ7lyz6dV2AwEhnxAmU-Ese -O video.mp4
+        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
 
       - name: Download single audio file
         run: |
@@ -55,7 +55,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          const TIKTOK_USER = "sl42t";
+          const TIKTOK_USER = "username12170432";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH  = 1280;
           const HEIGHT = 720;
