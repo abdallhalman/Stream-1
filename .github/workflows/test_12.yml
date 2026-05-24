@@ -253,7 +253,7 @@ jobs:
               if (yCursor < 80) break;
 
               const bgColor = HEART_COLORS[i % HEART_COLORS.length];
-              ctx.globalAlpha = alpha * 0.80;
+              ctx.globalAlpha = alpha * 0.50;
               ctx.fillStyle = bgColor;
               rr(ctx, CHAT_X, yCursor, CHAT_W, boxH, 8); ctx.fill();
               ctx.globalAlpha = alpha * 0.6;
@@ -314,8 +314,8 @@ jobs:
               const bX = (WIDTH - bW) / 2;
               const bY = HEIGHT - 95;
               const grad = ctx.createLinearGradient(bX, bY, bX + bW, bY);
-              grad.addColorStop(0, "#2c2c2c");
-              grad.addColorStop(1, "#333333");
+              grad.addColorStop(0, "#9d1d5d");
+              grad.addColorStop(1, "#ff6b9d");
               ctx.globalAlpha = fA * 0.92;
               ctx.fillStyle = grad;
               rr(ctx, bX, bY, bW, bH, 18); ctx.fill();
