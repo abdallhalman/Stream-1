@@ -55,7 +55,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          const TIKTOK_USER = "sl42t";
+          const TIKTOK_USER = "sal_u2";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH  = 1280;
           const HEIGHT = 720;
@@ -229,7 +229,8 @@ jobs:
                 ctx.fillText(gTxt, bx + 36, SUP_Y + 54);
               }
             }
-
+            
+            chatEvents = chatEvents.filter(e => now - e.time < 60000);
             const CHAT_X      = SUP_X;
             const CHAT_W      = SUP_W;
             const CHAT_BOTTOM = SUP_Y - 8;
@@ -243,7 +244,8 @@ jobs:
 
             for (let i = 0; i < Math.min(chatEvents.length, 10); i++) {
               const e     = chatEvents[i];
-              const alpha = 1;
+              const age   = (now - e.time) / 60000;
+              const alpha = Math.max(0, 1 - age);
               const fullText = e.text;
               ctx.font = "bold 16px sans-serif";
               const lines = wrapText(ctx, fullText, msgMaxW);
