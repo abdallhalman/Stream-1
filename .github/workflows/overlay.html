@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Stream Overlay</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            width: 1280px;
+            height: 720px;
+            background: transparent;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+        .stats-bar {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            display: flex;
+            gap: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 25px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #gift-banner-container {
+            position: absolute;
+            top: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+        .gift-banner {
+            background: linear-gradient(90deg, rgba(255,0,128,0.9) 0%, rgba(107,0,255,0.9) 100%);
+            border: 2px solid #ffffff;
+            border-radius: 50px;
+            padding: 15px 40px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            animation: bounceIn 0.5s ease-out;
+        }
+        .gift-banner img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+        }
+        .gift-text h2 { font-size: 24px; color: #fff; }
+        .gift-text p { font-size: 18px; color: #ffeb3b; font-weight: bold; }
+
+        #chat-container {
+            position: absolute;
+            bottom: 40px;
+            right: 30px;
+            width: 420px;
+            height: 420px;
+            display: flex;
+            flex-direction: column-reverse;
+            overflow: hidden;
+        }
+        .chat-msg {
+            background: rgba(15, 15, 15, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 12px;
+            border-radius: 16px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease-out;
+        }
+        .chat-msg .avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #ffbc00; }
+        .chat-msg .badge { width: 22px; height: 22px; object-fit: contain; }
+        .chat-msg .username { color: #ffbc00; font-weight: bold; font-size: 18px; }
+        .chat-msg .text { color: #ffffff; font-size: 17px; word-break: break-word; }
+
+        #join-container {
+            position: absolute;
+            bottom: 40px;
+            left: 30px;
+            width: 380px;
+            height: 420px;
+            display: flex;
+            flex-direction: column-reverse;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .join-notification {
+            background: rgba(30, 30, 30, 0.55);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 14px;
+            border-radius: 20px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            animation: slideInLeft 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), fadeOut 0.5s ease-out 3.5s forwards;
+        }
+        .join-notification .avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.5); }
+        .join-notification .info { display: flex; flex-direction: column; }
+        .join-notification .name { color: #ffffff; font-weight: 600; font-size: 16px; }
+        .join-notification .action { color: #b0b0b0; font-size: 13px; margin-top: 2px; }
+
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.3); } 50% { opacity: 0.9; transform: scale(1.1); } 80% { transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.9); max-height: 0; padding: 0; margin: 0; border: none; } }
+    </style>
+</head>
+<body>
+
+    <div class="stats-bar">
+        <div id="viewers-count">👤 0</div>
+        <div id="likes-count">❤️ 0</div>
+    </div>
+
+    <div id="gift-banner-container"></div>
+    <div id="chat-container"></div>
+    <div id="join-container"></div>
+
+    <script>
+        const ws = new WebSocket("ws://localhost:8080");
+        const chatContainer = document.getElementById("chat-container");
+        const joinContainer = document.getElementById("join-container");
+        const giftContainer = document.getElementById("gift-banner-container");
+
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            
+            if (msg.type === "viewerCount") {
+                document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
+            }
+            if (msg.type === "like") {
+                document.getElementById("likes-count").innerText = `❤️ ${msg.data.toLocaleString()}`;
+            }
+            
+            if (msg.type === "comment") {
+                const msgDiv = document.createElement("div");
+                msgDiv.className = "chat-msg";
+                let badgesHtml = "";
+                msg.data.badges.forEach(url => { badgesHtml += `<img class="badge" src="${url}">`; });
+                msgDiv.innerHTML = `
+                    <img class="avatar" src="${msg.data.avatar || 'https://www.tiktok.com/favicon.ico'}">
+                    <div class="msg-content">
+                        <span class="username">${msg.data.name}</span>
+                        ${badgesHtml}
+                        <span class="text">: ${msg.data.text}</span>
+                    </div>
+                `;
+                chatContainer.prepend(msgDiv);
+                if (chatContainer.children.length > 15) { chatContainer.removeChild(chatContainer.lastChild); }
+            }
+
+            if (msg.type === "join") {
+                const joinDiv = document.createElement("div");
+                joinDiv.className = "join-notification";
+                joinDiv.innerHTML = `
+                    <img class="avatar" src="${msg.data.avatar || 'https://www.tiktok.com/favicon.ico'}">
+                    <div class="info">
+                        <span class="name">${msg.data.name}</span>
+                        <span class="action">انضم إلى البث الآن ✨</span>
+                    </div>
+                `;
+                joinContainer.prepend(joinDiv);
+                setTimeout(() => { if (joinDiv.parentNode) { joinContainer.removeChild(joinDiv); } }, 4000);
+            }
+
+            if (msg.type === "gift") {
+                giftContainer.innerHTML = `
+                    <div class="gift-banner">
+                        <img src="${msg.data.avatar || 'https://www.tiktok.com/favicon.ico'}">
+                        <div class="gift-text">
+                            <h2>🤍 شكراً لك: ${msg.data.name}</h2>
+                            <p>أرسل ${msg.data.giftName} x${msg.data.count}</p>
+                        </div>
+                    </div>
+                `;
+                setTimeout(() => { giftContainer.innerHTML = ""; }, 5000);
+            }
+        };
+    </script>
+</body>
+</html>
+
