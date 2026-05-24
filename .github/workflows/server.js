@@ -102,47 +102,54 @@ async function startPuppeteer() {
 
 startPuppeteer();
 
+// 1. Room Stats Only
 tiktok.on("roomUser", data => { 
-    if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
-    
-    const user = data?.data || data;
-    if (user?.uniqueId) {
+    if (data?.viewerCount !== undefined) {
+        sendToOverlay("viewerCount", data.viewerCount); 
+    }
+});
+
+// 2. Correct Join Event (member)
+tiktok.on("member", data => {
+    if (data?.uniqueId) {
         sendToOverlay("join", {
-            name: user.nickname || user.uniqueId,
-            avatar: user.profilePictureUrl
+            name: data.nickname || data.uniqueId,
+            avatar: data.profilePictureUrl
         });
     }
 });
 
+// 3. Like Event & Trigger Hearts
 tiktok.on("like", data => { 
     if (data.likeCount > 0) {
         totalLikes += Number(data.likeCount);
         sendToOverlay("like", totalLikes); 
+        sendToOverlay("triggerHearts", data.likeCount);
     }
 });
 
+// 4. Correct Chat Event (Direct mapping)
 tiktok.on("comment", data => {
-    const msg = data?.data || data;
-    if (msg?.comment) {
-        console.log(`[TikTok Event] New Comment from ${msg.uniqueId}: ${msg.comment}`);
+    if (data?.comment) {
+        const badgesArr = data.badges?.map(b => b.url || b.image?.url).filter(Boolean) || [];
         sendToOverlay("comment", {
-            name: msg.nickname || msg.uniqueId,
-            text: msg.comment,
-            avatar: msg.profilePictureUrl,
-            badges: msg.badges?.map(b => b.url || b.image?.url).filter(Boolean) || []
+            name: data.nickname || data.uniqueId,
+            text: data.comment,
+            avatar: data.profilePictureUrl,
+            badges: badgesArr
         });
     }
 });
 
+// 5. Gift Event (Instant transmission)
 tiktok.on("gift", data => {
-    const gift = data?.data || data;
-    if (gift?.repeatEnd) {
+    if (data?.giftName) {
         sendToOverlay("gift", {
-            name: gift.nickname || gift.uniqueId,
-            giftName: gift.giftName,
-            count: gift.repeatCount,
-            avatar: gift.profilePictureUrl
+            name: data.nickname || data.uniqueId,
+            giftName: data.giftName,
+            count: data.repeatCount || 1,
+            avatar: data.profilePictureUrl
         });
     }
 });
-        
+          
