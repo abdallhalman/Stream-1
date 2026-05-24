@@ -16,6 +16,7 @@
             background-color: rgba(0, 0, 0, 0) !important;
             overflow: hidden;
             position: relative;
+            font-family: sans-serif;
         }
         .stats-bar {
             position: absolute;
@@ -25,11 +26,14 @@
             gap: 20px;
             font-size: 22px;
             font-weight: bold;
-            color: #ffffff;
-            background: rgba(0, 0, 0, 0.6);
+            color: #ffffff !important;
+            background: rgba(0, 0, 0, 0.75) !important;
             padding: 10px 25px;
             border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            z-index: 9999;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
         #gift-banner-container {
             position: absolute;
@@ -42,88 +46,86 @@
             justify-content: center;
             align-items: center;
             pointer-events: none;
+            z-index: 9999;
         }
         .gift-banner {
-            background: linear-gradient(90deg, rgba(255,0,128,0.9) 0%, rgba(107,0,255,0.9) 100%);
-            border: 2px solid #ffffff;
+            background: linear-gradient(90deg, #ff0080 0%, #6b00ff 100%) !important;
+            border: 3px solid #ffffff !important;
             border-radius: 50px;
             padding: 15px 40px;
-            color: white;
+            color: #ffffff !important;
             display: flex;
             align-items: center;
             gap: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            animation: bounceIn 0.5s ease-out;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            opacity: 1 !important;
         }
         .gift-banner img {
             width: 50px;
             height: 50px;
             border-radius: 50%;
         }
-        .gift-text h2 { font-size: 24px; color: #fff; }
-        .gift-text p { font-size: 18px; color: #ffeb3b; font-weight: bold; }
+        .gift-text h2 { font-size: 24px; color: #ffffff !important; }
+        .gift-text p { font-size: 18px; color: #ffeb3b !important; font-weight: bold; }
 
         #chat-container {
             position: absolute;
             bottom: 40px;
             right: 30px;
-            width: 420px;
-            height: 420px;
+            width: 450px;
+            height: 450px;
             display: flex;
             flex-direction: column-reverse;
             overflow: hidden;
+            z-index: 9999;
         }
         .chat-msg {
-            background: rgba(15, 15, 15, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            padding: 12px;
+            background: rgba(10, 10, 10, 0.85) !important;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff !important;
+            padding: 14px;
             border-radius: 16px;
             margin-top: 10px;
             display: flex;
             align-items: center;
             gap: 12px;
-            animation: slideInRight 0.3s ease-out;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
-        .chat-msg .avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #ffbc00; }
+        .chat-msg .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ffbc00; }
         .chat-msg .badge { width: 22px; height: 22px; object-fit: contain; }
-        .chat-msg .username { color: #ffbc00; font-weight: bold; font-size: 18px; }
-        .chat-msg .text { color: #ffffff; font-size: 17px; word-break: break-word; }
+        .chat-msg .username { color: #ffbc00 !important; font-weight: bold; font-size: 18px; }
+        .chat-msg .text { color: #ffffff !important; font-size: 18px; word-break: break-word; }
 
         #join-container {
             position: absolute;
             bottom: 40px;
             left: 30px;
             width: 380px;
-            height: 420px;
+            height: 450px;
             display: flex;
             flex-direction: column-reverse;
             overflow: hidden;
             pointer-events: none;
+            z-index: 9999;
         }
         .join-notification {
-            background: rgba(30, 30, 30, 0.55);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(20, 20, 20, 0.8) !important;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             padding: 14px;
             border-radius: 20px;
             margin-top: 10px;
             display: flex;
             align-items: center;
             gap: 15px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            animation: slideInLeft 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), fadeOut 0.5s ease-out 3.5s forwards;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            opacity: 1 !important;
+            visibility: visible !important;
         }
-        .join-notification .avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.5); }
+        .join-notification .avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ffffff; }
         .join-notification .info { display: flex; flex-direction: column; }
-        .join-notification .name { color: #ffffff; font-weight: 600; font-size: 16px; }
-        .join-notification .action { color: #b0b0b0; font-size: 13px; margin-top: 2px; }
-
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.3); } 50% { opacity: 0.9; transform: scale(1.1); } 80% { transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.9); max-height: 0; padding: 0; margin: 0; border: none; } }
+        .join-notification .name { color: #ffffff !important; font-weight: bold; font-size: 16px; }
+        .join-notification .action { color: #e0e0e0 !important; font-size: 14px; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -143,17 +145,20 @@
         const joinContainer = document.getElementById("join-container");
         const giftContainer = document.getElementById("gift-banner-container");
 
+        ws.onopen = () => { console.log("HTML Webcast Connected to WebSocket Server Successfully."); };
+
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             
-            if (msg.type === "viewerCount" && msg.data) {
+            if (msg.type === "viewerCount" && msg.data !== undefined) {
                 document.getElementById("viewers-count").innerText = `👤 ${Number(msg.data).toLocaleString()}`;
             }
-            if (msg.type === "like" && msg.data) {
+            if (msg.type === "like" && msg.data !== undefined) {
                 document.getElementById("likes-count").innerText = `❤️ ${Number(msg.data).toLocaleString()}`;
             }
             
             if (msg.type === "comment" && msg.data) {
+                console.log("HTML Received Comment:", msg.data.text);
                 const msgDiv = document.createElement("div");
                 msgDiv.className = "chat-msg";
                 let badgesHtml = "";
@@ -173,6 +178,7 @@
             }
 
             if (msg.type === "join" && msg.data) {
+                console.log("HTML Received Join:", msg.data.name);
                 const joinDiv = document.createElement("div");
                 joinDiv.className = "join-notification";
                 joinDiv.innerHTML = `
@@ -183,10 +189,11 @@
                     </div>
                 `;
                 joinContainer.prepend(joinDiv);
-                setTimeout(() => { if (joinDiv.parentNode) { joinContainer.removeChild(joinDiv); } }, 4000);
+                setTimeout(() => { if (joinDiv.parentNode) { joinContainer.removeChild(joinDiv); } }, 6000);
             }
 
             if (msg.type === "gift" && msg.data) {
+                console.log("HTML Received Gift:", msg.data.giftName);
                 giftContainer.innerHTML = `
                     <div class="gift-banner">
                         <img src="${msg.data.avatar || 'https://www.tiktok.com/favicon.ico'}">
