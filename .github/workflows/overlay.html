@@ -2,208 +2,223 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Interactive TikTok Overlay</title>
+    <title>TikTok Live Overlay</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
             width: 1280px;
             height: 720px;
-            background: transparent;
+            background-color: transparent;
             overflow: hidden;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             position: relative;
         }
 
-        /* Stats Area */
         #stats-container {
             position: absolute;
             top: 20px;
             right: 20px;
             display: flex;
             gap: 15px;
-        }
-        .stat-box {
-            background: rgba(17, 17, 17, 0.85);
-            color: #ffffff;
+            background: rgba(0, 0, 0, 0.6);
             padding: 10px 20px;
             border-radius: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
             font-size: 18px;
             font-weight: bold;
+        }
+        .stat-box {
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-        #viewer-box { border-left: 4px solid #00ffcc; }
-        #likes-box { border-left: 4px solid #ff4444; }
+        .heart-icon { color: #ff2b55; }
+        .user-icon { color: #00f2fe; }
 
-        /* Chat Stream Area */
         #chat-container {
             position: absolute;
-            bottom: 100px;
-            left: 20px;
-            width: 420px;
-            height: 400px;
+            bottom: 30px;
+            left: 30px;
+            width: 450px;
+            height: 380px;
             display: flex;
-            flex-direction: column-reverse;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 10px;
             overflow: hidden;
-            gap: 8px;
         }
-        .chat-msg {
-            background: rgba(26, 15, 46, 0.88);
-            border: 1px solid rgba(192, 132, 252, 0.5);
-            padding: 10px;
-            border-radius: 12px;
+
+        .chat-card {
             display: flex;
             align-items: center;
-            gap: 10px;
-            animation: fadeIn 0.3s ease-out forwards;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(5px);
+            padding: 10px 15px;
+            border-radius: 15px;
+            animation: slideIn 0.4s ease-out forwards;
             max-width: 100%;
+            border-left: 4px solid #00f2fe;
         }
-        .chat-avatar {
-            width: 30px;
-            height: 30px;
+        .chat-card.join-card {
+            border-left: 4px solid #25d366;
+            background: rgba(0, 50, 0, 0.6);
+        }
+        .avatar {
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
+            border: 2px solid #fff;
             object-fit: cover;
         }
-        .badge-img {
-            height: 16px;
-            object-fit: contain;
+        .text-content {
+            display: flex;
+            flex-direction: column;
+            color: white;
         }
-        .chat-content {
-            color: #ffffff;
+        .username {
             font-size: 15px;
             font-weight: bold;
-            word-break: break-word;
-            line-height: 1.4;
+            color: #ff2b55;
         }
-        .user-name { color: #00ffff; margin-right: 5px; }
+        .join-card .username {
+            color: #25d366;
+        }
+        .message {
+            font-size: 16px;
+            margin-top: 2px;
+            word-break: break-word;
+            color: #ffffff;
+        }
 
-        /* Floating Hearts Engine Styles */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        #hearts-fly-zone {
+            position: absolute;
+            bottom: 0;
+            right: 50px;
+            width: 150px;
+            height: 500px;
+            pointer-events: none;
+        }
         .floating-heart {
             position: absolute;
-            bottom: 30px;
-            right: 120px;
+            bottom: 0;
             font-size: 24px;
-            user-select: none;
-            pointer-events: none;
-            z-index: 999;
-            animation: flyUp 2s linear forwards;
+            animation: flyUp 3s linear forwards;
+            opacity: 0;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         @keyframes flyUp {
-            0% {
-                opacity: 1;
-                transform: translateY(0) scale(0.8) translateX(0);
-            }
-            50% {
-                transform: translateY(-300px) scale(1.2) translateX(var(--wobble));
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-600px) scale(0.8) translateX(calc(var(--wobble) * 2));
-            }
+            0% { transform: translateY(0) scale(0.5) translateX(0); opacity: 0; }
+            10% { opacity: 1; transform: translateY(-50px) scale(1.2); }
+            100% { transform: translateY(-500px) scale(0.8) translateX(var(--random-x)); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
     <div id="stats-container">
-        <div id="viewer-box" class="stat-box">👥 LIVE: <span id="viewer-count">0</span></div>
-        <div id="likes-box" class="stat-box">❤️ LIKES: <span id="likes-count">0</span></div>
+        <div class="stat-box">
+            <span class="user-icon">👤</span>
+            <span id="viewer-count">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="heart-icon">❤️</span>
+            <span id="like-count">0</span>
+        </div>
     </div>
 
     <div id="chat-container"></div>
 
-    <script>
-        const ws = new WebSocket("ws://localhost:8080");
-        const chatContainer = document.getElementById("chat-container");
-        const viewerCountEl = document.getElementById("viewer-count");
-        const likesCountEl = document.getElementById("likes-count");
+    <div id="hearts-fly-zone"></div>
 
-        ws.onopen = () => {
-            console.log("HTML Webcast Connected to WebSocket Server Successfully.");
-        };
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const viewerCountEl = document.getElementById('viewer-count');
+        const likeCountEl = document.getElementById('like-count');
+        const heartsZone = document.getElementById('hearts-fly-zone');
+
+        const eventQueue = [];
+        const MAX_VISIBLE_CARDS = 6; 
+        const DISPLAY_INTERVAL = 1200; 
+
+        const ws = new WebSocket('ws://localhost:8080');
+
+        ws.onopen = () => console.log('Connected to Server Data Stream!');
+        ws.onclose = () => console.log('Data Stream Closed.');
 
         ws.onmessage = (event) => {
-            const pack = JSON.parse(event.data);
-            const type = pack.type;
-            const data = pack.data;
-
-            if (type === "viewerCount") {
-                viewerCountEl.innerText = Number(data).toLocaleString();
-            }
-            else if (type === "like") {
-                likesCountEl.innerText = Number(data).toLocaleString();
-            }
-            else if (type === "triggerHearts") {
-                spawnHearts(data);
-            }
-            else if (type === "comment") {
-                addGenericRow(data.avatar, data.name, data.text, data.badges);
-            }
-            else if (type === "join") {
-                addGenericRow(data.avatar, data.name, "joined the live chat ✨", [], "#00ffcc");
-            }
-            else if (type === "gift") {
-                addGenericRow(data.avatar, data.name, `sent ${data.giftName} x${data.count} 🎁`, [], "#ffa500");
+            const packet = JSON.parse(event.data);
+            
+            if (packet.type === 'viewerCount') {
+                viewerCountEl.textContent = Number(packet.data.viewerCount).toLocaleString();
+            } 
+            else if (packet.type === 'like') {
+                likeCountEl.textContent = Number(packet.data.totalLikeCount).toLocaleString();
+                createFloatingHeart(); 
+            } 
+            else if (packet.type === 'comment' || packet.type === 'join') {
+                eventQueue.push({ type: packet.type, data: packet.data });
             }
         };
 
-        function addGenericRow(avatarUrl, name, text, badges = [], textColor = "#ffffff") {
-            const div = document.createElement("div");
-            div.className = "chat-msg";
-            if (textColor !== "#ffffff") {
-                div.style.borderColor = textColor;
+        setInterval(() => {
+            if (eventQueue.length > 0) {
+                const nextEvent = eventQueue.shift();
+                
+                if (eventQueue.length > 30) {
+                    eventQueue.splice(0, eventQueue.length - 10);
+                }
+
+                renderCard(nextEvent);
             }
+        }, DISPLAY_INTERVAL);
 
-            // Safe Avatar Injection
-            const imgUrl = avatarUrl || "https://www.tiktok.com/favicon.ico";
-            let htmlString = `<img class="chat-avatar" src="${imgUrl}" onerror="this.src='https://www.tiktok.com/favicon.ico'">`;
+        function renderCard(eventItem) {
+            const card = document.createElement('div');
+            card.className = `chat-card ${eventItem.type === 'join' ? 'join-card' : ''}`;
 
-            // Safe Badges Injection
-            if (Array.isArray(badges)) {
-                badges.forEach(bUrl => {
-                    if (bUrl) htmlString += `<img class="badge-img" src="${bUrl}">`;
-                });
-            }
+            const avatarUrl = eventItem.data.profilePictureUrl || 'https://www.tiktok.com/favicon.ico';
+            const name = eventItem.data.nickname || eventItem.data.uniqueId;
+            const messageText = eventItem.type === 'join' ? 'joined the live' : eventItem.data.comment;
 
-            htmlString += `<div class="chat-content"><span class="user-name" style="color:${textColor === '#ffffff' ? '#00ffff' : textColor}">${name}:</span>${text}</div>`;
-            div.innerHTML = htmlString;
+            card.innerHTML = `
+                <img class="avatar" src="${avatarUrl}" onerror="this.src='https://www.tiktok.com/favicon.ico'">
+                <div class="text-content">
+                    <span class="username">${name}</span>
+                    <span class="message">${messageText}</span>
+                </div>
+            `;
 
-            chatContainer.insertBefore(div, chatContainer.firstChild);
+            chatContainer.appendChild(card);
 
-            if (chatContainer.children.length > 10) {
-                chatContainer.removeChild(chatContainer.lastChild);
+            const currentCards = chatContainer.getElementsByClassName('chat-card');
+            if (currentCards.length > MAX_VISIBLE_CARDS) {
+                chatContainer.removeChild(currentCards[0]);
             }
         }
 
-        function spawnHearts(count) {
-            const maxHearts = Math.min(count, 15); 
-            for (let i = 0; i < maxHearts; i++) {
-                setTimeout(() => {
-                    const heart = document.createElement("div");
-                    heart.className = "floating-heart";
-                    heart.innerText = "❤️";
-                    
-                    const wobble = (Math.random() * 120 - 60) + "px";
-                    const randomX = (Math.random() * 80 - 40) + "px";
-                    
-                    heart.style.setProperty('--wobble', wobble);
-                    heart.style.right = `calc(120px + ${randomX})`;
-                    
-                    document.body.appendChild(heart);
-                    
-                    heart.addEventListener("animationend", () => {
-                        heart.remove();
-                    });
-                }, i * 100);
-            }
+        function createFloatingHeart() {
+            const heart = document.createElement('div');
+            heart.className = 'floating-heart';
+            const heartTypes = ['❤️', '💖', '💝', '💕', '💗'];
+            heart.textContent = heartTypes[Math.floor(Math.random() * heartTypes.length)];
+            
+            const randomX = (Math.random() * 100 - 50) + 'px';
+            heart.style.setProperty('--random-x', randomX);
+            heart.style.left = Math.random() * 80 + 'px';
+
+            heartsZone.appendChild(heart);
+
+            setTimeout(() => heart.remove(), 3000);
         }
     </script>
 </body>
