@@ -4,7 +4,7 @@ const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const path = require("path");
 
-const TIKTOK_USER = "alhadath";
+const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -22,7 +22,7 @@ wss.on("connection", (ws) => {
 
 function sendToOverlay(type, data) {
     if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-        wsClient.send(JSON.stringify({ type, data }));
+        wsClient.send(JSON.stringify({ type, data: JSON.parse(JSON.stringify(data)) }));
     }
 }
 
@@ -74,7 +74,7 @@ const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
 tiktok.on("roomUser", data => { 
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
-    if (data?.nickname || data?.uniqueId) {
+    if (data?.uniqueId) {
         sendToOverlay("join", {
             name: data.nickname || data.uniqueId,
             avatar: data.profilePictureUrl
@@ -90,12 +90,14 @@ tiktok.on("like", data => {
 });
 
 tiktok.on("comment", data => {
-    sendToOverlay("comment", {
-        name: data.nickname || data.uniqueId,
-        text: data.comment,
-        avatar: data.profilePictureUrl,
-        badges: data.badges?.map(b => b.url || b.image?.url).filter(Boolean) || []
-    });
+    if (data.comment) {
+        sendToOverlay("comment", {
+            name: data.nickname || data.uniqueId,
+            text: data.comment,
+            avatar: data.profilePictureUrl,
+            badges: data.badges?.map(b => b.url || b.image?.url).filter(Boolean) || []
+        });
+    }
 });
 
 tiktok.on("gift", data => {
@@ -112,3 +114,4 @@ tiktok.on("gift", data => {
 tiktok.connect().then(() => console.log("Connected TikTok")).catch(e => console.error(e));
 
 setTimeout(startPuppeteer, 5000);
+            
