@@ -87,11 +87,13 @@ jobs:
           const rndVol    = (0.95 + Math.random() * 0.10).toFixed(3);
 
           const ffmpeg = spawn("ffmpeg", [
+            "-thread_queue_size", "1024",
             "-f", "rawvideo",
             "-pixel_format", "bgra",
             "-video_size", `${WIDTH}x${HEIGHT}`,
             "-framerate", `${FPS}`,
             "-i", "pipe:0",
+            "-thread_queue_size", "1024",
             "-stream_loop", "-1", "-re", "-i", "video.mp4",
             "-stream_loop", "-1", "-re", "-i", "merged_audio.mp3",
             "-filter_complex", `[1:v]crop=${WIDTH-rndCrop}:${HEIGHT-rndCrop}:${rndX}:${rndY},scale=${WIDTH}:${HEIGHT},eq=brightness=${rndBright}:contrast=1.0[v1];[v1][0:v]overlay=0:0[v];[2:a]atempo=${rndPitch},volume=${rndVol}[a]`,
