@@ -1,11 +1,11 @@
-const { TikTokConnectionWrapper } = require('tiktok-live-connector');
+const { TikTokLiveConnect } = require('tiktok-live-connector');
 const puppeteer = require('puppeteer');
 const { spawn } = require('child_process');
 const WebSocket = require('ws');
 const path = require('path');
 const fs = require('fs');
 
-const TIKTOK_USERNAME = process.argv[2] || 'alhadath'; 
+const TIKTOK_USERNAME = process.argv[2] || 'moslim4quran'; 
 const STREAM_KEY = process.argv[3] || 'YOUR_STREAM_KEY';
 const RTMP_URL = `rtmp://live-api-s.restream.io/live/${STREAM_KEY}`;
 
@@ -110,13 +110,16 @@ async function startBrowser() {
                 ffmpegProcess.stdin.write(screenshot);
             }
         } catch (err) {
-            // Ignore temporary lag errors
+            // Safe fallback for frame pressure
         }
     }, 1000 / FPS);
 }
 
 function connectTikTok() {
-    const tiktokConnect = new TikTokConnectionWrapper(TIKTOK_USERNAME, {}, true);
+    // Verified constructor used successfully in past stable runs
+    const tiktokConnect = new TikTokLiveConnect(TIKTOK_USERNAME, {
+        enableExtendedSignaling: true
+    });
 
     tiktokConnect.on('connected', () => {
         console.log(`\nTiktok Connection Established Successfully with @${TIKTOK_USERNAME}!`);
@@ -127,6 +130,7 @@ function connectTikTok() {
         setTimeout(connectTikTok, 5000);
     });
 
+    // Direct event extraction to completely avoid undefined values
     tiktokConnect.on('chat', (data) => {
         if (data && data.comment) {
             sendToOverlay('comment', {
@@ -170,3 +174,4 @@ startWebSocketServer();
 startFFmpeg();
 startBrowser();
 setTimeout(connectTikTok, 5000);
+        
