@@ -22,7 +22,7 @@ wss.on("connection", (ws) => {
 
 function sendToOverlay(type, data) {
     if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-        wsClient.send(JSON.stringify({ type, data: JSON.parse(JSON.stringify(data)) }));
+        wsClient.send(JSON.stringify({ type, data }));
     }
 }
 
@@ -74,10 +74,12 @@ const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
 tiktok.on("roomUser", data => { 
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
-    if (data?.uniqueId) {
+    
+    const user = data?.data || data;
+    if (user?.uniqueId) {
         sendToOverlay("join", {
-            name: data.nickname || data.uniqueId,
-            avatar: data.profilePictureUrl
+            name: user.nickname || user.uniqueId,
+            avatar: user.profilePictureUrl
         });
     }
 });
@@ -90,23 +92,25 @@ tiktok.on("like", data => {
 });
 
 tiktok.on("comment", data => {
-    if (data.comment) {
+    const msg = data?.data || data;
+    if (msg?.comment) {
         sendToOverlay("comment", {
-            name: data.nickname || data.uniqueId,
-            text: data.comment,
-            avatar: data.profilePictureUrl,
-            badges: data.badges?.map(b => b.url || b.image?.url).filter(Boolean) || []
+            name: msg.nickname || msg.uniqueId,
+            text: msg.comment,
+            avatar: msg.profilePictureUrl,
+            badges: msg.badges?.map(b => b.url || b.image?.url).filter(Boolean) || []
         });
     }
 });
 
 tiktok.on("gift", data => {
-    if (data.repeatEnd) {
+    const gift = data?.data || data;
+    if (gift?.repeatEnd) {
         sendToOverlay("gift", {
-            name: data.nickname || data.uniqueId,
-            giftName: data.giftName,
-            count: data.repeatCount,
-            avatar: data.profilePictureUrl
+            name: gift.nickname || gift.uniqueId,
+            giftName: gift.giftName,
+            count: gift.repeatCount,
+            avatar: gift.profilePictureUrl
         });
     }
 });
@@ -114,4 +118,4 @@ tiktok.on("gift", data => {
 tiktok.connect().then(() => console.log("Connected TikTok")).catch(e => console.error(e));
 
 setTimeout(startPuppeteer, 5000);
-            
+        
