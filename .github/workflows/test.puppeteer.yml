@@ -16,17 +16,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg \
-            libgconf-2-4 \
-            libatk1.0-0 \
-            libatk-bridge2.0-0 \
-            libgdk-pixbuf2.0-0 \
-            libgtk-3-0 \
-            libgbm-dev \
+            fonts-noto-color-emoji \
+            curl \
+            libgbm1 \
+            libasound2t64 \
             libnss3 \
             libxss1 \
-            libasound2 \
-            fonts-noto-color-emoji \
-            curl
+            libgtk-3-0 \
+            libatk-bridge2.0-0 \
+            libgdk-pixbuf2.0-0
 
       - name: Install Python tools
         run: pip install gdown
@@ -51,4 +49,3 @@ jobs:
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
         run: node server.js
-
