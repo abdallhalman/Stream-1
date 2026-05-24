@@ -4,7 +4,7 @@ const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const path = require("path");
 
-const TIKTOK_USER = "livequranchannel";
+const TIKTOK_USER = "alhadath";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -31,7 +31,7 @@ const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 
 const ffmpeg = spawn("ffmpeg", [
     "-f", "image2pipe",
-    "-vcodec", "mjpeg",
+    "-vcodec", "png",
     "-framerate", `${FPS}`,
     "-i", "pipe:0",
     "-stream_loop", "-1", "-re", "-i", videoPath,
@@ -62,7 +62,7 @@ async function startPuppeteer() {
 
     setInterval(async () => {
         try {
-            const screenshot = await page.screenshot({ type: 'jpeg', quality: 90 });
+            const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
             if (ffmpeg.stdin.writable) {
                 ffmpeg.stdin.write(screenshot);
             }
