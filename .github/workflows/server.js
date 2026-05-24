@@ -22,7 +22,7 @@ wss.on("connection", (ws) => {
 
 function sendToOverlay(type, data) {
     if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-        wsClient.send(JSON.stringify({ type, data }));
+        wsClient.send(JSON.stringify({ type, data: JSON.parse(JSON.stringify(data)) }));
     }
 }
 
@@ -57,6 +57,9 @@ async function startPuppeteer() {
     const page = await browser.newPage();
     await page.setViewport({ width: WIDTH, height: HEIGHT });
     
+    // طباعة أي خطأ أو رسالة تخرج من داخل صفحة الـ HTML إلى سجل الجيت هوب
+    page.on('console', msg => console.log('HTML PAGE LOG:', msg.text()));
+
     const htmlPath = path.join(__dirname, 'overlay.html');
     await page.goto(`file://${htmlPath}`);
 
@@ -77,6 +80,7 @@ tiktok.on("roomUser", data => {
     
     const user = data?.data || data;
     if (user?.uniqueId) {
+        console.log(`[TikTok Event] User Joined: ${user.uniqueId}`);
         sendToOverlay("join", {
             name: user.nickname || user.uniqueId,
             avatar: user.profilePictureUrl
@@ -94,6 +98,7 @@ tiktok.on("like", data => {
 tiktok.on("comment", data => {
     const msg = data?.data || data;
     if (msg?.comment) {
+        console.log(`[TikTok Event] New Comment from ${msg.uniqueId}: ${msg.comment}`);
         sendToOverlay("comment", {
             name: msg.nickname || msg.uniqueId,
             text: msg.comment,
@@ -106,6 +111,7 @@ tiktok.on("comment", data => {
 tiktok.on("gift", data => {
     const gift = data?.data || data;
     if (gift?.repeatEnd) {
+        console.log(`[TikTok Event] Gift Received: ${gift.giftName} x${gift.repeatCount} from ${gift.uniqueId}`);
         sendToOverlay("gift", {
             name: gift.nickname || gift.uniqueId,
             giftName: gift.giftName,
@@ -118,4 +124,3 @@ tiktok.on("gift", data => {
 tiktok.connect().then(() => console.log("Connected TikTok")).catch(e => console.error(e));
 
 setTimeout(startPuppeteer, 5000);
-        
