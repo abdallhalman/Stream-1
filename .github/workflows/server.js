@@ -4,7 +4,7 @@ const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const path = require("path");
 
-const TIKTOK_USER = "alhadath";
+const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -22,7 +22,11 @@ wss.on("connection", (ws) => {
 
 function sendToOverlay(type, data) {
     if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-        wsClient.send(JSON.stringify({ type, data: JSON.parse(JSON.stringify(data)) }));
+        try {
+            wsClient.send(JSON.stringify({ type, data }));
+        } catch (e) {
+            console.error("Error sending to overlay:", e);
+        }
     }
 }
 
@@ -48,6 +52,27 @@ const ffmpeg = spawn("ffmpeg", [
 
 ffmpeg.stderr.on("data", d => process.stderr.write(d));
 
+const tiktok = new WebcastPushConnection(TIKTOK_USER);
+
+function connectToTikTok() {
+    if (tiktok.connected) return;
+
+    console.log("Attempting to connect to TikTok Live...");
+    tiktok.connect()
+        .then(() => {
+            console.log("TikTok Connection Established Successfully!");
+        })
+        .catch(e => {
+            console.error("TikTok Connection Failed. Retrying in 15 seconds...", e.message);
+            setTimeout(connectToTikTok, 15000);
+        });
+}
+
+tiktok.on("disconnected", () => {
+    console.warn("TikTok disconnected! Reconnecting in 15 seconds...");
+    setTimeout(connectToTikTok, 15000);
+});
+
 async function startPuppeteer() {
     const browser = await puppeteer.launch({
         headless: true,
@@ -57,7 +82,6 @@ async function startPuppeteer() {
     const page = await browser.newPage();
     await page.setViewport({ width: WIDTH, height: HEIGHT });
     
-    // طباعة أي خطأ أو رسالة تخرج من داخل صفحة الـ HTML إلى سجل الجيت هوب
     page.on('console', msg => console.log('HTML PAGE LOG:', msg.text()));
 
     const htmlPath = path.join(__dirname, 'overlay.html');
@@ -65,22 +89,24 @@ async function startPuppeteer() {
 
     setInterval(async () => {
         try {
-            const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
             if (ffmpeg.stdin.writable) {
+                const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
                 ffmpeg.stdin.write(screenshot);
             }
         } catch (e) {}
     }, 1000 / FPS);
+
+    console.log("Waiting 45 seconds for stream stability before connecting to TikTok...");
+    setTimeout(connectToTikTok, 45000);
 }
 
-const tiktok = new WebcastPushConnection(TIKTOK_USER);
+startPuppeteer();
 
 tiktok.on("roomUser", data => { 
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
     
     const user = data?.data || data;
     if (user?.uniqueId) {
-        console.log(`[TikTok Event] User Joined: ${user.uniqueId}`);
         sendToOverlay("join", {
             name: user.nickname || user.uniqueId,
             avatar: user.profilePictureUrl
@@ -111,7 +137,6 @@ tiktok.on("comment", data => {
 tiktok.on("gift", data => {
     const gift = data?.data || data;
     if (gift?.repeatEnd) {
-        console.log(`[TikTok Event] Gift Received: ${gift.giftName} x${gift.repeatCount} from ${gift.uniqueId}`);
         sendToOverlay("gift", {
             name: gift.nickname || gift.uniqueId,
             giftName: gift.giftName,
@@ -120,7 +145,4 @@ tiktok.on("gift", data => {
         });
     }
 });
-
-tiktok.connect().then(() => console.log("Connected TikTok")).catch(e => console.error(e));
-
-setTimeout(startPuppeteer, 5000);
+        
