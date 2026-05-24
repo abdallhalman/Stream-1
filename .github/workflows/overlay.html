@@ -146,18 +146,20 @@
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             
-            if (msg.type === "viewerCount") {
-                document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
+            if (msg.type === "viewerCount" && msg.data) {
+                document.getElementById("viewers-count").innerText = `👤 ${Number(msg.data).toLocaleString()}`;
             }
-            if (msg.type === "like") {
-                document.getElementById("likes-count").innerText = `❤️ ${msg.data.toLocaleString()}`;
+            if (msg.type === "like" && msg.data) {
+                document.getElementById("likes-count").innerText = `❤️ ${Number(msg.data).toLocaleString()}`;
             }
             
-            if (msg.type === "comment") {
+            if (msg.type === "comment" && msg.data) {
                 const msgDiv = document.createElement("div");
                 msgDiv.className = "chat-msg";
                 let badgesHtml = "";
-                msg.data.badges.forEach(url => { badgesHtml += `<img class="badge" src="${url}">`; });
+                if (Array.isArray(msg.data.badges)) {
+                    msg.data.badges.forEach(url => { badgesHtml += `<img class="badge" src="${url}">`; });
+                }
                 msgDiv.innerHTML = `
                     <img class="avatar" src="${msg.data.avatar || 'https://www.tiktok.com/favicon.ico'}">
                     <div class="msg-content">
@@ -170,7 +172,7 @@
                 if (chatContainer.children.length > 15) { chatContainer.removeChild(chatContainer.lastChild); }
             }
 
-            if (msg.type === "join") {
+            if (msg.type === "join" && msg.data) {
                 const joinDiv = document.createElement("div");
                 joinDiv.className = "join-notification";
                 joinDiv.innerHTML = `
@@ -184,7 +186,7 @@
                 setTimeout(() => { if (joinDiv.parentNode) { joinContainer.removeChild(joinDiv); } }, 4000);
             }
 
-            if (msg.type === "gift") {
+            if (msg.type === "gift" && msg.data) {
                 giftContainer.innerHTML = `
                     <div class="gift-banner">
                         <img src="${msg.data.avatar || 'https://www.tiktok.com/favicon.ico'}">
