@@ -26,14 +26,16 @@ function sendToOverlay(type, data) {
     }
 }
 
+const videoPath = path.join(__dirname, '../../video.mp4');
+const audioPath = path.join(__dirname, '../../merged_audio.mp3');
+
 const ffmpeg = spawn("ffmpeg", [
-    "-f", "rawvideo",
-    "-pixel_format", "rgba",
-    "-video_size", `${WIDTH}x${HEIGHT}`,
+    "-f", "image2pipe",
+    "-vcodec", "mjpeg",
     "-framerate", `${FPS}`,
     "-i", "pipe:0",
-    "-stream_loop", "-1", "-re", "-i", "video.mp4",
-    "-stream_loop", "-1", "-re", "-i", "merged_audio.mp3",
+    "-stream_loop", "-1", "-re", "-i", videoPath,
+    "-stream_loop", "-1", "-re", "-i", audioPath,
     "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
     "-map", "[v]", "-map", "2:a",
     "-c:v", "libx264", "-preset", "veryfast",
@@ -60,7 +62,7 @@ async function startPuppeteer() {
 
     setInterval(async () => {
         try {
-            const screenshot = await page.screenshot({ type: 'raw' });
+            const screenshot = await page.screenshot({ type: 'jpeg', quality: 90 });
             if (ffmpeg.stdin.writable) {
                 ffmpeg.stdin.write(screenshot);
             }
@@ -109,4 +111,4 @@ tiktok.on("gift", data => {
 
 tiktok.connect().then(() => console.log("Connected TikTok")).catch(e => console.error(e));
 
-setTimeout(startPuppeteer, 15000);
+setTimeout(startPuppeteer, 5000);
