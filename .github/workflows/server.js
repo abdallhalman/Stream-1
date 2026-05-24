@@ -8,7 +8,7 @@ const TIKTOK_USER = "alhadath";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
-const FPS    = 30;
+const FPS    = 24;
 
 let totalLikes = 0;
 
@@ -42,15 +42,20 @@ const ffmpeg = spawn("ffmpeg", [
     "-stream_loop", "-1", "-re", "-i", audioPath,
     "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
     "-map", "[v]", "-map", "2:a",
-    "-c:v", "libx264", "-preset", "veryfast",
-    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
-    "-g", "60",
+    "-c:v", "libx264", "-preset", "ultrafast",
+    "-b:v", "2000k", "-maxrate", "2000k", "-bufsize", "4000k",
+    "-g", "48",
     "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
 ]);
 
 ffmpeg.stderr.on("data", d => process.stderr.write(d));
+
+ffmpeg.on("close", (code) => {
+    console.error(`ffmpeg exited with code ${code}. Exiting process.`);
+    process.exit(1);
+});
 
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
@@ -78,22 +83,27 @@ async function startPuppeteer() {
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', `--window-size=${WIDTH},${HEIGHT}`]
     });
-    
+
     const page = await browser.newPage();
     await page.setViewport({ width: WIDTH, height: HEIGHT });
-    
+
     page.on('console', msg => console.log('HTML PAGE LOG:', msg.text()));
 
     const htmlPath = path.join(__dirname, 'overlay.html');
     await page.goto(`file://${htmlPath}`);
 
+    // حماية من تكدس الفريمات
+    let capturing = false;
     setInterval(async () => {
+        if (capturing) return;
+        capturing = true;
         try {
             if (ffmpeg.stdin.writable) {
                 const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
                 ffmpeg.stdin.write(screenshot);
             }
         } catch (e) {}
+        capturing = false;
     }, 1000 / FPS);
 
     console.log("Waiting 45 seconds for stream stability before connecting to TikTok...");
@@ -102,46 +112,43 @@ async function startPuppeteer() {
 
 startPuppeteer();
 
-// 1. Room Stats Only
-tiktok.on("roomUser", data => { 
+// المشاهدين فقط
+tiktok.on("roomUser", data => {
     if (data?.viewerCount !== undefined) {
-        sendToOverlay("viewerCount", data.viewerCount); 
+        sendToOverlay("viewerCount", data.viewerCount);
     }
 });
 
-// 2. Correct Join Event (member)
+// الانضمام - الحدث الصحيح
 tiktok.on("member", data => {
-    if (data?.uniqueId) {
-        sendToOverlay("join", {
-            name: data.nickname || data.uniqueId,
-            avatar: data.profilePictureUrl
-        });
-    }
+    sendToOverlay("join", {
+        name: data.nickname || data.uniqueId,
+        avatar: data.profilePictureUrl
+    });
 });
 
-// 3. Like Event & Trigger Hearts
-tiktok.on("like", data => { 
+// الإعجابات
+tiktok.on("like", data => {
     if (data.likeCount > 0) {
         totalLikes += Number(data.likeCount);
-        sendToOverlay("like", totalLikes); 
-        sendToOverlay("triggerHearts", data.likeCount);
+        sendToOverlay("like", totalLikes);
     }
 });
 
-// 4. Correct Chat Event (Direct mapping)
-tiktok.on("comment", data => {
+// التعليقات - الحدث الصحيح
+tiktok.on("chat", data => {
     if (data?.comment) {
-        const badgesArr = data.badges?.map(b => b.url || b.image?.url).filter(Boolean) || [];
+        console.log(`[TikTok] Comment from ${data.uniqueId}: ${data.comment}`);
         sendToOverlay("comment", {
             name: data.nickname || data.uniqueId,
             text: data.comment,
             avatar: data.profilePictureUrl,
-            badges: badgesArr
+            badges: data.badges?.map(b => b.url || b.image?.url).filter(Boolean) || []
         });
     }
 });
 
-// 5. Gift Event (Instant transmission)
+// الهدايا - بدون شرط repeatEnd
 tiktok.on("gift", data => {
     if (data?.giftName) {
         sendToOverlay("gift", {
@@ -152,4 +159,3 @@ tiktok.on("gift", data => {
         });
     }
 });
-          
