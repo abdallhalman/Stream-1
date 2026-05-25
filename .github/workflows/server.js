@@ -4,7 +4,8 @@ const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const path = require("path");
 
-const TIKTOK_USER = "sl42t";
+// تغيير الحساب إلى حساب إخباري مستمر للتجربة الفورية
+const TIKTOK_USER = "alarabytv";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -26,6 +27,7 @@ function sendToOverlay(type, data) {
     }
 }
 
+// مسارات الفيديو والصوت الواحد المباشر لتسريع التجربة
 const videoPath = path.join(__dirname, '../../video.mp4');
 const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 
@@ -72,8 +74,13 @@ async function startPuppeteer() {
 
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
+// 1. حدث العدادات الإجمالية فقط (مصلح)
 tiktok.on("roomUser", data => { 
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
+});
+
+// 2. إحياء حدث الانضمام الشرعي والمستقل لسحب الأسماء فوراً
+tiktok.on("member", data => {
     if (data?.nickname || data?.uniqueId) {
         sendToOverlay("join", {
             name: data.nickname || data.uniqueId,
@@ -82,6 +89,7 @@ tiktok.on("roomUser", data => {
     }
 });
 
+// 3. حدث اللايكات المستقر
 tiktok.on("like", data => { 
     if (data.likeCount > 0) {
         totalLikes += Number(data.likeCount);
@@ -89,26 +97,28 @@ tiktok.on("like", data => {
     }
 });
 
+// 4. حدث التعليقات الآمن (يمرر البيانات الخام للمتصفح دون تعقيد البادجات هنا)
 tiktok.on("comment", data => {
     sendToOverlay("comment", {
         name: data.nickname || data.uniqueId,
         text: data.comment,
         avatar: data.profilePictureUrl,
-        badges: data.badges?.map(b => b.url || b.image?.url).filter(Boolean) || []
+        badges: data.badges || []
     });
 });
 
+// 5. حدث الهدايا الشامل (لكل أنواع الهدايا)
 tiktok.on("gift", data => {
-    if (data.repeatEnd) {
+    if (data.repeatEnd || data.repeatCount === 1) {
         sendToOverlay("gift", {
             name: data.nickname || data.uniqueId,
             giftName: data.giftName,
-            count: data.repeatCount,
+            count: data.repeatCount || 1,
             avatar: data.profilePictureUrl
         });
     }
 });
 
-tiktok.connect().then(() => console.log("Connected TikTok")).catch(e => console.error(e));
+tiktok.connect().then(() => console.log("Connected TikTok to " + TIKTOK_USER)).catch(e => console.error(e));
 
 setTimeout(startPuppeteer, 5000);
