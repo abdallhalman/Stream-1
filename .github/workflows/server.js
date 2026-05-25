@@ -5,7 +5,7 @@ const WebSocket = require("ws");
 const path = require("path");
 
 // تغيير الحساب إلى حساب إخباري مستمر للتجربة الفورية
-const TIKTOK_USER = "quraan_lives";
+const TIKTOK_USER = "alarabytv";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
