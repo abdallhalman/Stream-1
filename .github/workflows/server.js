@@ -145,7 +145,27 @@ tiktok.on("gift", data => {
     }
 });
 
-tiktok.connect().then(() => console.log("Connected TikTok to " + TIKTOK_USER)).catch(e => console.error(e));
+function connectToTikTok() {
+    console.log(`Attempting to connect to TikTok user: ${TIKTOK_USER}...`);
+    
+    tiktok.connect()
+        .then(() => {
+            console.log("✅ TikTok connection established successfully!");
+        })
+        .catch(e => {
+            console.error("❌ Connection failed (Stream might be offline or rate-limited).");
+            console.log("🔄 Retrying connection in 15 seconds...");
+            setTimeout(connectToTikTok, 15000);
+        });
+}
+
+connectToTikTok();
+
+tiktok.on('disconnected', () => {
+    console.log("⚠️ TikTok connection lost unexpectedly!");
+    console.log("🔄 Initializing auto-reconnect in 5 seconds...");
+    setTimeout(connectToTikTok, 5000);
+});
 
 setTimeout(startPuppeteer, 5000);
         
