@@ -14,14 +14,14 @@ const FPS    = 25;
 let totalLikes = 0;
 let lastJoinTime = 0;
 let lastCommentTime = 0;
-const EVENT_THROTTLE_MS = 1000;
+const EVENT_THROTTLE_MS = 800; // تحسين وقت الاستجابة قليلاً
 
 const wss = new WebSocket.Server({ port: 8080 });
 let wsClient = null;
 
 wss.on("connection", (ws) => {
     wsClient = ws;
-    console.log("Overlay interface connected local.");
+    console.log("✅ Overlay interface connected local.");
 });
 
 function sendToOverlay(type, data) {
@@ -30,11 +30,10 @@ function sendToOverlay(type, data) {
     }
 }
 
-// مسارات الفيديو والصوت
 const videoPath = path.join(__dirname, '../../video.mp4');
 const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 
-// إعدادات الـ FFmpeg المعدلة والمحسنة لمنع الـ Broken pipe ورفع الـ speed لـ 1.0x
+// إعدادات الـ FFmpeg الصارمة لقراءة الـ PNG بسرعة عالية جداً
 const ffmpeg = spawn("ffmpeg", [
     "-f", "image2pipe",
     "-vcodec", "png",
@@ -46,11 +45,11 @@ const ffmpeg = spawn("ffmpeg", [
     "-map", "[v]", 
     "-map", "2:a", 
     "-c:v", "libx264", 
-    "-preset", "ultrafast", // تسريع المعالجة لأقصى حد لرفع الـ speed
-    "-tune", "zerolatency",  // منع التأخير التراكمي في الأنبوب
-    "-b:v", "2000k",        // تقليل البتريت قليلاً للاستقرار الممتد
-    "-maxrate", "2000k", 
-    "-bufsize", "4000k",    // تصغير حجم البافر لمنع انفجاره
+    "-preset", "ultrafast", 
+    "-tune", "zerolatency",  
+    "-b:v", "2500k",        
+    "-maxrate", "2500k", 
+    "-bufsize", "5000k",    
     "-g", "50",
     "-c:a", "aac", 
     "-b:a", "128k", 
@@ -69,7 +68,7 @@ async function startPuppeteer() {
             '--no-sandbox', 
             '--disable-setuid-sandbox', 
             '--disable-gpu', 
-            '--disable-dev-shm-usage', // تفعيل استهلاك الذاكرة العادية بدلاً من المؤقتة المشتركة
+            '--disable-dev-shm-usage', 
             `--window-size=${WIDTH},${HEIGHT}`
         ]
     });
@@ -83,6 +82,7 @@ async function startPuppeteer() {
     setInterval(async () => {
         try {
             if (ffmpeg.stdin.writable) {
+                // التقاط سريع جداً مع تفعيل الخفة الفائقة للمتصفح لمنع التراكم الهبوطي لـ speed
                 const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
                 ffmpeg.stdin.write(screenshot);
             }
@@ -94,12 +94,10 @@ async function startPuppeteer() {
 
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
-// العدادات الإجمالية للمشاهدين
 tiktok.on("roomUser", data => { 
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
 });
 
-// إشعارات انضمام البث
 tiktok.on("member", data => {
     const now = Date.now();
     if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
@@ -113,7 +111,6 @@ tiktok.on("member", data => {
     }
 });
 
-// إشعارات الإعجابات
 tiktok.on("like", data => { 
     if (data.likeCount > 0) {
         totalLikes += Number(data.likeCount);
@@ -121,7 +118,6 @@ tiktok.on("like", data => {
     }
 });
 
-// استقبال وجلب التعليقات الحية
 tiktok.on("comment", data => {
     const now = Date.now();
     if (now - lastCommentTime >= EVENT_THROTTLE_MS) {
@@ -135,7 +131,6 @@ tiktok.on("comment", data => {
     }
 });
 
-// إشعارات الهدايا
 tiktok.on("gift", data => {
     if (data.repeatEnd || data.repeatCount === 1) {
         sendToOverlay("gift", {
@@ -147,24 +142,30 @@ tiktok.on("gift", data => {
     }
 });
 
-// دالة الاتصال الذكي مع إعادة المحاولة التلقائية في حال حدوث مشاكل بالشبكة
+// استقبال المتابعات بشكل منفصل تماماً لضمان تفعيل البنر
+tiktok.on("follow", data => {
+    if (data?.nickname || data?.uniqueId) {
+        sendToOverlay("follow", {
+            name: data.nickname || data.uniqueId,
+            avatar: data.profilePictureUrl
+        });
+    }
+});
+
 function connectToTikTok() {
-    console.log(`جاري محاولة الاتصال بحساب التيك توك: ${TIKTOK_USER}...`);
+    console.log(`جاري الاتصال بحساب تيك توك: ${TIKTOK_USER}...`);
     tiktok.connect()
-        .then(() => console.log("✅ تم الاتصال بنجاح وتلقي البيانات من تيك توك"))
+        .then(() => console.log("✅ تم الاتصال المباشر بالتيك توك"))
         .catch(e => {
-            console.error("❌ فشل الاتصال، قد يكون الحساب مغلقاً أو محظوراً مؤقتاً.");
-            console.log("🔄 جاري إعادة المحاولة خلال 15 ثانية...");
             setTimeout(connectToTikTok, 15000);
         });
 }
 
 connectToTikTok();
 
-// التعامل مع انقطاع الاتصال المفاجئ من طرف تيك توك
 tiktok.on('disconnected', () => {
-    console.log("⚠️ انقطع الاتصال المفاجئ بالتيك توك! جاري إعادة الاتصال التلقائي...");
     setTimeout(connectToTikTok, 5000);
 });
 
 setTimeout(startPuppeteer, 5000);
+            
