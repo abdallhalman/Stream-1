@@ -9,7 +9,7 @@ const TIKTOK_USER = "alarabytv";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
-const FPS    = 30;
+const FPS    = 25;
 
 let totalLikes = 0;
 
@@ -34,25 +34,22 @@ const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 const ffmpeg = spawn("ffmpeg", [
     "-f", "image2pipe",
     "-vcodec", "png",
-    "-framerate", `${FPS}`,
+    "-framerate", "25", // تقليل الفريمات قليلاً للتخفيف
     "-i", "pipe:0",
-    // إضافة الـ loop بشكل صحيح لكل مدخل مع الـ re لتثبيت الزمن
     "-re", "-stream_loop", "-1", "-i", videoPath,
     "-re", "-stream_loop", "-1", "-i", audioPath,
-    // الفلتر المعقد مع تفعيل خيار العرض المستمر
     "-filter_complex", "[1:v][0:v]overlay=0:0:shortest=0[v]",
     "-map", "[v]", 
     "-map", "2:a",
     "-c:v", "libx264", 
-    "-preset", "veryfast",
-    "-b:v", "2500k", 
-    "-maxrate", "2500k", 
-    "-bufsize", "5000k",
-    "-g", "60",
+    "-preset", "ultrafast", // تسريع المعالجة لأقصى حد لرفع الـ speed
+    "-b:v", "2000k",        // تقليل البتريت قليلاً للاستقرار
+    "-maxrate", "2000k", 
+    "-bufsize", "4000k",
+    "-g", "50",
     "-c:a", "aac", 
     "-b:a", "128k", 
     "-ar", "44100",
-    // هذا السطر يمنع الـ FFmpeg من إغلاق الميكسر لو اختلف توقيت الملفات
     "-fflags", "+genpts",
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
