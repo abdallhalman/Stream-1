@@ -4,7 +4,6 @@ const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const path = require("path");
 
-// تغيير الحساب إلى حساب إخباري مستمر للتجربة الفورية
 const TIKTOK_USER = "designer..fares..4k";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
@@ -14,7 +13,8 @@ const FPS    = 25;
 let totalLikes = 0;
 let lastJoinTime = 0;
 let lastCommentTime = 0;
-const EVENT_THROTTLE_MS = 1000;
+let lastFollowTime = 0;
+const EVENT_THROTTLE_MS = 1000; // منع التكدس
 
 const wss = new WebSocket.Server({ port: 8080 });
 let wsClient = null;
@@ -30,7 +30,6 @@ function sendToOverlay(type, data) {
     }
 }
 
-// مسارات الفيديو والصوت الواحد المباشر لتسريع التجربة
 const videoPath = path.join(__dirname, '../../video.mp4');
 const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 
@@ -38,14 +37,14 @@ const ffmpeg = spawn("ffmpeg", [
     "-f", "image2pipe",
     "-vcodec", "png",
     "-framerate", `${FPS}`,
-    "-i", "pipe:0", // المدخل 0
-    "-stream_loop", "-1", "-re", "-i", videoPath, // المدخل 1
-    "-stream_loop", "-1", "-re", "-i", audioPath, // المدخل 2
-    "-filter_complex", "[1:v][0:v]overlay=0:0[v]", // دمج الأوفرلاي فوق الفيديو
-    "-map", "[v]", // تمرير الفيديو المدمج بنجاح
-    "-map", "2:a", // ربط مسار صوت الملف الثاني (audioPath) بشكل مباشر وصحيح
+    "-i", "pipe:0", 
+    "-stream_loop", "-1", "-re", "-i", videoPath, 
+    "-stream_loop", "-1", "-re", "-i", audioPath, 
+    "-filter_complex", "[1:v][0:v]overlay=0:0[v]", 
+    "-map", "[v]", 
+    "-map", "2:a", 
     "-c:v", "libx264", 
-    "-preset", "ultrafast", // تسريع المعالجة لأقصى حد لمنع هبوط الـ speed وحدوث الـ Broken pipe
+    "-preset", "ultrafast", 
     "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
     "-g", "60",
     "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
@@ -79,11 +78,12 @@ async function startPuppeteer() {
 
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
-// 1. حدث العدادات الإجمالية فقط (مصلح)
+// العدادات الإجمالية
 tiktok.on("roomUser", data => { 
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
 });
 
+// إشعار انضمام الغرفة
 tiktok.on("member", data => {
     const now = Date.now();
     if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
@@ -97,7 +97,21 @@ tiktok.on("member", data => {
     }
 });
 
+// إشعار المتابعين الجدد (تمت إضافته وإصلاحه)
+tiktok.on("follow", data => {
+    const now = Date.now();
+    if (now - lastFollowTime >= EVENT_THROTTLE_MS) {
+        if (data?.nickname || data?.uniqueId) {
+            sendToOverlay("follow", {
+                name: data.nickname || data.uniqueId,
+                avatar: data.profilePictureUrl
+            });
+            lastFollowTime = now;
+        }
+    }
+});
 
+// الإعجابات
 tiktok.on("like", data => { 
     if (data.likeCount > 0) {
         totalLikes += Number(data.likeCount);
@@ -105,6 +119,7 @@ tiktok.on("like", data => {
     }
 });
 
+// التعليقات
 tiktok.on("comment", data => {
     const now = Date.now();
     if (now - lastCommentTime >= EVENT_THROTTLE_MS) {
@@ -118,7 +133,7 @@ tiktok.on("comment", data => {
     }
 });
 
-// 5. حدث الهدايا الشامل (لكل أنواع الهدايا)
+// الهدايا
 tiktok.on("gift", data => {
     if (data.repeatEnd || data.repeatCount === 1) {
         sendToOverlay("gift", {
@@ -133,3 +148,4 @@ tiktok.on("gift", data => {
 tiktok.connect().then(() => console.log("Connected TikTok to " + TIKTOK_USER)).catch(e => console.error(e));
 
 setTimeout(startPuppeteer, 5000);
+        
