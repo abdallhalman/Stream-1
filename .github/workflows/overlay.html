@@ -64,7 +64,7 @@
         .gift-text h2 { font-size: 22px; color: #fff; margin-bottom: 2px; }
         .gift-text p { font-size: 18px; color: #ffeb3b; font-weight: bold; }
 
-        /* صندوق التعليقات - أسفل اليمين (مصلح ومنظم للصعود) */
+        /* صندوق التعليقات - مصلح ومطابق هيكلياً */
         #chat-container {
             position: absolute;
             bottom: 40px;
@@ -92,13 +92,14 @@
             max-width: 100%;
         }
         .chat-msg .avatar { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #ffbc00; }
-        .chat-msg .msg-content { display: flex; flex-direction: column; flex: 1; }
+        .chat-msg .msg-body { display: flex; flex-direction: column; flex: 1; }
+        .chat-msg .username-container { display: flex; align-items: center; gap: 5px; }
         .chat-msg .username { color: #ffbc00; font-weight: bold; font-size: 15px; text-align: right; }
-        .chat-msg .badge { height: 16px; object-fit: contain; vertical-align: middle; margin-right: 4px; }
+        .chat-msg .badge { height: 16px; object-fit: contain; }
         .chat-msg .text { color: #ffffff; font-size: 15px; margin-top: 2px; word-break: break-word; text-align: right; }
 
         /* صندوق إشعارات الانضمام - أسفل اليسار */
-        #join-container {
+        #notification-container {
             position: absolute;
             bottom: 40px;
             left: 30px;
@@ -126,8 +127,8 @@
         }
         .join-notification .avatar { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.6); }
         .join-notification .info { display: flex; flex-direction: column; }
-        .join-notification .name { color: #ffffff; font-weight: 600; font-size: 15px; }
-        .join-notification .action { color: #e0e0e0; font-size: 13px; margin-top: 1px; }
+        .join-notification .name { color: #ffffff; font-weight: 600; font-size: 15px; text-align: right; }
+        .join-notification .action { color: #e0e0e0; font-size: 13px; margin-top: 1px; text-align: right; }
 
         /* بنر المتابعين الجديد الشفاف والزاهي - أسفل المنتصف */
         #follower-banner-container {
@@ -180,26 +181,15 @@
             font-size: 32px;
             user-select: none;
             pointer-events: none;
-            animation: flyHeart 2.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            animation: flyHeart 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
 
-        /* أنيميشن اندفاع القلوب إلى وسط يمين الشاشة */
         @keyframes flyHeart {
-            0% {
-                opacity: 1;
-                transform: scale(0.4) translate(0, 0);
-            }
-            40% {
-                opacity: 0.95;
-                transform: scale(1.2) translate(-140px, -220px); /* الاتجاه لوسط يمين الشاشة */
-            }
-            100% {
-                opacity: 0;
-                transform: scale(0.7) translate(-90px, -480px); /* الصعود التدريجي والاختفاء */
-            }
+            0% { opacity: 1; transform: scale(0.4) translate(0, 0); }
+            40% { opacity: 0.95; transform: scale(1.2) translate(-140px, -220px); }
+            100% { opacity: 0; transform: scale(0.7) translate(-90px, -480px); }
         }
 
-        /* حركات الظهور العامة */
         @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.3); } 50% { opacity: 0.9; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
@@ -214,14 +204,14 @@
 
     <div id="gift-banner-container"></div>
     <div id="chat-container"></div>
-    <div id="join-container"></div>
+    <div id="notification-container"></div>
     <div id="follower-banner-container"></div>
     <div id="hearts-emitter"></div>
 
     <script>
         const ws = new WebSocket("ws://localhost:8080");
         const chatContainer = document.getElementById("chat-container");
-        const joinContainer = document.getElementById("join-container");
+        const notificationContainer = document.getElementById("notification-container");
         const giftContainer = document.getElementById("gift-banner-container");
         const followerContainer = document.getElementById("follower-banner-container");
         const heartsEmitter = document.getElementById("hearts-emitter");
@@ -231,12 +221,10 @@
             try {
                 const msg = JSON.parse(event.data);
                 
-                // تحديث عداد المشاهدات
                 if (msg.type === "viewerCount") {
                     document.getElementById("viewers-count").innerHTML = `👤 ${msg.data.toLocaleString()}`;
                 }
                 
-                // معالجة الإعجابات وضخ القلوب الملونة إلى وسط يمين الشاشة
                 if (msg.type === "like") {
                     document.getElementById("likes-count").innerHTML = `❤️ ${msg.data.toLocaleString()}`;
                     
@@ -247,17 +235,13 @@
                     heartEl.className = "floating-heart";
                     heartEl.innerText = randomHeart;
                     
-                    // توليد انحراف عشوائي خفيف لتوزيع انتشار القلوب
-                    const randomXOffset = Math.floor(Math.random() * 50) - 25;
+                    const randomXOffset = Math.floor(Math.random() * 60) - 30;
                     heartEl.style.marginRight = `${randomXOffset}px`;
                     
                     heartsEmitter.appendChild(heartEl);
-                    
-                    // حذف عنصر القلب بعد انتهاء الحركة مباشرة للحفاظ على خفة المتصفح
-                    setTimeout(() => { heartEl.remove(); }, 2800);
+                    setTimeout(() => { heartEl.remove(); }, 2500);
                 }
                 
-                // معالجة واستقبال التعليقات (صعود سلس فوري)
                 if (msg.type === "comment") {
                     const msgDiv = document.createElement("div");
                     msgDiv.className = "chat-msg";
@@ -276,18 +260,20 @@
 
                     msgDiv.innerHTML = `
                         <img class="avatar" src="${userAvatar}" onerror="this.src='${fallbackAvatar}'">
-                        <div class="msg-content">
-                            <span class="username">${userName} ${badgesHtml}</span>
+                        <div class="msg-body">
+                            <div class="username-container">
+                                <span class="username">${userName}</span>
+                                ${badgesHtml}
+                            </div>
                             <span class="text">${userText}</span>
                         </div>
                     `;
                     chatContainer.prepend(msgDiv);
-                    if (chatContainer.children.length > 15) { 
+                    if (chatContainer.children.length > 10) { 
                         chatContainer.removeChild(chatContainer.lastChild); 
                     }
                 }
 
-                // معالجة إشعارات انضمام الغرفة (أسفل اليسار)
                 if (msg.type === "join") {
                     const joinDiv = document.createElement("div");
                     joinDiv.className = "join-notification";
@@ -302,11 +288,13 @@
                             <span class="action">انضم إلى البث الآن ✨</span>
                         </div>
                     `;
-                    joinContainer.prepend(joinDiv);
-                    setTimeout(() => { if (joinDiv.parentNode) { joinContainer.removeChild(joinDiv); } }, 4000);
+                    notificationContainer.prepend(joinDiv);
+                    if (notificationContainer.children.length > 4) {
+                        notificationContainer.removeChild(notificationContainer.lastChild);
+                    }
+                    setTimeout(() => { joinDiv.remove(); }, 4000);
                 }
 
-                // معالجة بنر المتابعين الجدد الشفاف والزاهي (أسفل المنتصف)
                 if (msg.type === "follow") {
                     const fAvatar = msg.data.avatar || fallbackAvatar;
                     const fName = msg.data.name || "متابع جديد";
@@ -320,10 +308,9 @@
                             </div>
                         </div>
                     `;
-                    setTimeout(() => { followerContainer.innerHTML = ""; }, 4000);
+                    setTimeout(() => { followerContainer.innerHTML = ""; }, 5000);
                 }
 
-                // معالجة بنر الهدايا الإجمالي العريض (أعلى المنتصف)
                 if (msg.type === "gift") {
                     const giftAvatar = msg.data.avatar || fallbackAvatar;
                     const giftName = msg.data.name || "داعم كريم";
@@ -340,9 +327,10 @@
                     setTimeout(() => { giftContainer.innerHTML = ""; }, 5000);
                 }
             } catch (e) {
-                console.error("خطأ في استقبال حزمة البيانات الحية:", e);
+                console.error(e);
             }
         };
     </script>
 </body>
-</html>
+    </html>
+    
