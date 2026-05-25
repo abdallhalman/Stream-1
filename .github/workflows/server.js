@@ -1,4 +1,4 @@
-const { TikTokLiveConnect } = require('tiktok-live-connector');
+const { WebcastPushConnection } = require('tiktok-live-connector');
 const puppeteer = require('puppeteer');
 const { spawn } = require('child_process');
 const WebSocket = require('ws');
@@ -117,7 +117,7 @@ async function startBrowser() {
 
 function connectTikTok() {
     // ✅ Fix 3: حذف enableExtendedSignaling غير المدعوم
-    const tiktokConnect = new TikTokLiveConnect(TIKTOK_USERNAME);
+    const tiktokConnect = new WebcastPushConnection(TIKTOK_USERNAME);
 
     tiktokConnect.on('connected', () => {
         console.log(`\nTiktok Connection Established Successfully with @${TIKTOK_USERNAME}!`);
