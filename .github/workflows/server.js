@@ -1,173 +1,114 @@
-const { WebcastPushConnection } = require('tiktok-live-connector');
-const puppeteer = require('puppeteer');
-const { spawn } = require('child_process');
-const WebSocket = require('ws');
-const path = require('path');
-const fs = require('fs');
+const { WebcastPushConnection } = require("tiktok-live-connector");
+const { spawn } = require("child_process");
+const puppeteer = require("puppeteer");
+const WebSocket = require("ws");
+const path = require("path");
 
-const TIKTOK_USERNAME = process.argv[2] || 'moslim4quran'; 
-const STREAM_KEY = process.argv[3] || process.env.STREAM_KEY || 'YOUR_STREAM_KEY'; // ✅ Fix 1: يقرأ من env
-const RTMP_URL = `rtmp://live-api-s.restream.io/live/${STREAM_KEY}`;
-
-const FPS = 30;
-const WIDTH = 1280;
+const TIKTOK_USER = "sl42t";
+const STREAM_KEY = process.env.STREAM_KEY;
+const WIDTH  = 1280;
 const HEIGHT = 720;
+const FPS    = 30;
 
-const videoPath = path.join(__dirname, 'video.mp4');
-const audioPath = path.join(__dirname, 'merged_audio.mp3'); // ✅ Fix 2: الاسم الصحيح
+let totalLikes = 0;
 
-let wss;
+const wss = new WebSocket.Server({ port: 8080 });
 let wsClient = null;
-let ffmpegProcess = null;
-let browser = null;
-let page = null;
 
-function startWebSocketServer() {
-    wss = new WebSocket.Server({ port: 8080 });
-    console.log('WebSocket Server running on port 8080');
-
-    wss.on('connection', (ws) => {
-        wsClient = ws;
-        console.log('Overlay Browser Connected to WebSocket!');
-    });
-}
+wss.on("connection", (ws) => {
+    wsClient = ws;
+    console.log("Overlay interface connected local.");
+});
 
 function sendToOverlay(type, data) {
     if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-        try {
-            wsClient.send(JSON.stringify({ type, data }));
-        } catch (e) {
-            console.error('Error sending data to overlay:', e);
-        }
+        wsClient.send(JSON.stringify({ type, data }));
     }
 }
 
-function startFFmpeg() {
-    const ffmpegArgs = [
-        '-loglevel', 'info',
-        '-f', 'image2pipe',
-        '-vcodec', 'png',
-        '-r', `${FPS}`,
-        '-i', '-',
-        '-stream_loop', '-1', '-i', videoPath,
-        '-stream_loop', '-1', '-i', audioPath,
-        '-filter_complex', '[1:v][0:v]overlay=0:0:shortest=1[outv]',
-        '-map', '[outv]',
-        '-map', '2:a',
-        '-vcodec', 'libx264',
-        '-pix_fmt', 'yuv420p',
-        '-preset', 'veryfast',
-        '-maxrate', '2500k',
-        '-bufsize', '5000k',
-        '-acodec', 'aac',
-        '-b:a', '128k',
-        '-ar', '44100',
-        '-f', 'flv',
-        RTMP_URL
-    ];
+const videoPath = path.join(__dirname, '../../video.mp4');
+const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 
-    ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
+const ffmpeg = spawn("ffmpeg", [
+    "-f", "image2pipe",
+    "-vcodec", "png",
+    "-framerate", `${FPS}`,
+    "-i", "pipe:0",
+    "-stream_loop", "-1", "-re", "-i", videoPath,
+    "-stream_loop", "-1", "-re", "-i", audioPath,
+    "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
+    "-map", "[v]", "-map", "2:a",
+    "-c:v", "libx264", "-preset", "veryfast",
+    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
+    "-g", "60",
+    "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+    "-f", "flv",
+    `rtmp://live.restream.io/live/${STREAM_KEY}`
+]);
 
-    ffmpegProcess.stdout.on('data', (data) => console.log(`[FFmpeg JSON] ${data}`));
-    ffmpegProcess.stderr.on('data', (data) => {
-        const msg = data.toString();
-        if (msg.includes('frame=')) {
-            process.stdout.write(`\r${msg.trim().split('\n')[0]}`);
-        } else {
-            console.log(`[FFmpeg] ${msg.trim()}`);
-        }
-    });
+ffmpeg.stderr.on("data", d => process.stderr.write(d));
 
-    ffmpegProcess.on('close', (code) => {
-        console.log(`\nFFmpeg exited with code ${code}. Exiting process.`);
-        process.exit(1);
-    });
-}
-
-async function startBrowser() {
-    browser = await puppeteer.launch({
+async function startPuppeteer() {
+    const browser = await puppeteer.launch({
         headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-gpu',
-            '--disable-dev-shm-usage',
-            `--window-size=${WIDTH},${HEIGHT}`
-        ]
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', `--window-size=${WIDTH},${HEIGHT}`]
     });
-
-    page = await browser.newPage();
+    
+    const page = await browser.newPage();
     await page.setViewport({ width: WIDTH, height: HEIGHT });
-
+    
     const htmlPath = path.join(__dirname, 'overlay.html');
     await page.goto(`file://${htmlPath}`);
-    console.log('Overlay.html loaded in Headless Browser.');
 
     setInterval(async () => {
         try {
-            if (ffmpegProcess && ffmpegProcess.stdin.writable) {
-                const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
-                ffmpegProcess.stdin.write(screenshot);
+            const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
+            if (ffmpeg.stdin.writable) {
+                ffmpeg.stdin.write(screenshot);
             }
-        } catch (err) {
-            // Safe fallback for frame pressure
-        }
+        } catch (e) {}
     }, 1000 / FPS);
 }
 
-function connectTikTok() {
-    // ✅ Fix 3: حذف enableExtendedSignaling غير المدعوم
-    const tiktokConnect = new WebcastPushConnection(TIKTOK_USERNAME);
+const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
-    tiktokConnect.on('connected', () => {
-        console.log(`\nTiktok Connection Established Successfully with @${TIKTOK_USERNAME}!`);
-    });
-
-    tiktokConnect.on('disconnected', () => {
-        console.log('TikTok Connection Disconnected! Reconnecting...');
-        setTimeout(connectTikTok, 5000);
-    });
-
-    tiktokConnect.on('chat', (data) => {
-        if (data && data.comment) {
-            sendToOverlay('comment', {
-                nickname: data.nickname,
-                uniqueId: data.uniqueId,
-                comment: data.comment,
-                profilePictureUrl: data.profilePictureUrl
-            });
-        }
-    });
-
-    tiktokConnect.on('member', (data) => {
-        sendToOverlay('join', {
-            nickname: data.nickname,
-            uniqueId: data.uniqueId,
-            profilePictureUrl: data.profilePictureUrl
+tiktok.on("roomUser", data => { 
+    if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
+    if (data?.nickname || data?.uniqueId) {
+        sendToOverlay("join", {
+            name: data.nickname || data.uniqueId,
+            avatar: data.profilePictureUrl
         });
-    });
+    }
+});
 
-    tiktokConnect.on('like', (data) => {
-        sendToOverlay('like', {
-            likeCount: data.likeCount,
-            totalLikeCount: data.totalLikeCount,
-            nickname: data.nickname
+tiktok.on("like", data => { 
+    if (data.likeCount > 0) {
+        totalLikes += Number(data.likeCount);
+        sendToOverlay("like", totalLikes); 
+    }
+});
+
+tiktok.on("comment", data => {
+    sendToOverlay("comment", {
+        name: data.nickname || data.uniqueId,
+        text: data.comment,
+        avatar: data.profilePictureUrl,
+        badges: data.badges?.map(b => b.url || b.image?.url).filter(Boolean) || []
+    });
+});
+
+tiktok.on("gift", data => {
+    if (data.repeatEnd) {
+        sendToOverlay("gift", {
+            name: data.nickname || data.uniqueId,
+            giftName: data.giftName,
+            count: data.repeatCount,
+            avatar: data.profilePictureUrl
         });
-    });
+    }
+});
 
-    tiktokConnect.on('roomUser', (data) => {
-        sendToOverlay('viewerCount', {
-            viewerCount: data.viewerCount
-        });
-    });
+tiktok.connect().then(() => console.log("Connected TikTok")).catch(e => console.error(e));
 
-    tiktokConnect.connect().catch((err) => {
-        console.error('Failed to connect to TikTok. Retrying...', err.message);
-        setTimeout(connectTikTok, 10000);
-    });
-}
-
-startWebSocketServer();
-startFFmpeg();
-startBrowser();
-setTimeout(connectTikTok, 5000);
+setTimeout(startPuppeteer, 5000);
