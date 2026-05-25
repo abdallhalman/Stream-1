@@ -32,41 +32,23 @@ const videoPath = path.join(__dirname, '../../video.mp4');
 const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 
 const ffmpeg = spawn("ffmpeg", [
-    // 1. مدخل الصور من Puppeteer هو المدخل الأساسي (القائد للتوقيت)
     "-f", "image2pipe",
     "-vcodec", "png",
     "-framerate", `${FPS}`,
-    "-i", "pipe:0", 
-
-    // 2. مدخل الفيديو مكرر بشكل حر وبدون قيد الـ -re
-    "-stream_loop", "-1",
-    "-i", videoPath, 
-
-    // 3. مدخل الصوت مكرر بشكل حر وبدون قيد الـ -re
-    "-stream_loop", "-1",
-    "-i", audioPath, 
-
-    // 4. الفلتر الذكي: يجبر الـ FFmpeg على أخذ توقيت الفريمات (PTS) من البايب الحي [0:v] 
-    // وتجاهل أي اضطراب زمني يحدث أثناء تكرار الفيديو الخلفي [1:v]
-    "-filter_complex", "[1:v][0:v]overlay=0:0:shortest=0:pts_start_from_first_video=1[v]", 
-
-    // 5. الخرائط والضغط المستقر والمضمون للسيرفرات
-    "-map", "[v]", 
-    "-map", "2:a", 
+    "-i", "pipe:0", // المدخل 0
+    "-stream_loop", "-1", "-re", "-i", videoPath, // المدخل 1
+    "-stream_loop", "-1", "-re", "-i", audioPath, // المدخل 2
+    "-filter_complex", "[1:v][0:v]overlay=0:0[v]", // دمج الأوفرلاي فوق الفيديو
+    "-map", "[v]", // تمرير الفيديو المدمج بنجاح
+    "-map", "2:a", // ربط مسار صوت الملف الثاني (audioPath) بشكل مباشر وصحيح
     "-c:v", "libx264", 
-    "-preset", "ultrafast", // خيار فائق السرعة لمنع تراكم فريمات المتصفح في الذاكرة
+    "-preset", "ultrafast", // تسريع المعالجة لأقصى حد لمنع هبوط الـ speed وحدوث الـ Broken pipe
     "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
     "-g", "60",
-    
-    // ضبط مزامنة الصوت المستمر ومنع الفجوات الزمنية (مهم جداً للـ Loops)
     "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
-    "-async", "1",
-    "-vsync", "passthrough",
-    
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
 ]);
-
 
 ffmpeg.stderr.on("data", d => process.stderr.write(d));
 
