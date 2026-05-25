@@ -4,11 +4,7 @@
     <meta charset="UTF-8">
     <title>Stream Overlay</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             width: 1280px;
             height: 720px;
@@ -55,11 +51,7 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             animation: bounceIn 0.5s ease-out;
         }
-        .gift-banner img {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-        }
+        .gift-banner img { width: 50px; height: 50px; border-radius: 50%; }
         .gift-text h2 { font-size: 24px; color: #fff; }
         .gift-text p { font-size: 18px; color: #ffeb3b; font-weight: bold; }
 
@@ -142,59 +134,82 @@
         const chatContainer = document.getElementById("chat-container");
         const joinContainer = document.getElementById("join-container");
         const giftContainer = document.getElementById("gift-banner-container");
+        const fallbackAvatar = 'https://www.tiktok.com/favicon.ico';
 
         ws.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            
-            if (msg.type === "viewerCount") {
-                document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
-            }
-            if (msg.type === "like") {
-                document.getElementById("likes-count").innerText = `❤️ ${msg.data.toLocaleString()}`;
-            }
-            
-            if (msg.type === "comment") {
-                const msgDiv = document.createElement("div");
-                msgDiv.className = "chat-msg";
-                let badgesHtml = "";
-                msg.data.badges.forEach(url => { badgesHtml += `<img class="badge" src="${url}">`; });
-                msgDiv.innerHTML = `
-                    <img class="avatar" src="${msg.data.avatar || 'https://www.tiktok.com/favicon.ico'}">
-                    <div class="msg-content">
-                        <span class="username">${msg.data.name}</span>
-                        ${badgesHtml}
-                        <span class="text">: ${msg.data.text}</span>
-                    </div>
-                `;
-                chatContainer.prepend(msgDiv);
-                if (chatContainer.children.length > 15) { chatContainer.removeChild(chatContainer.lastChild); }
-            }
+            try {
+                const msg = JSON.parse(event.data);
+                
+                if (msg.type === "viewerCount") {
+                    document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
+                }
+                if (msg.type === "like") {
+                    document.getElementById("likes-count").innerText = `❤️ ${msg.data.toLocaleString()}`;
+                }
+                
+                if (msg.type === "comment") {
+                    const msgDiv = document.createElement("div");
+                    msgDiv.className = "chat-msg";
+                    
+                    // حائط صد آمن لقراءة البادجات والرموز بدون انهيار الصفحة
+                    let badgesHtml = "";
+                    if (msg.data.badges && Array.isArray(msg.data.badges)) {
+                        msg.data.badges.forEach(b => {
+                            const url = b.url || b.image?.url;
+                            if (url) badgesHtml += `<img class="badge" src="${url}">`;
+                        });
+                    }
+                    
+                    const userAvatar = msg.data.avatar || fallbackAvatar;
+                    const userName = msg.data.name || "متابع";
+                    const userText = msg.data.text || "";
 
-            if (msg.type === "join") {
-                const joinDiv = document.createElement("div");
-                joinDiv.className = "join-notification";
-                joinDiv.innerHTML = `
-                    <img class="avatar" src="${msg.data.avatar || 'https://www.tiktok.com/favicon.ico'}">
-                    <div class="info">
-                        <span class="name">${msg.data.name}</span>
-                        <span class="action">انضم إلى البث الآن ✨</span>
-                    </div>
-                `;
-                joinContainer.prepend(joinDiv);
-                setTimeout(() => { if (joinDiv.parentNode) { joinContainer.removeChild(joinDiv); } }, 4000);
-            }
-
-            if (msg.type === "gift") {
-                giftContainer.innerHTML = `
-                    <div class="gift-banner">
-                        <img src="${msg.data.avatar || 'https://www.tiktok.com/favicon.ico'}">
-                        <div class="gift-text">
-                            <h2>🤍 شكراً لك: ${msg.data.name}</h2>
-                            <p>أرسل ${msg.data.giftName} x${msg.data.count}</p>
+                    msgDiv.innerHTML = `
+                        <img class="avatar" src="${userAvatar}" onerror="this.src='${fallbackAvatar}'">
+                        <div class="msg-content">
+                            <span class="username">${userName}</span>
+                            ${badgesHtml}
+                            <span class="text">: ${userText}</span>
                         </div>
-                    </div>
-                `;
-                setTimeout(() => { giftContainer.innerHTML = ""; }, 5000);
+                    `;
+                    chatContainer.prepend(msgDiv);
+                    if (chatContainer.children.length > 15) { chatContainer.removeChild(chatContainer.lastChild); }
+                }
+
+                if (msg.type === "join") {
+                    const joinDiv = document.createElement("div");
+                    joinDiv.className = "join-notification";
+                    const joinAvatar = msg.data.avatar || fallbackAvatar;
+                    const joinName = msg.data.name || "متابع جديد";
+
+                    joinDiv.innerHTML = `
+                        <img class="avatar" src="${joinAvatar}" onerror="this.src='${fallbackAvatar}'">
+                        <div class="info">
+                            <span class="name">${joinName}</span>
+                            <span class="action">انضم إلى البث الآن ✨</span>
+                        </div>
+                    `;
+                    joinContainer.prepend(joinDiv);
+                    setTimeout(() => { if (joinDiv.parentNode) { joinContainer.removeChild(joinDiv); } }, 4000);
+                }
+
+                if (msg.type === "gift") {
+                    const giftAvatar = msg.data.avatar || fallbackAvatar;
+                    const giftName = msg.data.name || "داعم كريم";
+                    
+                    giftContainer.innerHTML = `
+                        <div class="gift-banner">
+                            <img src="${giftAvatar}" onerror="this.src='${fallbackAvatar}'">
+                            <div class="gift-text">
+                                <h2>🤍 شكراً لك: ${giftName}</h2>
+                                <p>أرسل ${msg.data.giftName} x${msg.data.count}</p>
+                            </div>
+                        </div>
+                    `;
+                    setTimeout(() => { giftContainer.innerHTML = ""; }, 5000);
+                }
+            } catch (e) {
+                console.error("خطأ في استقبال حزمة البيانات الحية:", e);
             }
         };
     </script>
