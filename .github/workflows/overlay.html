@@ -21,12 +21,11 @@
             right: 25px;
             display: flex;
             gap: 20px;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             color: #ffffff;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.65);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
             padding: 10px 25px;
             border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -34,13 +33,13 @@
         }
         .stats-item { display: flex; align-items: center; gap: 8px; }
 
-        /* بنر الهدايا - أعلى المنتصف */
+        /* بنر الهدايا - منتصف الشاشة من الأعلى */
         #gift-banner-container {
             position: absolute;
             top: 100px;
             left: 50%;
             transform: translateX(-50%);
-            width: 600px;
+            width: 550px;
             height: 100px;
             display: flex;
             justify-content: center;
@@ -49,7 +48,7 @@
             z-index: 999;
         }
         .gift-banner {
-            background: linear-gradient(90deg, rgba(255, 0, 128, 0.9) 0%, rgba(107, 0, 255, 0.9) 100%);
+            background: linear-gradient(90deg, rgba(255, 0, 128, 0.95) 0%, rgba(107, 0, 255, 0.95) 100%);
             border: 2px solid #ffffff;
             border-radius: 50px;
             padding: 12px 35px;
@@ -57,14 +56,14 @@
             display: flex;
             align-items: center;
             gap: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .gift-banner img { width: 55px; height: 55px; border-radius: 50%; border: 2px solid #fff; }
         .gift-text h2 { font-size: 22px; color: #fff; margin-bottom: 2px; }
         .gift-text p { font-size: 18px; color: #ffeb3b; font-weight: bold; }
 
-        /* صندوق التعليقات - مصلح ومطابق هيكلياً */
+        /* صندوق التعليقات - أسفل اليمين (مصلح ومعزز) */
         #chat-container {
             position: absolute;
             bottom: 40px;
@@ -72,14 +71,13 @@
             width: 420px;
             height: 380px;
             display: flex;
-            flex-direction: column-reverse;
-            justify-content: flex-start;
+            flex-direction: column; /* تم تعديله لإصلاح الترتيب */
+            justify-content: flex-end;
             overflow: hidden;
         }
         .chat-msg {
             background: rgba(20, 20, 20, 0.75);
             backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #ffffff;
             padding: 10px 14px;
@@ -93,12 +91,12 @@
         }
         .chat-msg .avatar { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #ffbc00; }
         .chat-msg .msg-body { display: flex; flex-direction: column; flex: 1; }
-        .chat-msg .username-container { display: flex; align-items: center; gap: 5px; }
-        .chat-msg .username { color: #ffbc00; font-weight: bold; font-size: 15px; text-align: right; }
+        .chat-msg .username-container { display: flex; align-items: center; gap: 6px; }
+        .chat-msg .username { color: #ffbc00; font-weight: bold; font-size: 15px; }
         .chat-msg .badge { height: 16px; object-fit: contain; }
         .chat-msg .text { color: #ffffff; font-size: 15px; margin-top: 2px; word-break: break-word; text-align: right; }
 
-        /* صندوق إشعارات الانضمام - أسفل اليسار */
+        /* صندوق الإشعارات (انضمام ومتابعة) - أسفل اليسار */
         #notification-container {
             position: absolute;
             bottom: 40px;
@@ -106,15 +104,14 @@
             width: 380px;
             height: 380px;
             display: flex;
-            flex-direction: column-reverse;
-            justify-content: flex-start;
+            flex-direction: column;
+            justify-content: flex-end;
             overflow: hidden;
             pointer-events: none;
         }
         .join-notification {
             background: rgba(30, 30, 30, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             padding: 12px 16px;
             border-radius: 20px;
@@ -122,74 +119,21 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
             animation: slideInLeft 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        /* تمييز إشعار المتابعة بلون متوهج خفيف */
+        .join-notification.follow-type {
+            border: 1px solid rgba(0, 255, 150, 0.4);
+            background: rgba(15, 35, 25, 0.75);
+        }
         .join-notification .avatar { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.6); }
+        .join-notification.follow-type .avatar { border-color: #00ff96; }
         .join-notification .info { display: flex; flex-direction: column; }
-        .join-notification .name { color: #ffffff; font-weight: 600; font-size: 15px; text-align: right; }
-        .join-notification .action { color: #e0e0e0; font-size: 13px; margin-top: 1px; text-align: right; }
+        .join-notification .name { color: #ffffff; font-weight: 600; font-size: 15px; }
+        .join-notification .action { color: #e0e0e0; font-size: 13px; margin-top: 1px; }
 
-        /* بنر المتابعين الجديد الشفاف والزاهي - أسفل المنتصف */
-        #follower-banner-container {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 500px;
-            height: 75px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-            z-index: 999;
-        }
-        .follower-banner {
-            background: linear-gradient(135deg, rgba(0, 242, 254, 0.75) 0%, rgba(79, 172, 254, 0.75) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-radius: 35px;
-            padding: 10px 30px;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 8px 32px rgba(0, 140, 255, 0.3);
-            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .follower-banner img { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #ffffff; }
-        .follower-banner .text-info { display: flex; flex-direction: column; }
-        .follower-banner .follower-name { font-size: 16px; font-weight: bold; color: #ffffff; }
-        .follower-banner .follower-count { font-size: 12px; color: #ffe500; font-weight: 600; margin-top: 1px; }
-
-        /* حاوية القلوب المتطايرة الاحترافية */
-        #hearts-emitter {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 10;
-        }
-        .floating-heart {
-            position: absolute;
-            bottom: 30px;
-            right: 40px;
-            font-size: 32px;
-            user-select: none;
-            pointer-events: none;
-            animation: flyHeart 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-
-        @keyframes flyHeart {
-            0% { opacity: 1; transform: scale(0.4) translate(0, 0); }
-            40% { opacity: 0.95; transform: scale(1.2) translate(-140px, -220px); }
-            100% { opacity: 0; transform: scale(0.7) translate(-90px, -480px); }
-        }
-
+        /* حركات الأنميشن */
         @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.3); } 50% { opacity: 0.9; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
@@ -205,16 +149,12 @@
     <div id="gift-banner-container"></div>
     <div id="chat-container"></div>
     <div id="notification-container"></div>
-    <div id="follower-banner-container"></div>
-    <div id="hearts-emitter"></div>
 
     <script>
         const ws = new WebSocket("ws://localhost:8080");
         const chatContainer = document.getElementById("chat-container");
         const notificationContainer = document.getElementById("notification-container");
         const giftContainer = document.getElementById("gift-banner-container");
-        const followerContainer = document.getElementById("follower-banner-container");
-        const heartsEmitter = document.getElementById("hearts-emitter");
         const fallbackAvatar = 'https://www.tiktok.com/favicon.ico';
 
         ws.onmessage = (event) => {
@@ -224,24 +164,11 @@
                 if (msg.type === "viewerCount") {
                     document.getElementById("viewers-count").innerHTML = `👤 ${msg.data.toLocaleString()}`;
                 }
-                
                 if (msg.type === "like") {
                     document.getElementById("likes-count").innerHTML = `❤️ ${msg.data.toLocaleString()}`;
-                    
-                    const heartColors = ['💖', '❤️', '🧡', '💛', '💚', '💙', '💜', '✨'];
-                    const randomHeart = heartColors[Math.floor(Math.random() * heartColors.length)];
-                    
-                    const heartEl = document.createElement("div");
-                    heartEl.className = "floating-heart";
-                    heartEl.innerText = randomHeart;
-                    
-                    const randomXOffset = Math.floor(Math.random() * 60) - 30;
-                    heartEl.style.marginRight = `${randomXOffset}px`;
-                    
-                    heartsEmitter.appendChild(heartEl);
-                    setTimeout(() => { heartEl.remove(); }, 2500);
                 }
                 
+                // معالج التعليقات (مصلح بالكامل)
                 if (msg.type === "comment") {
                     const msgDiv = document.createElement("div");
                     msgDiv.className = "chat-msg";
@@ -268,49 +195,38 @@
                             <span class="text">${userText}</span>
                         </div>
                     `;
-                    chatContainer.prepend(msgDiv);
-                    if (chatContainer.children.length > 10) { 
-                        chatContainer.removeChild(chatContainer.lastChild); 
-                    }
+                    chatContainer.appendChild(msgDiv); // استخدام appendChild مع الـ column العادي
+                    if (chatContainer.children.length > 6) { chatContainer.removeChild(chatContainer.firstChild); }
                 }
 
-                if (msg.type === "join") {
-                    const joinDiv = document.createElement("div");
-                    joinDiv.className = "join-notification";
+                // معالج الانضمام والمتابعة الموحد
+                if (msg.type === "join" || msg.type === "follow") {
+                    const isFollow = msg.type === "follow";
+                    const notifDiv = document.createElement("div");
+                    notifDiv.className = `join-notification ${isFollow ? 'follow-type' : ''}`;
                     
-                    const joinAvatar = msg.data.avatar || fallbackAvatar;
-                    const joinName = msg.data.name || "متابع";
+                    const avatar = msg.data.avatar || fallbackAvatar;
+                    const name = msg.data.name || "متابع";
+                    const actionText = isFollow ? "قام بمتابعة البث الآن 💖" : "انضم إلى البث الآن ✨";
 
-                    joinDiv.innerHTML = `
-                        <img class="avatar" src="${joinAvatar}" onerror="this.src='${fallbackAvatar}'">
+                    notifDiv.innerHTML = `
+                        <img class="avatar" src="${avatar}" onerror="this.src='${fallbackAvatar}'">
                         <div class="info">
-                            <span class="name">${joinName}</span>
-                            <span class="action">انضم إلى البث الآن ✨</span>
+                            <span class="name">${name}</span>
+                            <span class="action">${actionText}</span>
                         </div>
                     `;
-                    notificationContainer.prepend(joinDiv);
-                    if (notificationContainer.children.length > 4) {
-                        notificationContainer.removeChild(notificationContainer.lastChild);
-                    }
-                    setTimeout(() => { joinDiv.remove(); }, 4000);
+                    notificationContainer.appendChild(notifDiv);
+                    if (notificationContainer.children.length > 5) { notificationContainer.removeChild(notificationContainer.firstChild); }
+                    
+                    setTimeout(() => { 
+                        notifDiv.style.opacity = '0';
+                        notifDiv.style.transition = 'all 0.4s ease';
+                        setTimeout(() => { if (notifDiv.parentNode) { notificationContainer.removeChild(notifDiv); } }, 400);
+                    }, 4000);
                 }
 
-                if (msg.type === "follow") {
-                    const fAvatar = msg.data.avatar || fallbackAvatar;
-                    const fName = msg.data.name || "متابع جديد";
-
-                    followerContainer.innerHTML = `
-                        <div class="follower-banner">
-                            <img src="${fAvatar}" onerror="this.src='${fallbackAvatar}'">
-                            <div class="text-info">
-                                <span class="follower-name">✨ ${fName} قام بمتابعة البث الآن</span>
-                                <span class="follower-count">⚡ شكراً لك على الدعم والمساندة</span>
-                            </div>
-                        </div>
-                    `;
-                    setTimeout(() => { followerContainer.innerHTML = ""; }, 5000);
-                }
-
+                // معالج الهدايا
                 if (msg.type === "gift") {
                     const giftAvatar = msg.data.avatar || fallbackAvatar;
                     const giftName = msg.data.name || "داعم كريم";
@@ -327,10 +243,9 @@
                     setTimeout(() => { giftContainer.innerHTML = ""; }, 5000);
                 }
             } catch (e) {
-                console.error(e);
+                console.error("خطأ في معالجة حزمة البيانات:", e);
             }
         };
     </script>
 </body>
-    </html>
-    
+</html>
