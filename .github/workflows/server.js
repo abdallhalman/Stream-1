@@ -4,7 +4,6 @@ const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const path = require("path");
 
-// الحساب المستهدف للبث
 const TIKTOK_USER = "designer..fares..4k";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
@@ -14,14 +13,15 @@ const FPS    = 25;
 let totalLikes = 0;
 let lastJoinTime = 0;
 let lastCommentTime = 0;
-const EVENT_THROTTLE_MS = 800; // تحسين وقت الاستجابة قليلاً
+let lastFollowTime = 0;
+const EVENT_THROTTLE_MS = 1000; // منع التكدس
 
 const wss = new WebSocket.Server({ port: 8080 });
 let wsClient = null;
 
 wss.on("connection", (ws) => {
     wsClient = ws;
-    console.log("✅ Overlay interface connected local.");
+    console.log("Overlay interface connected local.");
 });
 
 function sendToOverlay(type, data) {
@@ -33,28 +33,21 @@ function sendToOverlay(type, data) {
 const videoPath = path.join(__dirname, '../../video.mp4');
 const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 
-// إعدادات الـ FFmpeg الصارمة لقراءة الـ PNG بسرعة عالية جداً
 const ffmpeg = spawn("ffmpeg", [
     "-f", "image2pipe",
     "-vcodec", "png",
     "-framerate", `${FPS}`,
     "-i", "pipe:0", 
-    "-re", "-stream_loop", "-1", "-i", videoPath, 
-    "-re", "-stream_loop", "-1", "-i", audioPath, 
-    "-filter_complex", "[1:v][0:v]overlay=0:0:shortest=0[v]", 
+    "-stream_loop", "-1", "-re", "-i", videoPath, 
+    "-stream_loop", "-1", "-re", "-i", audioPath, 
+    "-filter_complex", "[1:v][0:v]overlay=0:0[v]", 
     "-map", "[v]", 
     "-map", "2:a", 
     "-c:v", "libx264", 
     "-preset", "ultrafast", 
-    "-tune", "zerolatency",  
-    "-b:v", "2500k",        
-    "-maxrate", "2500k", 
-    "-bufsize", "5000k",    
-    "-g", "50",
-    "-c:a", "aac", 
-    "-b:a", "128k", 
-    "-ar", "44100",
-    "-fflags", "+genpts",
+    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
+    "-g", "60",
+    "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
 ]);
@@ -64,13 +57,7 @@ ffmpeg.stderr.on("data", d => process.stderr.write(d));
 async function startPuppeteer() {
     const browser = await puppeteer.launch({
         headless: true,
-        args: [
-            '--no-sandbox', 
-            '--disable-setuid-sandbox', 
-            '--disable-gpu', 
-            '--disable-dev-shm-usage', 
-            `--window-size=${WIDTH},${HEIGHT}`
-        ]
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', `--window-size=${WIDTH},${HEIGHT}`]
     });
     
     const page = await browser.newPage();
@@ -81,23 +68,22 @@ async function startPuppeteer() {
 
     setInterval(async () => {
         try {
+            const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
             if (ffmpeg.stdin.writable) {
-                // التقاط سريع جداً مع تفعيل الخفة الفائقة للمتصفح لمنع التراكم الهبوطي لـ speed
-                const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
                 ffmpeg.stdin.write(screenshot);
             }
-        } catch (e) {
-            console.error("خطأ أثناء تمرير لقطة الشاشة للـ pipeline:", e.message);
-        }
+        } catch (e) {}
     }, 1000 / FPS);
 }
 
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
+// العدادات الإجمالية
 tiktok.on("roomUser", data => { 
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
 });
 
+// إشعار انضمام الغرفة
 tiktok.on("member", data => {
     const now = Date.now();
     if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
@@ -111,6 +97,21 @@ tiktok.on("member", data => {
     }
 });
 
+// إشعار المتابعين الجدد (تمت إضافته وإصلاحه)
+tiktok.on("follow", data => {
+    const now = Date.now();
+    if (now - lastFollowTime >= EVENT_THROTTLE_MS) {
+        if (data?.nickname || data?.uniqueId) {
+            sendToOverlay("follow", {
+                name: data.nickname || data.uniqueId,
+                avatar: data.profilePictureUrl
+            });
+            lastFollowTime = now;
+        }
+    }
+});
+
+// الإعجابات
 tiktok.on("like", data => { 
     if (data.likeCount > 0) {
         totalLikes += Number(data.likeCount);
@@ -118,6 +119,7 @@ tiktok.on("like", data => {
     }
 });
 
+// التعليقات
 tiktok.on("comment", data => {
     const now = Date.now();
     if (now - lastCommentTime >= EVENT_THROTTLE_MS) {
@@ -131,6 +133,7 @@ tiktok.on("comment", data => {
     }
 });
 
+// الهدايا
 tiktok.on("gift", data => {
     if (data.repeatEnd || data.repeatCount === 1) {
         sendToOverlay("gift", {
@@ -142,30 +145,7 @@ tiktok.on("gift", data => {
     }
 });
 
-// استقبال المتابعات بشكل منفصل تماماً لضمان تفعيل البنر
-tiktok.on("follow", data => {
-    if (data?.nickname || data?.uniqueId) {
-        sendToOverlay("follow", {
-            name: data.nickname || data.uniqueId,
-            avatar: data.profilePictureUrl
-        });
-    }
-});
-
-function connectToTikTok() {
-    console.log(`جاري الاتصال بحساب تيك توك: ${TIKTOK_USER}...`);
-    tiktok.connect()
-        .then(() => console.log("✅ تم الاتصال المباشر بالتيك توك"))
-        .catch(e => {
-            setTimeout(connectToTikTok, 15000);
-        });
-}
-
-connectToTikTok();
-
-tiktok.on('disconnected', () => {
-    setTimeout(connectToTikTok, 5000);
-});
+tiktok.connect().then(() => console.log("Connected TikTok to " + TIKTOK_USER)).catch(e => console.error(e));
 
 setTimeout(startPuppeteer, 5000);
-            
+    
