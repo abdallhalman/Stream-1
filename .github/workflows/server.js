@@ -9,7 +9,7 @@ const TIKTOK_USER = "alarabytv";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
-const FPS    = 15;
+const FPS    = 25;
 
 let totalLikes = 0;
 
@@ -32,24 +32,37 @@ const videoPath = path.join(__dirname, '../../video.mp4');
 const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 
 const ffmpeg = spawn("ffmpeg", [
+    // 1. مدخل الصور من Puppeteer هو المدخل الأساسي (القائد للتوقيت)
     "-f", "image2pipe",
     "-vcodec", "png",
     "-framerate", `${FPS}`,
-    "-i", "pipe:0",
-    "-re", "-stream_loop", "-1",
-    "-r", `${FPS}`,
-    "-i", videoPath,
-    "-re", "-stream_loop", "-1",
-    "-i", audioPath,
-    "-filter_complex", "[1:v][0:v]overlay=0:0:shortest=0[v]",
-    "-map", "[v]",
-    "-map", "2:a",
-    "-c:v", "libx264",
-    "-preset", "ultrafast",
-    "-r", `${FPS}`,
-    "-b:v", "2000k", "-maxrate", "2000k", "-bufsize", "4000k",
-    "-g", "30",
+    "-i", "pipe:0", 
+
+    // 2. مدخل الفيديو مكرر بشكل حر وبدون قيد الـ -re
+    "-stream_loop", "-1",
+    "-i", videoPath, 
+
+    // 3. مدخل الصوت مكرر بشكل حر وبدون قيد الـ -re
+    "-stream_loop", "-1",
+    "-i", audioPath, 
+
+    // 4. الفلتر الذكي: يجبر الـ FFmpeg على أخذ توقيت الفريمات (PTS) من البايب الحي [0:v] 
+    // وتجاهل أي اضطراب زمني يحدث أثناء تكرار الفيديو الخلفي [1:v]
+    "-filter_complex", "[1:v][0:v]overlay=0:0:shortest=0:pts_start_from_first_video=1[v]", 
+
+    // 5. الخرائط والضغط المستقر والمضمون للسيرفرات
+    "-map", "[v]", 
+    "-map", "2:a", 
+    "-c:v", "libx264", 
+    "-preset", "ultrafast", // خيار فائق السرعة لمنع تراكم فريمات المتصفح في الذاكرة
+    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
+    "-g", "60",
+    
+    // ضبط مزامنة الصوت المستمر ومنع الفجوات الزمنية (مهم جداً للـ Loops)
     "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+    "-async", "1",
+    "-vsync", "passthrough",
+    
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
 ]);
