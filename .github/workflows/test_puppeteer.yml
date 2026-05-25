@@ -1,0 +1,51 @@
+name: test.puppeteer
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg \
+            fonts-noto-color-emoji \
+            curl \
+            libgbm1 \
+            libasound2t64 \
+            libnss3 \
+            libxss1 \
+            libgtk-3-0 \
+            libatk-bridge2.0-0 \
+            libgdk-pixbuf2.0-0
+
+      - name: Install Python tools
+        run: pip install gdown
+
+      - name: Install Node tools
+        run: npm install tiktok-live-connector puppeteer ws
+
+      - name: Download Video
+        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
+
+      - name: Download audio assets
+        run: |
+          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
+          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
+          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
+          echo "file 'audio1.mp3'" > mylist.txt
+          echo "file 'audio2.mp3'" >> mylist.txt
+          echo "file 'audio3.mp3'" >> mylist.txt
+          ffmpeg -f concat -safe 0 -i mylist.txt -c copy merged_audio.mp3 -y
+
+      - name: Run Puppeteer Stream Server
+        env:
+          STREAM_KEY: ${{ secrets.STREAM_KEY }}
+        run: node server.js  # ✅ Fix 4: المسار الصحيح

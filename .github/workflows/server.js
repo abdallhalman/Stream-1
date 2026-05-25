@@ -1,4 +1,4 @@
-const { TikTokConnectionWrapper } = require('tiktok-live-connector');
+const { TikTokLiveConnect } = require('tiktok-live-connector');
 const puppeteer = require('puppeteer');
 const { spawn } = require('child_process');
 const WebSocket = require('ws');
@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 
 const TIKTOK_USERNAME = process.argv[2] || 'moslim4quran'; 
-const STREAM_KEY = process.argv[3] || 'YOUR_STREAM_KEY';
+const STREAM_KEY = process.argv[3] || process.env.STREAM_KEY || 'YOUR_STREAM_KEY'; // ✅ Fix 1: يقرأ من env
 const RTMP_URL = `rtmp://live-api-s.restream.io/live/${STREAM_KEY}`;
 
 const FPS = 30;
@@ -14,7 +14,7 @@ const WIDTH = 1280;
 const HEIGHT = 720;
 
 const videoPath = path.join(__dirname, 'video.mp4');
-const audioPath = path.join(__dirname, 'audio.mp3');
+const audioPath = path.join(__dirname, 'merged_audio.mp3'); // ✅ Fix 2: الاسم الصحيح
 
 let wss;
 let wsClient = null;
@@ -110,14 +110,14 @@ async function startBrowser() {
                 ffmpegProcess.stdin.write(screenshot);
             }
         } catch (err) {
-            // Safe fallback
+            // Safe fallback for frame pressure
         }
     }, 1000 / FPS);
 }
 
 function connectTikTok() {
-    // Instantiating via the correct Wrapper instance method verified for current library build
-    const tiktokConnect = new TikTokConnectionWrapper(TIKTOK_USERNAME, {}, true);
+    // ✅ Fix 3: حذف enableExtendedSignaling غير المدعوم
+    const tiktokConnect = new TikTokLiveConnect(TIKTOK_USERNAME);
 
     tiktokConnect.on('connected', () => {
         console.log(`\nTiktok Connection Established Successfully with @${TIKTOK_USERNAME}!`);
@@ -171,4 +171,3 @@ startWebSocketServer();
 startFFmpeg();
 startBrowser();
 setTimeout(connectTikTok, 5000);
-            
