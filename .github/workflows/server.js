@@ -9,7 +9,7 @@ const TIKTOK_USER = "alarabytv";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
-const FPS    = 25;
+const FPS    = 15;
 
 let totalLikes = 0;
 
@@ -34,26 +34,26 @@ const audioPath = path.join(__dirname, '../../merged_audio.mp3');
 const ffmpeg = spawn("ffmpeg", [
     "-f", "image2pipe",
     "-vcodec", "png",
-    "-framerate", "25", // تقليل الفريمات قليلاً للتخفيف
+    "-framerate", `${FPS}`,
     "-i", "pipe:0",
-    "-re", "-stream_loop", "-1", "-i", videoPath,
-    "-re", "-stream_loop", "-1", "-i", audioPath,
+    "-re", "-stream_loop", "-1",
+    "-r", `${FPS}`,
+    "-i", videoPath,
+    "-re", "-stream_loop", "-1",
+    "-i", audioPath,
     "-filter_complex", "[1:v][0:v]overlay=0:0:shortest=0[v]",
-    "-map", "[v]", 
+    "-map", "[v]",
     "-map", "2:a",
-    "-c:v", "libx264", 
-    "-preset", "ultrafast", // تسريع المعالجة لأقصى حد لرفع الـ speed
-    "-b:v", "2000k",        // تقليل البتريت قليلاً للاستقرار
-    "-maxrate", "2000k", 
-    "-bufsize", "4000k",
-    "-g", "50",
-    "-c:a", "aac", 
-    "-b:a", "128k", 
-    "-ar", "44100",
-    "-fflags", "+genpts",
+    "-c:v", "libx264",
+    "-preset", "ultrafast",
+    "-r", `${FPS}`,
+    "-b:v", "2000k", "-maxrate", "2000k", "-bufsize", "4000k",
+    "-g", "30",
+    "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
 ]);
+
 
 ffmpeg.stderr.on("data", d => process.stderr.write(d));
 
