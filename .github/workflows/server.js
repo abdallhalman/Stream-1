@@ -32,29 +32,29 @@ function sendToOverlay(type, data) {
 
 const videoPath = path.join(__dirname, '../../video.mp4');
 const audioPath = path.join(__dirname, '../../merged_audio.mp3');
-const overlayPath = path.join(__dirname, '../../overlay.png'); // ← الملف على الديسك
+const overlayPath = path.join(__dirname, '../../overlay.png');
 
-const ffmpeg = spawn("ffmpeg", [
-    // ← الأوفرلاي: يقرأ من الديسك مباشرة بدون pipe
-    "-re", "-stream_loop", "-1", "-i", overlayPath,
-    // ← الفيديو الرئيسي
-    "-stream_loop", "-1", "-re", "-i", videoPath,
-    // ← الصوت
-    "-stream_loop", "-1", "-re", "-i", audioPath,
-    "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
-    "-map", "[v]",
-    "-map", "2:a",
-    "-c:v", "libx264",
-    "-preset", "ultrafast",
-    "-tune", "zerolatency",
-    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "2500k",
-    "-g", "50",
-    "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
-    "-f", "flv",
-    `rtmp://live.restream.io/live/${STREAM_KEY}`
-]);
-
-ffmpeg.stderr.on("data", d => process.stderr.write(d));
+// ← FFmpeg يبدأ فقط بعد استدعاء هذه الدالة
+function startFFmpeg() {
+    const ffmpeg = spawn("ffmpeg", [
+        "-re", "-stream_loop", "-1", "-i", overlayPath,
+        "-stream_loop", "-1", "-re", "-i", videoPath,
+        "-stream_loop", "-1", "-re", "-i", audioPath,
+        "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
+        "-map", "[v]",
+        "-map", "2:a",
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-tune", "zerolatency",
+        "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "2500k",
+        "-g", "50",
+        "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+        "-f", "flv",
+        `rtmp://live.restream.io/live/${STREAM_KEY}`
+    ]);
+    ffmpeg.stderr.on("data", d => process.stderr.write(d));
+    console.log("FFmpeg started.");
+}
 
 async function startPuppeteer() {
     const browser = await puppeteer.launch({
@@ -68,17 +68,22 @@ async function startPuppeteer() {
     const htmlPath = path.join(__dirname, 'overlay.html');
     await page.goto(`file://${htmlPath}`);
 
-    // ← أول صورة قبل ما FFmpeg يبدأ
+    // ← أول صورة تُكتب على الديسك أولاً
     const first = await page.screenshot({ type: 'png', omitBackground: true });
     fs.writeFileSync(overlayPath, first);
+    console.log("overlay.png written, starting FFmpeg...");
 
+    // ← الآن فقط يبدأ FFmpeg بعد ما الملف موجود
+    startFFmpeg();
+
+    // ← تحديث الأوفرلاي كل ثانية
     setInterval(async () => {
         try {
-            const screenshot = await page.screenshot({ 
-                type: 'png',           // ← PNG يدعم الشفافية
-                omitBackground: true   // ← يحافظ على الشفافية
+            const screenshot = await page.screenshot({
+                type: 'png',
+                omitBackground: true
             });
-            fs.writeFileSync(overlayPath, screenshot); // ← يستبدل القديم مباشرة
+            fs.writeFileSync(overlayPath, screenshot);
         } catch (e) {
             console.error("Screenshot error:", e.message);
         }
@@ -137,5 +142,4 @@ tiktok.on("gift", data => {
 
 tiktok.connect().then(() => console.log("Connected TikTok to " + TIKTOK_USER)).catch(e => console.error(e));
 
-// ← FFmpeg يبدأ بعد 5 ثواني لضمان وجود overlay.png على الديسك
-setTimeout(startPuppeteer, 5000);
+startPuppeteer();
