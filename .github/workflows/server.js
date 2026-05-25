@@ -11,7 +11,9 @@ const WIDTH  = 1280;
 const HEIGHT = 720;
 const FPS    = 25;
 
-let totalLikes = 0;
+let lastJoinTime = 0;
+let lastCommentTime = 0;
+const EVENT_THROTTLE_MS = 1000;
 
 const wss = new WebSocket.Server({ port: 8080 });
 let wsClient = null;
@@ -83,11 +85,15 @@ tiktok.on("roomUser", data => {
 
 // 2. إحياء حدث الانضمام الشرعي والمستقل لسحب الأسماء فوراً
 tiktok.on("member", data => {
-    if (data?.nickname || data?.uniqueId) {
-        sendToOverlay("join", {
-            name: data.nickname || data.uniqueId,
-            avatar: data.profilePictureUrl
-        });
+    const now = Date.now();
+    if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
+        if (data?.nickname || data?.uniqueId) {
+            sendToOverlay("join", {
+                name: data.nickname || data.uniqueId,
+                avatar: data.profilePictureUrl
+            });
+            lastJoinTime = now;
+        }
     }
 });
 
@@ -99,14 +105,17 @@ tiktok.on("like", data => {
     }
 });
 
-// 4. حدث التعليقات الآمن (يمرر البيانات الخام للمتصفح دون تعقيد البادجات هنا)
 tiktok.on("comment", data => {
-    sendToOverlay("comment", {
-        name: data.nickname || data.uniqueId,
-        text: data.comment,
-        avatar: data.profilePictureUrl,
-        badges: data.badges || []
-    });
+    const now = Date.now();
+    if (now - lastCommentTime >= EVENT_THROTTLE_MS) {
+        sendToOverlay("comment", {
+            name: data.nickname || data.uniqueId,
+            text: data.comment,
+            avatar: data.profilePictureUrl,
+            badges: data.badges || []
+        });
+        lastCommentTime = now;
+    }
 });
 
 // 5. حدث الهدايا الشامل (لكل أنواع الهدايا)
