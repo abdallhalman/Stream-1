@@ -3,12 +3,13 @@ const { spawn } = require("child_process");
 const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const path = require("path");
+const fs = require("fs");
 
 const TIKTOK_USER = "designer..fares..4k";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
-const FPS    = 10; // ← تقليل من 25 إلى 10: الأوفرلاي لا يحتاج أكثر
+const FPS    = 10;
 
 let totalLikes = 0;
 let lastJoinTime = 0;
@@ -31,21 +32,22 @@ function sendToOverlay(type, data) {
 
 const videoPath = path.join(__dirname, '../../video.mp4');
 const audioPath = path.join(__dirname, '../../merged_audio.mp3');
+const overlayPath = path.join(__dirname, '../../overlay.png'); // ← الملف على الديسك
 
 const ffmpeg = spawn("ffmpeg", [
-    "-f", "image2pipe",
-    "-vcodec", "mjpeg",      // ← JPEG بدل PNG: حجم أصغر بكثير (~50KB بدل ~500KB)
-    "-framerate", `${FPS}`,
-    "-i", "pipe:0",
+    // ← الأوفرلاي: يقرأ من الديسك مباشرة بدون pipe
+    "-re", "-stream_loop", "-1", "-i", overlayPath,
+    // ← الفيديو الرئيسي
     "-stream_loop", "-1", "-re", "-i", videoPath,
+    // ← الصوت
     "-stream_loop", "-1", "-re", "-i", audioPath,
-    "-filter_complex", `[1:v][0:v]overlay=0:0[v]`,
+    "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
     "-map", "[v]",
     "-map", "2:a",
     "-c:v", "libx264",
     "-preset", "ultrafast",
-    "-tune", "zerolatency",  // ← يقلل latency ويمنع تراكم buffer
-    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "2500k", // ← bufsize = maxrate (مش ضعفه)
+    "-tune", "zerolatency",
+    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "2500k",
     "-g", "50",
     "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
     "-f", "flv",
@@ -54,50 +56,39 @@ const ffmpeg = spawn("ffmpeg", [
 
 ffmpeg.stderr.on("data", d => process.stderr.write(d));
 
-// ← المفتاح: backpressure - لا ترسل فريم جديد إلا لما FFmpeg جاهز
-let isSending = false;
-
 async function startPuppeteer() {
     const browser = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', `--window-size=${WIDTH},${HEIGHT}`]
     });
-    
+
     const page = await browser.newPage();
     await page.setViewport({ width: WIDTH, height: HEIGHT });
-    
+
     const htmlPath = path.join(__dirname, 'overlay.html');
     await page.goto(`file://${htmlPath}`);
 
-    setInterval(async () => {
-        // ← إذا FFmpeg stdin مليان (drain لم يُستدعى) تخطى الفريم هذا
-        if (isSending) return;
-        if (!ffmpeg.stdin.writable) return;
+    // ← أول صورة قبل ما FFmpeg يبدأ
+    const first = await page.screenshot({ type: 'png', omitBackground: true });
+    fs.writeFileSync(overlayPath, first);
 
+    setInterval(async () => {
         try {
-            isSending = true;
             const screenshot = await page.screenshot({ 
-                type: 'jpeg',      // ← JPEG: أصغر وأسرع
-                quality: 70        // ← جودة 70%: كافية للأوفرلاي
+                type: 'png',           // ← PNG يدعم الشفافية
+                omitBackground: true   // ← يحافظ على الشفافية
             });
-            
-            const canWrite = ffmpeg.stdin.write(screenshot);
-            if (!canWrite) {
-                // ← FFmpeg buffer ممتلئ: انتظر حتى يفرغ (drain event)
-                await new Promise(resolve => ffmpeg.stdin.once('drain', resolve));
-            }
+            fs.writeFileSync(overlayPath, screenshot); // ← يستبدل القديم مباشرة
         } catch (e) {
             console.error("Screenshot error:", e.message);
-        } finally {
-            isSending = false;
         }
     }, 1000 / FPS);
 }
 
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
-tiktok.on("roomUser", data => { 
-    if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
+tiktok.on("roomUser", data => {
+    if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount);
 });
 
 tiktok.on("member", data => {
@@ -113,10 +104,10 @@ tiktok.on("member", data => {
     }
 });
 
-tiktok.on("like", data => { 
+tiktok.on("like", data => {
     if (data.likeCount > 0) {
         totalLikes += Number(data.likeCount);
-        sendToOverlay("like", totalLikes); 
+        sendToOverlay("like", totalLikes);
     }
 });
 
@@ -146,5 +137,5 @@ tiktok.on("gift", data => {
 
 tiktok.connect().then(() => console.log("Connected TikTok to " + TIKTOK_USER)).catch(e => console.error(e));
 
+// ← FFmpeg يبدأ بعد 5 ثواني لضمان وجود overlay.png على الديسك
 setTimeout(startPuppeteer, 5000);
-                
