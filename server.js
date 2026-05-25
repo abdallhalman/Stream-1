@@ -5,7 +5,7 @@ const WebSocket = require('ws');
 const path = require('path');
 const fs = require('fs');
 
-const TIKTOK_USERNAME = process.argv[2] || 'moslim4quran'; 
+const TIKTOK_USERNAME = process.argv[2] || 'alarabytv'; 
 const STREAM_KEY = process.argv[3] || process.env.STREAM_KEY || 'YOUR_STREAM_KEY';
 const RTMP_URL = `rtmp://live-api-s.restream.io/live/${STREAM_KEY}`;
 
