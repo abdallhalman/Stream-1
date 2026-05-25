@@ -7,8 +7,7 @@ const fs = require('fs');
 
 const TIKTOK_USERNAME = process.argv[2] || 'alarabytv'; 
 const STREAM_KEY = process.argv[3] || process.env.STREAM_KEY || 'YOUR_STREAM_KEY';
-const RTMP_URL = `rtmp://live-api-s.restream.io/live/${STREAM_KEY}`;
-
+const RTMP_URL = `rtmp://live.restream.io/live/${STREAM_KEY}`
 const FPS = 30;
 const WIDTH = 1280;
 const HEIGHT = 720;
