@@ -36,14 +36,24 @@ const ffmpeg = spawn("ffmpeg", [
     "-vcodec", "png",
     "-framerate", `${FPS}`,
     "-i", "pipe:0",
-    "-stream_loop", "-1", "-re", "-i", videoPath,
-    "-stream_loop", "-1", "-re", "-i", audioPath,
-    "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
-    "-map", "[v]", "-map", "2:a",
-    "-c:v", "libx264", "-preset", "veryfast",
-    "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
+    // إضافة الـ loop بشكل صحيح لكل مدخل مع الـ re لتثبيت الزمن
+    "-re", "-stream_loop", "-1", "-i", videoPath,
+    "-re", "-stream_loop", "-1", "-i", audioPath,
+    // الفلتر المعقد مع تفعيل خيار العرض المستمر
+    "-filter_complex", "[1:v][0:v]overlay=0:0:shortest=0[v]",
+    "-map", "[v]", 
+    "-map", "2:a",
+    "-c:v", "libx264", 
+    "-preset", "veryfast",
+    "-b:v", "2500k", 
+    "-maxrate", "2500k", 
+    "-bufsize", "5000k",
     "-g", "60",
-    "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+    "-c:a", "aac", 
+    "-b:a", "128k", 
+    "-ar", "44100",
+    // هذا السطر يمنع الـ FFmpeg من إغلاق الميكسر لو اختلف توقيت الملفات
+    "-fflags", "+genpts",
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
 ]);
