@@ -11,6 +11,7 @@ const WIDTH  = 1280;
 const HEIGHT = 720;
 const FPS    = 25;
 
+let totalLikes = 0;
 let lastJoinTime = 0;
 let lastCommentTime = 0;
 const EVENT_THROTTLE_MS = 1000;
@@ -83,7 +84,6 @@ tiktok.on("roomUser", data => {
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount); 
 });
 
-// 2. إحياء حدث الانضمام الشرعي والمستقل لسحب الأسماء فوراً
 tiktok.on("member", data => {
     const now = Date.now();
     if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
@@ -97,7 +97,7 @@ tiktok.on("member", data => {
     }
 });
 
-// 3. حدث اللايكات المستقر
+
 tiktok.on("like", data => { 
     if (data.likeCount > 0) {
         totalLikes += Number(data.likeCount);
