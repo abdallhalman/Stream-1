@@ -198,6 +198,6 @@ tiktok.on("gift", data => {
     }
 });
 
-connectTikTok();
+setTimeout(connectTikTok, 120000);
 startPuppeteer();
   
