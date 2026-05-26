@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Stream Overlay</title>
+    <title>Stream Overlay Premium</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,36 +16,35 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── الساعة الذكية (زاوية فوق يسار) بتوقيت مكة ── */
+        /* ── 1. الساعة المصغرة بدون ثواني (فوق يسار) ── */
         .clock-box {
             position: absolute;
             top: 25px;
             left: 25px;
-            background: rgba(12, 12, 18, 0.45); /* زيادة الشفافية */
+            background: rgba(0, 0, 0, 0.55);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 18px;
-            padding: 12px 24px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            padding: 8px 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             z-index: 100;
         }
         .clock-time {
-            font-size: 30px; /* تكبير درجة الخط */
-            font-weight: 800; /* خط أوضح وأثقل */
+            font-size: 21px; /* تصغير الخط */
+            font-weight: 700;
             color: #ffffff;
-            letter-spacing: 1.5px;
+            letter-spacing: 1px;
             direction: ltr;
         }
         .clock-label {
-            font-size: 12px;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.6);
-            letter-spacing: 1px;
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 1px;
         }
 
         /* ── شريط الإحصائيات (فوق يمين) ── */
@@ -54,27 +53,26 @@
             top: 25px;
             right: 25px;
             display: flex;
-            gap: 24px;
-            font-size: 24px; /* تكبير الخط */
+            gap: 20px;
+            font-size: 21px;
             font-weight: 700;
             color: #ffffff;
-            background: rgba(12, 12, 18, 0.55);
+            background: rgba(0, 0, 0, 0.55);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            padding: 12px 28px;
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            padding: 10px 25px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
             z-index: 100;
         }
 
-        /* ── بنر الهدايا (تهدئة السرعة بالكامل) ── */
+        /* ── بنر الهدايا الذكي المستقر ── */
         #gift-banner-container {
             position: absolute;
             top: 160px;
             left: 50%;
             transform: translateX(-50%);
-            width: 650px;
+            width: 620px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -82,116 +80,98 @@
             z-index: 90;
         }
         .gift-banner {
-            background: linear-gradient(135deg, rgba(190, 0, 110, 0.85) 0%, rgba(95, 0, 210, 0.85) 100%);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 24px;
-            padding: 18px 40px;
+            background: linear-gradient(135deg, rgba(180, 0, 100, 0.92) 0%, rgba(90, 0, 200, 0.92) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            padding: 16px 36px;
             color: white;
             display: flex;
             align-items: center;
-            gap: 20px;
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4);
-            /* أنيميشن ناعم وبطيء للدخول والخروج بسلاسة عالية */
-            animation: smoothBounceIn 0.8s cubic-bezier(0.25, 1, 0.5, 1), fadeOut 0.6s ease-out 5.4s forwards;
+            gap: 18px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .gift-banner img { 
-            width: 58px; height: 58px; 
-            border-radius: 50%; 
-            border: 2px solid rgba(255, 255, 255, 0.5); 
-        }
-        .gift-text h2 { font-size: 25px; font-weight: 700; color: #fff; }
-        .gift-text p  { font-size: 19px; color: #ffeb3b; font-weight: 700; margin-top: 4px; }
+        .gift-banner img { width: 52px; height: 52px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.4); }
+        .gift-text h2 { font-size: 22px; font-weight: 700; color: #fff; }
+        .gift-text p  { font-size: 17px; color: #ffeb3b; font-weight: 700; margin-top: 3px; display: inline-block; }
+        
+        /* تأثير النبض لزيادة العداد حياً */
+        .count-pop { animation: popScale 0.3s ease-out; }
 
-        /* ── بنر المتابعة المطور (فوق الكل + شفاف ونعومة قصوى) ── */
+        /* ── بنر المتابعة الذكي (فوق الكل) ── */
         #follow-banner-container {
             position: absolute;
-            bottom: 140px; /* رفعه قليلاً للأعلى لتفادي كروت الدخول */
+            bottom: 140px;
             left: 50%;
             transform: translateX(-50%);
-            width: 58px0px;
+            width: 540px;
             pointer-events: none;
-            z-index: 200; /* أعلى قيمة ليكون فوق كل الكروت والإشعارات */
+            z-index: 200; /* يضمن الظهور فوق كروت الشات والانضمام */
         }
         .follow-banner {
-            background: rgba(10, 8, 25, 0.60); /* زيادة الشفافية */
-            backdrop-filter: blur(25px); /* تعميق البلور الزجاجي */
+            background: rgba(10, 8, 25, 0.65);
+            backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(157, 93, 255, 0.4);
-            border-radius: 24px;
-            padding: 18px 26px;
+            border: 1px solid rgba(157, 93, 255, 0.5);
+            border-radius: 22px;
+            padding: 16px 22px;
             display: flex;
             align-items: center;
-            gap: 20px;
-            box-shadow: 0 0 50px rgba(157, 93, 255, 0.2), 0 15px 45px rgba(0, 0, 0, 0.5);
-            /* تهدئة أنيميشن الصعود وجعله انسيابياً وبطيئاً */
-            animation: smoothSlideUp 0.8s cubic-bezier(0.25, 1, 0.5, 1), fadeOut 0.6s ease-out 5.4s forwards;
+            gap: 16px;
+            box-shadow: 0 0 40px rgba(157, 93, 255, 0.25), 0 12px 40px rgba(0, 0, 0, 0.6);
+            animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .follow-banner img {
-            width: 64px; height: 64px;
-            border-radius: 50%;
-            border: 2px solid rgba(157, 93, 255, 0.8);
-            flex-shrink: 0;
-        }
+        .follow-banner img { width: 56px; height: 56px; border-radius: 50%; border: 2px solid rgba(157, 93, 255, 0.7); flex-shrink: 0; }
         .follow-info { flex: 1; }
-        .follow-label {
-            font-size: 13px;
-            font-weight: 800;
-            color: rgba(187, 140, 255, 1);
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-        .follow-name {
-            font-size: 25px; /* تكبير اسم المتابع */
-            color: #ffffff;
-            font-weight: 700;
-            margin-top: 3px;
-        }
-        .follow-count {
-            font-size: 18px; /* تكبير حجم عداد المتابعين ليظهر بوضوح عالي */
-            color: rgba(255, 255, 255, 0.8); /* توضيح اللون */
-            margin-top: 4px;
-            font-weight: 700;
-        }
-        .follow-icon { font-size: 38px; flex-shrink: 0; }
+        .follow-label { font-size: 12px; font-weight: 700; color: rgba(180, 130, 255, 0.9); letter-spacing: 1.5px; text-transform: uppercase; }
+        .follow-name { font-size: 24px; color: #ffffff; font-weight: 700; margin-top: 2px; }
+        .follow-count { font-size: 16px; color: rgba(255, 255, 255, 0.8); margin-top: 3px; font-weight: 600; }
+        .follow-icon { font-size: 34px; flex-shrink: 0; }
 
-        /* ── صندوق التعليقات ── */
+        /* ── 2. صندوق التعليقات المحسّن (قصير + تأثير التلاشي التدرجي للذكاء البصري iOS) ── */
         #chat-container {
             position: absolute;
             bottom: 40px;
             right: 30px;
             width: 440px;
-            height: 440px;
+            height: 350px; /* تقصير الصندوق لحمايته من التمدد للأعلى */
             display: flex;
             flex-direction: column-reverse;
             overflow: hidden;
             z-index: 50;
+            /* سر صناعة قناع التلاشي التدريجي الـ iOS الخيالي */
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 65%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 65%, rgba(0,0,0,0) 100%);
         }
+        
+        /* تطابق كامل ومثالي مع حواف كروت الانضمام ونظام الـ iOS الرفيع */
         .chat-msg {
             background: rgba(12, 12, 18, 0.75);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.12); /* خط الحافة الرفيع الحاد والممتاز */
             color: #ffffff;
             padding: 12px 16px;
-            border-radius: 16px;
-            margin-top: 10px; /* زيادة التباعد الرأسي بين الكروت لنعومة الصعود */
+            border-radius: 18px; /* نفس حواف الانضمام تماماً */
+            margin-top: 10px;
             display: flex;
             align-items: flex-start;
             gap: 12px;
-            animation: smoothSlideInRight 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            /* استخدام نفس نظام أنيميشن الـ الانضمام الناعم والمريح للعين */
+            animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15);
         }
-        .chat-msg .avatar { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid rgba(255, 188, 0, 0.7); flex-shrink: 0; }
-        .chat-msg .badge  { width: 22px; height: 22px; object-fit: contain; vertical-align: middle; margin-right: 4px; }
-        .chat-msg .username { color: #ffbc00; font-weight: 700; font-size: 18px; display: inline-flex; align-items: center; gap: 4px; }
-        .chat-msg .text { color: rgba(255, 255, 255, 0.95); font-size: 17px; word-break: break-word; margin-top: 4px; line-height: 1.4; font-weight: 600; }
+        .chat-msg .avatar { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255, 188, 0, 0.6); flex-shrink: 0; }
+        .chat-msg .badge  { width: 20px; height: 20px; object-fit: contain; }
+        .chat-msg .username { color: #ffbc00; font-weight: 700; font-size: 17px; }
+        .chat-msg .text { color: rgba(255, 255, 255, 0.95); font-size: 16px; word-break: break-word; margin-top: 3px; line-height: 1.4; font-weight: 600; }
 
-        /* ── صندوق الانضمامات ── */
+        /* ── صندوق الانضمامات المستقر ── */
         #join-container {
             position: absolute;
             bottom: 40px;
             left: 30px;
-            width: 380px;
-            height: 440px;
+            width: 360px;
+            height: 350px;
             display: flex;
             flex-direction: column-reverse;
             overflow: hidden;
@@ -199,35 +179,36 @@
             z-index: 50;
         }
         .join-notification {
-            background: rgba(20, 20, 30, 0.55);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 14px 18px;
+            background: rgba(20, 20, 30, 0.60);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 13px 16px;
             border-radius: 18px;
             margin-top: 10px;
             display: flex;
             align-items: center;
-            gap: 14px;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.25);
-            animation: smoothSlideInLeft 0.5s cubic-bezier(0.25, 1, 0.5, 1), fadeOut 0.5s ease-out 4.5s forwards;
+            gap: 13px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+            animation: slideInLeft 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15), fadeOut 0.5s ease-out 4.5s forwards;
         }
-        .join-notification .avatar { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.4); }
-        .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 17px; }
-        .join-notification .action { color: rgba(255, 255, 255, 0.6); font-size: 13px; margin-top: 2px; font-weight: 600; }
+        .join-notification .avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
+        .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 16px; }
+        .join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 13px; margin-top: 2px; font-weight: 600; }
 
-        /* ── تحسين وتخفيف سرعة الـ Animations (تهدئة الأنيميشن) ── */
-        @keyframes smoothSlideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes smoothSlideInLeft  { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes smoothSlideUp      { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes smoothBounceIn     { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes fadeOut            { from { opacity: 1; } to { opacity: 0; max-height: 0; padding: 0; margin: 0; border: none; } }
+        /* ── جرافيكس الأنيميشنز الثابتة والمريحة ── */
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInLeft  { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideUp      { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounceIn     { 0% { opacity:0; transform:scale(0.85); } 70% { opacity:1; transform:scale(1.02); } 100% { transform:scale(1); } }
+        @keyframes fadeOut      { from { opacity:1; } to { opacity:0; max-height:0; padding:0; margin:0; border:none; } }
+        @keyframes popScale     { 0% { transform: scale(1); } 50% { transform: scale(1.3); color: #fff; } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
     <div class="clock-box">
-        <div class="clock-time" id="clock-time">00:00:00</div>
+        <div class="clock-time" id="clock-time">00:00</div>
         <div class="clock-label">مكة المكرمة · KSA</div>
     </div>
 
@@ -242,25 +223,32 @@
     <div id="join-container"></div>
 
     <script>
-        // ── تحديث توقيت مكة المكرمة بدقة ──
+        // تحديث الساعة بدون ثواني
         function updateClock() {
             const now = new Date();
             const ksa = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Riyadh" }));
             const h = String(ksa.getHours()).padStart(2, '0');
             const m = String(ksa.getMinutes()).padStart(2, '0');
-            const s = String(ksa.getSeconds()).padStart(2, '0');
-            document.getElementById("clock-time").textContent = `${h}:${m}:${s}`;
+            document.getElementById("clock-time").textContent = `${h}:${m}`;
         }
         updateClock();
-        setInterval(updateClock, 1000);
+        setInterval(updateClock, 10000); // تحديث هادئ كل 10 ثوانٍ لعدم إجهاد الصفحة
 
-        // ── الاتصال وسحب البيانات الحية ──
         const ws = new WebSocket("ws://localhost:8080");
         const chatContainer   = document.getElementById("chat-container");
         const joinContainer   = document.getElementById("join-container");
         const giftContainer   = document.getElementById("gift-banner-container");
         const followContainer = document.getElementById("follow-banner-container");
         const fallbackAvatar  = 'https://www.tiktok.com/favicon.ico';
+
+        // متغيرات ذكية لحفظ الذاكرة اللحظية للبث ومنع التكرار البصري
+        let currentGiftUser  = null;
+        let currentGiftName  = null;
+        let currentGiftCount = 0;
+        let giftTimer        = null;
+
+        let currentFollowUser = null;
+        let followTimer       = null;
 
         ws.onmessage = (event) => {
             try {
@@ -306,15 +294,18 @@
                             <div class="action">انضم إلى البث الآن ✨</div>
                         </div>`;
                     joinContainer.prepend(joinDiv);
-                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 5000); // تمديد الوقت لـ 5 ثوانٍ للهدوء
+                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 5000);
                 }
 
+                // ── منطق المتابعة الذكي المتتالي ──
                 if (msg.type === "follow") {
-                    const avatar = msg.data.avatar || fallbackAvatar;
                     const name   = msg.data.name || "متابع جديد";
+                    const avatar = msg.data.avatar || fallbackAvatar;
                     const count  = msg.data.followerCount ? Number(msg.data.followerCount).toLocaleString() : "";
-                    
-                    // البنر يظهر لمدة 6 ثوانٍ كاملة ليعطي هيبة وهدوء في العرض والاختفاء
+
+                    clearTimeout(followTimer);
+                    currentFollowUser = name;
+
                     followContainer.innerHTML = `
                         <div class="follow-banner">
                             <img src="${avatar}" onerror="this.src='${fallbackAvatar}'">
@@ -325,27 +316,63 @@
                             </div>
                             <div class="follow-icon">🎉</div>
                         </div>`;
-                    setTimeout(() => { followContainer.innerHTML = ""; }, 6000);
+
+                    followTimer = setTimeout(() => {
+                        followContainer.innerHTML = "";
+                        currentFollowUser = null;
+                    }, 5500);
                 }
 
+                // ── منطق العداد التراكمي الحي للهدايا المتتالية ──
                 if (msg.type === "gift") {
-                    const giftAvatar = msg.data.avatar || fallbackAvatar;
-                    // البنر يظهر لمدة 6 ثوانٍ مريحة وبطيئة
-                    giftContainer.innerHTML = `
-                        <div class="gift-banner">
-                            <img src="${giftAvatar}" onerror="this.src='${fallbackAvatar}'">
-                            <div class="gift-text">
-                                <h2>🤍 شكراً: ${msg.data.name || "داعم كريم"}</h2>
-                                <p>${msg.data.giftName} × ${msg.data.count}</p>
-                            </div>
-                        </div>`;
-                    setTimeout(() => { giftContainer.innerHTML = ""; }, 6000);
+                    const name     = msg.data.name || "داعم كريم";
+                    const giftName = msg.data.giftName;
+                    const avatar   = msg.data.avatar || fallbackAvatar;
+                    const newCount = msg.data.count || 1;
+
+                    // تحقق إذا كان نفس الشخص يرسل نفس الهدية متتالياً
+                    if (currentGiftUser === name && currentGiftName === giftName) {
+                        currentGiftCount += newCount;
+                        clearTimeout(giftTimer);
+                        
+                        const countEl = document.getElementById("gift-counter-hit");
+                        if (countEl) {
+                            countEl.innerText = `${giftName} × ${currentGiftCount}`;
+                            // تفعيل هزة العداد الحية النطاطة
+                            countEl.classList.remove("count-pop");
+                            void countEl.offsetWidth; 
+                            countEl.classList.add("count-pop");
+                        }
+                    } else {
+                        // إرسالية جديدة بالكامل
+                        currentGiftUser  = name;
+                        currentGiftName  = giftName;
+                        currentGiftCount = newCount;
+                        clearTimeout(giftTimer);
+
+                        giftContainer.innerHTML = `
+                            <div class="gift-banner">
+                                <img src="${avatar}" onerror="this.src='${fallbackAvatar}'">
+                                <div class="gift-text">
+                                    <h2>🤍 شكراً: ${name}</h2>
+                                    <p id="gift-counter-hit" class="count-pop">${giftName} × ${currentGiftCount}</p>
+                                </div>
+                            </div>`;
+                    }
+
+                    giftTimer = setTimeout(() => {
+                        giftContainer.innerHTML = "";
+                        currentGiftUser  = null;
+                        currentGiftName  = null;
+                        currentGiftCount = 0;
+                    }, 6000);
                 }
 
             } catch (e) {
-                console.error("خطأ:", e);
+                console.error("خطأ في التحليل:", e);
             }
         };
     </script>
 </body>
-</html>
+    </html>
+    
