@@ -33,11 +33,32 @@ jobs:
         run: npm install tiktok-live-connector puppeteer ws
 
       - name: Download Video
-        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
+        run: gdown 1NXc6QzwO0ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
 
-      - name: Download single audio asset (Fast Stream)
+      # ── تحميل الـ 5 ملفات صوتية كاملة من الجوجل درايف ──
+      - name: Download multiple audio files (5 Assets)
         run: |
-          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a1.tmp && ffmpeg -i a1.tmp merged_audio.mp3 -y
+          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
+          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
+          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
+          gdown 19PiaqOunxL6UvY97G93B7f_A_gXJ1rWh -O a4.tmp && ffmpeg -i a4.tmp audio4.mp3 -y
+          gdown 1bYg84WdC76v5rG44x839p4V9G_lM1P6Z -O a5.tmp && ffmpeg -i a5.tmp audio5.mp3 -y
+
+      # ── نظام خلط الـ 5 أصوات عشوائياً وتغيير السرعة والفريمات لكسر البصمة ──
+      - name: Create playlist and shuffle merge
+        run: |
+          # خلط ترتيب الـ 5 ملفات صوتية بشكل عشوائي تماماً عند كل تشغيل
+          ls audio*.mp3 | shuf > playlist.txt
+          while IFS= read -r file; do
+            echo "file '$file'"
+          done < playlist.txt > concat.txt
+          
+          # توليد سرعات فريمات وترددات صوتية متغيرة عشوائياً لكسر خوارزميات الحظر
+          RND_FPS=$(echo "scale=2; 28 + ($RANDOM % 5)" | bc)
+          RND_TEMPO=$(echo "scale=3; 0.98 + (($RANDOM % 5) / 100)" | bc)
+          
+          # دمج الـ 5 ملفات مع الفلاتر العشوائية لإنتاج الملف الصوتي المشوش النهائي
+          ffmpeg -f concat -safe 0 -i concat.txt -filter:a "atempo=$RND_TEMPO" -r $RND_FPS merged_audio.mp3 -y
 
       - name: Run Puppeteer Stream Server
         env:
