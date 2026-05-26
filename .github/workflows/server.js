@@ -5,12 +5,12 @@ const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
 
-const TIKTOK_USER = "alarabytv";
+const TIKTOK_USER = "designer..fares..4k";
 const STREAM_KEY = process.env.STREAM_KEY;
-const WIDTH  = 1280;
-const HEIGHT = 720;
-const FPS    = 30;
-const BUFFER_SIZE = 60; // 30fps × 2 ثانية - نكبرها لـ 120 لو FFmpeg جمع الـ fps
+const WIDTH       = 1280;
+const HEIGHT      = 720;
+const FPS         = 30;
+const BUFFER_SIZE = 60; // 30fps × 2 ثانية
 
 let totalLikes = 0;
 let lastJoinTime = 0;
@@ -31,35 +31,26 @@ function sendToOverlay(type, data) {
     }
 }
 
-const videoPath  = path.join(__dirname, '../../video.mp4');
-const audioPath  = path.join(__dirname, '../../merged_audio.mp3');
-const framesDir  = path.join(__dirname, '../../frames');
-const tmpPath    = path.join(__dirname, '../../overlay_tmp.png');
-
-// ← إنشاء مجلد الفريمات
-if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
-
-// ← تهيئة الـ buffer بأسماء ملفات ثابتة
-for (let i = 0; i < BUFFER_SIZE; i++) {
-    const p = path.join(framesDir, `frame_${String(i).padStart(3,'0')}.png`);
-    if (!fs.existsSync(p)) {
-        // صورة فارغة شفافة كـ placeholder
-        fs.copyFileSync(path.join(__dirname, '../../overlay_tmp.png'), p);
-    }
-}
-
-let writeIndex = 0; // Puppeteer يكتب هنا
-let readIndex  = 0; // FFmpeg يقرأ من هنا (متأخر بـ BUFFER_SIZE)
+const videoPath = path.join(__dirname, '../../video.mp4');
+const audioPath = path.join(__dirname, '../../merged_audio.mp3');
+const framesDir = path.join(__dirname, '../../frames');
+const tmpPath   = path.join(__dirname, '../../overlay_tmp.png');
 
 function getFramePath(index) {
     return path.join(framesDir, `frame_${String(index % BUFFER_SIZE).padStart(3,'0')}.png`);
 }
 
+let ffmpegStarted = false;
+
 function startFFmpeg() {
-    // FFmpeg يقرأ الفريمات من المجلد بالترتيب بشكل دائري
+    if (ffmpegStarted) return;
+    ffmpegStarted = true;
+
     const ffmpeg = spawn("ffmpeg", [
-        "-re", "-framerate", `${FPS}`, "-f", "image2", 
-        "-stream_loop", "-1", "-i", path.join(framesDir, "frame_%03d.png"),
+        "-re", "-framerate", `${FPS}`,
+        "-f", "image2",
+        "-stream_loop", "-1",
+        "-i", path.join(framesDir, "frame_%03d.png"),
         "-stream_loop", "-1", "-re", "-i", videoPath,
         "-stream_loop", "-1", "-re", "-i", audioPath,
         "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
@@ -79,6 +70,9 @@ function startFFmpeg() {
     console.log("FFmpeg started.");
 }
 
+let writeIndex = 0;
+let bufferReady = false;
+
 async function fillBuffer(page) {
     console.log(`Filling buffer: ${BUFFER_SIZE} frames...`);
     for (let i = 0; i < BUFFER_SIZE; i++) {
@@ -87,10 +81,17 @@ async function fillBuffer(page) {
         fs.renameSync(tmpPath, getFramePath(i));
     }
     writeIndex = BUFFER_SIZE;
+    bufferReady = true;
     console.log("Buffer ready, starting FFmpeg...");
+    startFFmpeg(); // ← يبدأ FFmpeg بعد اكتمال الـ buffer
 }
 
+let puppeteerStarted = false;
+
 async function startPuppeteer() {
+    if (puppeteerStarted) return;
+    puppeteerStarted = true;
+
     const browser = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', `--window-size=${WIDTH},${HEIGHT}`]
@@ -102,15 +103,11 @@ async function startPuppeteer() {
     const htmlPath = path.join(__dirname, 'overlay.html');
     await page.goto(`file://${htmlPath}`);
 
-    // ← اكتب أول صورة للـ placeholder قبل أي شيء
-    const first = await page.screenshot({ type: 'png', omitBackground: true });
-    fs.writeFileSync(tmpPath, first);
+    // ← إنشاء مجلد الفريمات بعد ما Puppeteer جاهز
+    if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
 
-    // ← املأ الـ buffer أولاً (2 ثانية)
+    // ← املأ الـ buffer أولاً ثم يبدأ FFmpeg
     await fillBuffer(page);
-
-    // ← الآن ابدأ FFmpeg
-    startFFmpeg();
 
     // ← استمر في الكتابة بعد البدء
     setInterval(async () => {
@@ -125,22 +122,24 @@ async function startPuppeteer() {
     }, 1000 / FPS);
 }
 
-// ← محاولة الاتصال بتيك توك مع إعادة المحاولة كل 20 ثانية
+// ← تيك توك: يحاول الاتصال في الخلفية، البث لا يتوقف عليه
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
 function connectTikTok() {
     tiktok.connect()
         .then(() => {
-            console.log("Connected TikTok to " + TIKTOK_USER);
-            // ← نجح الاتصال: ابدأ Puppeteer
-            startPuppeteer();
+            console.log("TikTok connected: " + TIKTOK_USER);
         })
         .catch(e => {
-            console.error("TikTok connection failed:", e.message);
-            console.log("Retrying in 20 seconds...");
+            console.error("TikTok failed:", e.message, "- retrying in 20s...");
             setTimeout(connectTikTok, 20000);
         });
 }
+
+tiktok.on("disconnected", () => {
+    console.log("TikTok disconnected, retrying in 20s...");
+    setTimeout(connectTikTok, 20000);
+});
 
 tiktok.on("roomUser", data => {
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount);
@@ -190,5 +189,6 @@ tiktok.on("gift", data => {
     }
 });
 
-// ← ابدأ هنا
+// ← ابدأ: تيك توك في الخلفية + Puppeteer مباشرة
 connectTikTok();
+startPuppeteer();
