@@ -35,7 +35,7 @@ jobs:
       - name: Download Video
         run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
 
-      # ── تحميل الـ 5 ملفات صوتية كاملة من الجوجل درايف ──
+      # ── تحميل الـ 5 ملفات صوتية الصحيحة من ملف 12 ──
       - name: Download multiple audio files (5 Assets)
         run: |
           gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
@@ -44,30 +44,17 @@ jobs:
           gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O a4.tmp && ffmpeg -i a4.tmp audio4.mp3 -y
           gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O a5.tmp && ffmpeg -i a5.tmp audio5.mp3 -y
 
-      # ── نظام خلط الـ 5 أصوات عشوائياً وتغيير السرعة والفريمات لكسر البصمة ──
-      - name: Create playlist and shuffle merge
+      # ── إنشاء قائمة التشغيل العشوائية والدمج السريع بالفيديو والصوت من ملف 12 ──
+      - name: Create playlist and merge
         run: |
-          # خلط ترتيب الـ 5 ملفات صوتية بشكل عشوائي تماماً عند كل تشغيل
           ls audio*.mp3 | shuf > playlist.txt
           while IFS= read -r file; do
             echo "file '$file'"
           done < playlist.txt > concat.txt
-          
-          # توليد سرعات وترددات صوتية متغيرة عشوائياً لكسر خوارزميات الحظر
-          RND_FPS=$(echo "scale=2; 28 + ($RANDOM % 5)" | bc)
-          RND_TEMPO=$(echo "scale=3; 0.98 + (($RANDOM % 5) / 100)" | bc)
-          
-          # تصدير المتغيرات لتبق متاحاً للخطوات التالية وسيرفر البث
-          echo "RND_FPS=$RND_FPS" >> $GITHUB_ENV
-          echo "RND_TEMPO=$RND_TEMPO" >> $GITHUB_ENV
-          
-          # دمج الـ 5 ملفات مع فلاتر البصمة الصوتية العشوائية لإنتاج الملف المشوش النهائي
-          ffmpeg -f concat -safe 0 -i concat.txt -filter:a "atempo=$RND_TEMPO" merged_audio.mp3 -y
+          ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3 -y
 
       - name: Run Puppeteer Stream Server
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
-          RND_FPS: ${{ env.RND_FPS }}
-          RND_TEMPO: ${{ env.RND_TEMPO }}
         run: node .github/workflows/server.js
         
