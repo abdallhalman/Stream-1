@@ -41,7 +41,11 @@ function getFramePath(index) {
 }
 
 let ffmpegStarted = false;
-
+const rndCrop   = Math.floor(Math.random() * 20);
+const rndX      = Math.floor(Math.random() * (rndCrop + 1));
+const rndY      = Math.floor(Math.random() * (rndCrop + 1));
+const rndBright = ((Math.random() * 0.06) - 0.03).toFixed(3);
+const rndSpeed  = (27 + Math.random() * 6).toFixed(2);
 function startFFmpeg() {
     if (ffmpegStarted) return;
     ffmpegStarted = true;
@@ -52,13 +56,13 @@ function startFFmpeg() {
         "-i", path.join(framesDir, "frame_%03d.png"),
         "-stream_loop", "-1", "-re", "-i", videoPath,
         "-stream_loop", "-1", "-re", "-i", audioPath,
-        "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
+        "-filter_complex", `[1:v]crop=${WIDTH-rndCrop}:${HEIGHT-rndCrop}:${rndX}:${rndY},scale=${WIDTH}:${HEIGHT},eq=brightness=${rndBright}:contrast=1.0[v1];[v1][0:v]overlay=0:0[v]`,
         "-map", "[v]",
         "-map", "2:a",
         "-c:v", "libx264",
         "-preset", "ultrafast",
         "-tune", "zerolatency",
-        "-r", `${FPS}`,
+        "-r", rndSpeed,
         "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "2500k",
         "-g", "50",
         "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
