@@ -33,7 +33,7 @@ jobs:
         run: npm install tiktok-live-connector puppeteer ws
 
       - name: Download Video
-        run: gdown 1NXc6QzwO0ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
+        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
 
       # ── تحميل الـ 5 ملفات صوتية كاملة من الجوجل درايف ──
       - name: Download multiple audio files (5 Assets)
@@ -53,15 +53,21 @@ jobs:
             echo "file '$file'"
           done < playlist.txt > concat.txt
           
-          # توليد سرعات فريمات وترددات صوتية متغيرة عشوائياً لكسر خوارزميات الحظر
+          # توليد سرعات وترددات صوتية متغيرة عشوائياً لكسر خوارزميات الحظر
           RND_FPS=$(echo "scale=2; 28 + ($RANDOM % 5)" | bc)
           RND_TEMPO=$(echo "scale=3; 0.98 + (($RANDOM % 5) / 100)" | bc)
           
-          # دمج الـ 5 ملفات مع الفلاتر العشوائية لإنتاج الملف الصوتي المشوش النهائي
-          ffmpeg -f concat -safe 0 -i concat.txt -filter:a "atempo=$RND_TEMPO" -r $RND_FPS merged_audio.mp3 -y
+          # تصدير المتغيرات لتبق متاحاً للخطوات التالية وسيرفر البث
+          echo "RND_FPS=$RND_FPS" >> $GITHUB_ENV
+          echo "RND_TEMPO=$RND_TEMPO" >> $GITHUB_ENV
+          
+          # دمج الـ 5 ملفات مع فلاتر البصمة الصوتية العشوائية لإنتاج الملف المشوش النهائي
+          ffmpeg -f concat -safe 0 -i concat.txt -filter:a "atempo=$RND_TEMPO" merged_audio.mp3 -y
 
       - name: Run Puppeteer Stream Server
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
+          RND_FPS: ${{ env.RND_FPS }}
+          RND_TEMPO: ${{ env.RND_TEMPO }}
         run: node .github/workflows/server.js
         
