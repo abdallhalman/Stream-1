@@ -40,31 +40,34 @@
             letter-spacing: 1px;
             direction: ltr;
         }
-        .clock-label {
-            font-size: 10px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 1px;
-        }
-
-        /* ── شريط الإحصائيات (فوق يمين) ── */
-        .stats-bar {
-            position: absolute;
-            top: 25px;
-            right: 25px;
-            display: flex;
-            gap: 20px;
+         .clock-time {
             font-size: 21px;
             font-weight: 700;
             color: #ffffff;
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            padding: 10px 25px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            z-index: 100;
+            letter-spacing: 0.5px;
+            direction: ltr;
         }
+        
+        /* ── شريط الإحصائيات (فوق يمين) ── */
+        .stats-bar {
+           position: absolute;
+           top: 25px;
+           right: 25px;
+           display: flex;
+           gap: 20px;
+           font-size: 21px;
+           font-weight: 700;
+           color: #ffffff;
+           letter-spacing: 0.5px;
+           background: rgba(0, 0, 0, 0.55);
+           backdrop-filter: blur(15px);
+           -webkit-backdrop-filter: blur(15px);
+           padding: 10px 25px;
+           border-radius: 16px;
+           border: 1px solid rgba(255, 255, 255, 0.12);
+           z-index: 100;
+       }
+
 
         /* ── بنر الهدايا الذكي المستقر ── */
         #gift-banner-container {
@@ -134,7 +137,7 @@
             bottom: 40px;
             right: 30px;
             width: 440px;
-            height: 350px; /* تقصير الصندوق لحمايته من التمدد للأعلى */
+            height: 600px; /* تقصير الصندوق لحمايته من التمدد للأعلى */
             display: flex;
             flex-direction: column-reverse;
             overflow: hidden;
@@ -159,7 +162,13 @@
             gap: 12px;
             /* استخدام نفس نظام أنيميشن الـ الانضمام الناعم والمريح للعين */
             animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+         }
+        #chat-container .chat-msg:nth-child(1) { opacity: 1; }
+        #chat-container .chat-msg:nth-child(2) { opacity: 0.7; }
+        #chat-container .chat-msg:nth-child(3) { opacity: 0.4; }
+        #chat-container .chat-msg:nth-child(n+4) { opacity: 0.15; }
         }
+        
         .chat-msg .avatar { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255, 188, 0, 0.6); flex-shrink: 0; }
         .chat-msg .badge  { width: 20px; height: 20px; object-fit: contain; }
         .chat-msg .username { color: #ffbc00; font-weight: 700; font-size: 17px; }
@@ -209,7 +218,7 @@
 
     <div class="clock-box">
         <div class="clock-time" id="clock-time">00:00</div>
-        <div class="clock-label">مكة المكرمة · KSA</div>
+        <div class="clock-label"> مكة المكرمة </div>
     </div>
 
     <div class="stats-bar">
@@ -294,7 +303,7 @@
                             <div class="action">انضم إلى البث الآن ✨</div>
                         </div>`;
                     joinContainer.prepend(joinDiv);
-                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 5000);
+                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 7000);
                 }
 
                 // ── منطق المتابعة الذكي المتتالي ──
@@ -320,7 +329,7 @@
                     followTimer = setTimeout(() => {
                         followContainer.innerHTML = "";
                         currentFollowUser = null;
-                    }, 5500);
+                    }, 7000);
                 }
 
                 // ── منطق العداد التراكمي الحي للهدايا المتتالية ──
@@ -354,7 +363,7 @@
                             <div class="gift-banner">
                                 <img src="${avatar}" onerror="this.src='${fallbackAvatar}'">
                                 <div class="gift-text">
-                                    <h2>🤍 شكراً: ${name}</h2>
+                                    <h2> 🤍 شكراً: ${name}</h2>
                                     <p id="gift-counter-hit" class="count-pop">${giftName} × ${currentGiftCount}</p>
                                 </div>
                             </div>`;
@@ -365,7 +374,7 @@
                         currentGiftUser  = null;
                         currentGiftName  = null;
                         currentGiftCount = 0;
-                    }, 6000);
+                    }, 7000);
                 }
 
             } catch (e) {
