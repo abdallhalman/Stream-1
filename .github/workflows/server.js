@@ -9,7 +9,8 @@ const TIKTOK_USER = "designer..fares..4k";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
-const FPS    = 10;
+const FPS    = 30;
+const BUFFER_SIZE = 60; // 30fps × 2 ثانية - نكبرها لـ 120 لو FFmpeg جمع الـ fps
 
 let totalLikes = 0;
 let lastJoinTime = 0;
@@ -30,14 +31,35 @@ function sendToOverlay(type, data) {
     }
 }
 
-const videoPath = path.join(__dirname, '../../video.mp4');
-const audioPath = path.join(__dirname, '../../merged_audio.mp3');
-const overlayPath = path.join(__dirname, '../../overlay.png');
+const videoPath  = path.join(__dirname, '../../video.mp4');
+const audioPath  = path.join(__dirname, '../../merged_audio.mp3');
+const framesDir  = path.join(__dirname, '../../frames');
+const tmpPath    = path.join(__dirname, '../../overlay_tmp.png');
 
-// ← FFmpeg يبدأ فقط بعد استدعاء هذه الدالة
+// ← إنشاء مجلد الفريمات
+if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
+
+// ← تهيئة الـ buffer بأسماء ملفات ثابتة
+for (let i = 0; i < BUFFER_SIZE; i++) {
+    const p = path.join(framesDir, `frame_${String(i).padStart(3,'0')}.png`);
+    if (!fs.existsSync(p)) {
+        // صورة فارغة شفافة كـ placeholder
+        fs.copyFileSync(path.join(__dirname, '../../overlay_tmp.png'), p);
+    }
+}
+
+let writeIndex = 0; // Puppeteer يكتب هنا
+let readIndex  = 0; // FFmpeg يقرأ من هنا (متأخر بـ BUFFER_SIZE)
+
+function getFramePath(index) {
+    return path.join(framesDir, `frame_${String(index % BUFFER_SIZE).padStart(3,'0')}.png`);
+}
+
 function startFFmpeg() {
+    // FFmpeg يقرأ الفريمات من المجلد بالترتيب بشكل دائري
     const ffmpeg = spawn("ffmpeg", [
-        "-re", "-stream_loop", "-1", "-i", overlayPath,
+        "-re", "-framerate", `${FPS}`, "-f", "image2", 
+        "-stream_loop", "-1", "-i", path.join(framesDir, "frame_%03d.png"),
         "-stream_loop", "-1", "-re", "-i", videoPath,
         "-stream_loop", "-1", "-re", "-i", audioPath,
         "-filter_complex", "[1:v][0:v]overlay=0:0[v]",
@@ -46,6 +68,7 @@ function startFFmpeg() {
         "-c:v", "libx264",
         "-preset", "ultrafast",
         "-tune", "zerolatency",
+        "-r", `${FPS}`,
         "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "2500k",
         "-g", "50",
         "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
@@ -54,6 +77,17 @@ function startFFmpeg() {
     ]);
     ffmpeg.stderr.on("data", d => process.stderr.write(d));
     console.log("FFmpeg started.");
+}
+
+async function fillBuffer(page) {
+    console.log(`Filling buffer: ${BUFFER_SIZE} frames...`);
+    for (let i = 0; i < BUFFER_SIZE; i++) {
+        const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
+        fs.writeFileSync(tmpPath, screenshot);
+        fs.renameSync(tmpPath, getFramePath(i));
+    }
+    writeIndex = BUFFER_SIZE;
+    console.log("Buffer ready, starting FFmpeg...");
 }
 
 async function startPuppeteer() {
@@ -68,29 +102,45 @@ async function startPuppeteer() {
     const htmlPath = path.join(__dirname, 'overlay.html');
     await page.goto(`file://${htmlPath}`);
 
-    // ← أول صورة تُكتب على الديسك أولاً
+    // ← اكتب أول صورة للـ placeholder قبل أي شيء
     const first = await page.screenshot({ type: 'png', omitBackground: true });
-    fs.writeFileSync(overlayPath, first);
-    console.log("overlay.png written, starting FFmpeg...");
+    fs.writeFileSync(tmpPath, first);
 
-    // ← الآن فقط يبدأ FFmpeg بعد ما الملف موجود
+    // ← املأ الـ buffer أولاً (2 ثانية)
+    await fillBuffer(page);
+
+    // ← الآن ابدأ FFmpeg
     startFFmpeg();
 
-    // ← تحديث الأوفرلاي كل ثانية
+    // ← استمر في الكتابة بعد البدء
     setInterval(async () => {
         try {
-            const screenshot = await page.screenshot({
-                type: 'png',
-                omitBackground: true
-            });
-            fs.writeFileSync(overlayPath, screenshot);
+            const screenshot = await page.screenshot({ type: 'png', omitBackground: true });
+            fs.writeFileSync(tmpPath, screenshot);
+            fs.renameSync(tmpPath, getFramePath(writeIndex));
+            writeIndex++;
         } catch (e) {
             console.error("Screenshot error:", e.message);
         }
     }, 1000 / FPS);
 }
 
+// ← محاولة الاتصال بتيك توك مع إعادة المحاولة كل 20 ثانية
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
+
+function connectTikTok() {
+    tiktok.connect()
+        .then(() => {
+            console.log("Connected TikTok to " + TIKTOK_USER);
+            // ← نجح الاتصال: ابدأ Puppeteer
+            startPuppeteer();
+        })
+        .catch(e => {
+            console.error("TikTok connection failed:", e.message);
+            console.log("Retrying in 20 seconds...");
+            setTimeout(connectTikTok, 20000);
+        });
+}
 
 tiktok.on("roomUser", data => {
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount);
@@ -140,6 +190,5 @@ tiktok.on("gift", data => {
     }
 });
 
-tiktok.connect().then(() => console.log("Connected TikTok to " + TIKTOK_USER)).catch(e => console.error(e));
-
-startPuppeteer();
+// ← ابدأ هنا
+connectTikTok();
