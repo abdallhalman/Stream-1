@@ -43,7 +43,8 @@ jobs:
           gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
           gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O a4.tmp && ffmpeg -i a4.tmp audio4.mp3 -y
           gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O a5.tmp && ffmpeg -i a5.tmp audio5.mp3 -y
-
+          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O a6.tmp && ffmpeg -i a6.tmp audio6.mp3 -y
+     
       # ── إنشاء قائمة التشغيل العشوائية والدمج السريع بالفيديو والصوت من ملف 12 ──
       - name: Create playlist and merge
         run: |
