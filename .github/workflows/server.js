@@ -16,7 +16,22 @@ let lastJoinTime = 0;
 let lastCommentTime = 0;
 const EVENT_THROTTLE_MS = 1000;
 
-const wss = new WebS// ==================== [بداية نظام التشغيل الجديد] ====================
+// إنشاء سيرفر الـ WebSocket الثابت بشكل صحيح
+const wss = new WebSocket.Server({ port: 8080 });
+let wsClient = null;
+
+wss.on("connection", (ws) => {
+    wsClient = ws;
+    console.log("Overlay interface connected local.");
+});
+
+function sendToOverlay(type, data) {
+    if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+        wsClient.send(JSON.stringify({ type, data }));
+    }
+}
+
+// ==================== [بداية نظام التشغيل الجديد] ====================
 const videoPath   = path.join(__dirname, '../../video.mp4');
 const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
 const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png'); // الملف المؤقت المعزول للـ Puppeteer
@@ -117,26 +132,11 @@ async function startOverlayStream() {
     });
 }
 
-// تشغيل النظام الموحد الجديد
+// تشغيل النظام الموحد الجديد تلقائياً
 startOverlayStream();
 // ==================== [نهاية نظام التشغيل الجديد] ====================
-ocket.Server({ port: 8080 });
-let wsClient = null;
 
-wss.on("connection", (ws) => {
-    wsClient = ws;
-    console.log("Overlay interface connected local.");
-});
-
-function sendToOverlay(type, data) {
-    if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-        wsClient.send(JSON.stringify({ type, data }));
-    }
-}
-
-const videoPath   = path.join(__dirname, '../../video.mp4');
-
-
+// ==================== [اتصال تيك توك والأحداث الأصلية كاملة] ====================
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
 function connectTikTok() {
@@ -225,5 +225,6 @@ tiktok.on("gift", (data) => {
     }
 });
 
+// تشغيل ربط التيك توك الأصلي بعد دقيقتين كما كان في نظامك المستقر تماماً
 setTimeout(connectTikTok, 120000);
-startPuppeteer();
+        
