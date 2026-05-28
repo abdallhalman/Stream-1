@@ -31,7 +31,7 @@ function sendToOverlay(type, data) {
     }
 }
 
-// ==================== [بداية نظام التشغيل الجديد] ====================
+// ==================== [بداية نظام التشغيل الموحد والمطور لكسر البصمة] ====================
 const videoPath   = path.join(__dirname, '../../video.mp4');
 const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
 const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png'); // الملف المؤقت المعزول للـ Puppeteer
@@ -43,7 +43,7 @@ if (fs.existsSync(mainFramePath)) fs.unlinkSync(mainFramePath);
 
 // إنشاء فريم شفاف تماماً كبداية بأبعاد صحيحة حتى لا يتعطل FFmpeg عند الإقلاع
 const transparentBuffer = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAad9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
+    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAAD9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
     "base64"
 );
 fs.writeFileSync(mainFramePath, transparentBuffer);
@@ -87,59 +87,62 @@ async function startOverlayStream() {
     // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
     captureLoop();
 
-    // ── تأخير إقلاع FFmpeg لمدة ثانيتين للتأكد من حفظ الفريم الأول بالكامل ──
-    console.log("Waiting 2 seconds for first stable frame setup...");
-    setTimeout(() => {
-        console.log("Launching FFmpeg with Atomic Single-Frame Engine...");
+    console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
+
+    // حساب قيم عشوائية دقيقة لتغيير البصمة اللونية والسطوع بشكل خفي في كل إقلاع للبث
+    const randBrightness = (Math.random() * 0.02 - 0.01).toFixed(4); // قيمة سطوع عشوائية متغيرة خفيفة
+    const randContrast = (1 + (Math.random() * 0.02 - 0.01)).toFixed(4); // قيمة تباين عشوائية متغيرة خفيفة
+    const randSaturation = (1 + (Math.random() * 0.04 - 0.02)).toFixed(4); // قيمة تشبع لوني متغيرة خفيفة
+    
+    const ffmpegArgs = [
+        "-loop", "1",               // تكرار قراءة مدخل الصورة باستمرار
+        "-f", "image2",
+        "-i", mainFramePath,        // مدخل الأوفرلاي الثابت (الملف رقم 0)
         
-        const ffmpegArgs = [
-            "-loop", "1",               // تكرار قراءة الملف الثابت باستمرار
-            "-f", "image2",
-            "-re-file-loop", "1",       // إجبار الفلتر على إعادة فحص نظام الملفات وتحديث الصورة فوراً
-            "-i", mainFramePath,        // مدخل الأوفرلاي الثابت
-            
-            "-stream_loop", "-1",       // تكرار فيديو الخلفية
-            "-i", videoPath,
-            
-            "-i", audioPath,            // ملف الصوت المدمج
-            
-            "-filter_complex",
-            `[0:v]fps=${FPS}[overlay_v];[1:v]fps=${FPS}[bg_v];[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
-            
-            "-map", "[out_v]",
-            "-map", "2:a",
-            "-c:v", "libx264",
-            "-preset", "veryfast",
-            "-tune", "zerolatency",     // لتقليل كاش المعالجة وضمان قراءة الفريم أولاً بأول
-            "-pix_fmt", "yuv420p",
-            "-c:a", "aac",
-            "-b:a", "128k",
-            "-f", "flv",
-            `rtmp://live.restream.io/live/${STREAM_KEY}`
-        ];
+        "-stream_loop", "-1",       // تكرار فيديو الخلفية باستمرار
+        "-i", videoPath,            // مدخل الفيديو (الملف رقم 1)
+        
+        "-i", audioPath,            // ملف الصوت المدمج المحمي (الملف رقم 2)
+        
+        "-filter_complex",
+        // 1. معالجة فيديو الخلفية بفلاتر كسر البصمة القوية (التشويش والسطوع المتغير وبكسل خفي) ثم دمج الأوفرلاي الفوقي
+        `[1:v]fps=${FPS},eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},noise=alls=1:allf=t,drawbox=x=0:y=0:w=1:h=1:color=black@0.01[bg_anti_copyright];` +
+        `[0:v]fps=${FPS}[overlay_v];` +
+        `[bg_anti_copyright][overlay_v]overlay=0:0:shortest=1[out_v]`,
+        
+        "-map", "[out_v]",
+        "-map", "2:a",
+        "-c:v", "libx264",
+        "-preset", "veryfast",
+        "-tune", "zerolatency",     // لمنع الكاش وضمان ثبات حركة الفريمات أولاً بأول
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        "-f", "flv",
+        `rtmp://live.restream.io/live/${STREAM_KEY}`
+    ];
 
-        const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+    const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
-        ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
-        ffmpegProcess.stderr.on("data", (data) => {
-            if (data.toString().includes("frame=")) {
-                console.log(`ffmpeg status: ${data.toString().trim()}`);
-            }
-        });
+    ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
+    ffmpegProcess.stderr.on("data", (data) => {
+        if (data.toString().includes("frame=")) {
+            console.log(`ffmpeg status: ${data.toString().trim()}`);
+        }
+    });
 
-        ffmpegProcess.on("close", (code) => {
-            console.log(`FFmpeg process exited with code ${code}`);
-            browser.close();
-            process.exit(code);
-        });
-    }, 2000); // تأخير تشغيل FFmpeg ثانيتين للحماية
+    ffmpegProcess.on("close", (code) => {
+        console.log(`FFmpeg process exited with code ${code}`);
+        browser.close();
+        process.exit(code);
+    });
 }
 
-// تشغيل النظام الموحد الجديد تلقائياً
+// تشغيل النظام الموحد الجديد تلقائياً وبأمان
 startOverlayStream();
-// ==================== [نهاية نظام التشغيل الجديد] ====================
+// ==================== [نهاية نظام التشغيل الجديد المطور] ====================
 
-// ==================== [اتصال تيك توك والأحداث الأصلية كاملة] ====================
+// ==================== [اتصال تيك توك والأحداث الأصلية كاملة ومطابقة 100%] ====================
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
 
 function connectTikTok() {
