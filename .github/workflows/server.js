@@ -95,32 +95,32 @@ async function startOverlayStream() {
     const randSaturation = (1 + (Math.random() * 0.04 - 0.02)).toFixed(4); // قيمة تشبع لوني متغيرة خفيفة
     
     const ffmpegArgs = [
-        "-loop", "1",               // تكرار قراءة مدخل الصورة باستمرار
-        "-f", "image2",
-        "-i", mainFramePath,        // مدخل الأوفرلاي الثابت (الملف رقم 0)
-        
-        "-stream_loop", "-1",       // تكرار فيديو الخلفية باستمرار
-        "-i", videoPath,            // مدخل الفيديو (الملف رقم 1)
-        
-        "-i", audioPath,            // ملف الصوت المدمج المحمي (الملف رقم 2)
-        
-        "-filter_complex",
-        // 1. معالجة فيديو الخلفية بفلاتر كسر البصمة القوية (التشويش والسطوع المتغير وبكسل خفي) ثم دمج الأوفرلاي الفوقي
-        `[1:v]fps=${FPS},eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},noise=alls=1:allf=t,drawbox=x=0:y=0:w=1:h=1:color=black@0.01[bg_anti_copyright];` +
-        `[0:v]fps=${FPS}[overlay_v];` +
-        `[bg_anti_copyright][overlay_v]overlay=0:0:shortest=1[out_v]`,
-        
-        "-map", "[out_v]",
-        "-map", "2:a",
-        "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-tune", "zerolatency",     // لمنع الكاش وضمان ثبات حركة الفريمات أولاً بأول
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        "-f", "flv",
-        `rtmp://live.restream.io/live/${STREAM_KEY}`
-    ];
+    "-re",                      // الضبط: قراءة المدخلات بالسرعة الطبيعية (1x) لمنع استنزاف المعالج
+    "-loop", "1",
+    "-f", "image2",
+    "-i", mainFramePath,
+    
+    "-stream_loop", "-1",
+    "-i", videoPath,
+    "-i", audioPath,
+    
+    "-filter_complex",
+    `[1:v]fps=30,rotate=${randAngle}:ow=rotw(${randAngle}):oh=roth(${randAngle}),scale=${WIDTH}:${HEIGHT},eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation}[bg_anti_copyright];` +
+    `[0:v]fps=30[overlay_v];` +
+    `[bg_anti_copyright][overlay_v]overlay=0:0:shortest=1[out_v]`,
+    
+    "-map", "[out_v]",
+    "-map", "2:a",
+    "-c:v", "libx264",
+    "-r", "30",                 // الضبط: إجبار المخرج النهائي على 30 فريم ثابت
+    "-preset", "veryfast",
+    "-tune", "zerolatency",
+    "-pix_fmt", "yuv420p",
+    "-c:a", "aac",
+    "-b:a", "128k",
+    "-f", "flv",
+    `rtmp://live.restream.io/live/${STREAM_KEY}`
+];
 
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
