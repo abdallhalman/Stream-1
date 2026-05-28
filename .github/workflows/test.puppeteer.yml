@@ -32,13 +32,13 @@ jobs:
       - name: Install Node tools
         run: npm install tiktok-live-connector puppeteer ws
 
-      # ── الكاش يحفظ مجلد downloads (الأصوات كـ MP3 حقيقية فقط) ──
-      - name: Cache downloaded audio
+      # 1. محاولة استعادة الكاش القديم فقط (بدون تفعيل الحفظ التلقائي عند الإلغاء)
+      - name: Restore audio cache
         id: audio-cache
-        uses: actions/cache@v3
+        uses: actions/cache/restore@v3
         with:
           path: downloads
-          key: audio-downloads-v3
+          key: audio-downloads-v4
 
       # ── تحميل وتحويل الأصوات إلى MP3 حقيقي (في أول رن فقط) ──
       - name: Download multiple audio files
@@ -64,7 +64,7 @@ jobs:
           gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O downloads/t17.tmp && ffmpeg -i downloads/t17.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio17.mp3 -y
           rm -f downloads/*.tmp
 
-      # ── تحميل الفيديو الرئيسي خارج الكاش (يتحمل كل مرة لطلبه في السيرفر) ──
+      # ── تحميل الفيديو الرئيسي خارج الكاش ──
       - name: Download Video
         run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
 
@@ -77,8 +77,16 @@ jobs:
           done < playlist.txt > concat.txt
           ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3 -y
 
+      # ── تشغيل السيرفر والبث ──
       - name: Run Puppeteer Stream Server
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
         run: node .github/workflows/server.js
-        
+
+      # 2. خطوة الحفظ الإجبارية: ستعمل دائماً حتى لو ضغطت Cancel يدويّاً!
+      - name: Save audio cache forced
+        uses: actions/cache/save@v3
+        if: always() && steps.audio-cache.outputs.cache-hit != 'true'
+        with:
+          path: downloads
+          key: audio-downloads-v4
