@@ -117,21 +117,26 @@
     animation: none !important;
     transform: scale(1) !important;
 }
+/* 👤 صورة المرسل (الداعم) - حماية مطلقة للدائرة الفخمة */
+.gift-banner img {
+    border-radius: 50% !important;  
+    object-fit: cover !important;
+}
 
-/* 👑 صورة الهدية - مساحة حرة كاملة بدون دائرة وبدون أي اقتطاع للأطراف */
-.gift-banner .gift-img, 
-.gift-banner img:last-of-type {
+/* 👑 صورة الهدية - استهداف مباشر بالكلاس لمنع أي تداخل، ومساحة حرة بالكامل */
+.gift-banner .gift-img {
     width: 85px !important; 
     height: 85px !important;
-    object-fit: contain !important; /* 🌟 تضمن ظهور الهدية كاملة بنسبها الأصلية دون تمطيط */
-    border-radius: 0% !important;  /* 🚫 ألغينا الدائرة تماماً لتبق حدودها حرة */
-    border: none !important;        /* 🚫 حذفنا أي إطار قد يقيد شكل الهدية */
+    object-fit: contain !important; 
+    border-radius: 0% !important;  
+    border: none !important;        
     flex-shrink: 0;
     filter: drop-shadow(0 0 15px #ffbc00); 
     animation: none !important;
     transform: scale(1) !important;
     margin-left: auto; 
 }
+
 
 .gift-text h2 {
     font-size: 22px; 
