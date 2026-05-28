@@ -32,7 +32,7 @@ jobs:
       - name: Install Node tools
         run: npm install tiktok-live-connector puppeteer ws
 
-      # ── الكاش يحفظ مجلد downloads (الأصوات كـ MP3 حقيقية) ──
+      # ── الكاش يحفظ مجلد downloads (الأصوات كـ MP3 حقيقية فقط) ──
       - name: Cache downloaded audio
         id: audio-cache
         uses: actions/cache@v3
@@ -45,8 +45,6 @@ jobs:
         if: steps.audio-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p downloads
-          
-          # نقوم بتحميل الملف المؤقت ثم تحويله برمجياً إلى MP3 حقيقي لضمان سلامة الدمج لاحقاً
           gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
           gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O downloads/t3.tmp && ffmpeg -i downloads/t3.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio3.mp3 -y
@@ -64,22 +62,19 @@ jobs:
           gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O downloads/t15.tmp && ffmpeg -i downloads/t15.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio15.mp3 -y
           gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O downloads/t16.tmp && ffmpeg -i downloads/t16.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio16.mp3 -y
           gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O downloads/t17.tmp && ffmpeg -i downloads/t17.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio17.mp3 -y
-          
-          # تنظيف الملفات المؤقتة ليبقى مجلد الكاش صافي
           rm -f downloads/*.tmp
 
-      # ── إنشاء قائمة تشغيل عشوائية ودمجها (تتغير وتخلط الأصوات في كل مرة) ──
+      # ── تحميل الفيديو الرئيسي خارج الكاش (يتحمل كل مرة لطلبه في السيرفر) ──
+      - name: Download Video
+        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
+
+      # ── إنشاء قائمة تشغيل عشوائية ودمجها ──
       - name: Create playlist and merge
         run: |
-          # قراءة الأصوات الجاهزة من مجلد الكاش وخلط الترتيب
           ls downloads/audio*.mp3 | shuf > playlist.txt
-          
-          # تجهيز القائمة لـ ffmpeg
           while IFS= read -r file; do
             echo "file '$file'"
           done < playlist.txt > concat.txt
-          
-          # الدمج السريع جداً والآمن الآن لأن جميع المدخلات بصيغة MP3 متطابقة كلياً
           ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3 -y
 
       - name: Run Puppeteer Stream Server
