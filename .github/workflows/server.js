@@ -95,7 +95,7 @@ async function startOverlayStream() {
     const randSaturation = (1 + (Math.random() * 0.04 - 0.02)).toFixed(4); // قيمة تشبع لوني متغيرة خفيفة
     
     const ffmpegArgs = [
-    "-re",                      // الضبط: قراءة المدخلات بالسرعة الطبيعية (1x) لمنع استنزاف المعالج
+    "-re",                      // <--- لضبط سرعة القراءة
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
@@ -105,14 +105,14 @@ async function startOverlayStream() {
     "-i", audioPath,
     
     "-filter_complex",
-    `[1:v]fps=30,rotate=${randAngle}:ow=rotw(${randAngle}):oh=roth(${randAngle}),scale=${WIDTH}:${HEIGHT},eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation}[bg_anti_copyright];` +
+    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_anti_copyright];` + // إزالة المتغيرات العشوائية لتجنب الخطأ
     `[0:v]fps=30[overlay_v];` +
     `[bg_anti_copyright][overlay_v]overlay=0:0:shortest=1[out_v]`,
     
     "-map", "[out_v]",
     "-map", "2:a",
     "-c:v", "libx264",
-    "-r", "30",                 // الضبط: إجبار المخرج النهائي على 30 فريم ثابت
+    "-r", "30",                 // <--- لضبط سرعة البث النهائي
     "-preset", "veryfast",
     "-tune", "zerolatency",
     "-pix_fmt", "yuv420p",
@@ -121,6 +121,7 @@ async function startOverlayStream() {
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
 ];
+
 
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
