@@ -16,7 +16,7 @@ let lastJoinTime = 0;
 let lastCommentTime = 0;
 const EVENT_THROTTLE_MS = 1000;
 
-// إنشاء سيرفر الـ WebSocket الثابت بشكل صحيح
+// إنشاء سيرفر الـ WebSocket الثابت بشكل صحيح ونظيف
 const wss = new WebSocket.Server({ port: 8080 });
 let wsClient = null;
 
@@ -41,9 +41,9 @@ const mainFramePath = path.join(__dirname, '../../overlay.png');     // المل
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
 if (fs.existsSync(mainFramePath)) fs.unlinkSync(mainFramePath);
 
-// إنشاء فريم شفاف تماماً كبداية حتى لا يتعطل FFmpeg عند الإقلاع قبل المتصفح
+// إنشاء فريم شفاف تماماً كبداية بأبعاد صحيحة حتى لا يتعطل FFmpeg عند الإقلاع
 const transparentBuffer = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAAD9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
+    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAad9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
     "base64"
 );
 fs.writeFileSync(mainFramePath, transparentBuffer);
@@ -84,52 +84,55 @@ async function startOverlayStream() {
         setTimeout(captureLoop, 1000 / FPS);
     }
 
-    // تشغيل حلقة الالتقاط
+    // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
     captureLoop();
 
-    // ── محرك الـ FFmpeg المطور لقراءة الملف الواحد المستقر ──
-    console.log("Launching FFmpeg with Atomic Single-Frame Engine...");
-    
-    const ffmpegArgs = [
-        "-loop", "1",               // تكرار قراءة الملف الثابت باستمرار
-        "-f", "image2",
-        "-re-file-loop", "1",       // إجبار الفلتر على إعادة فحص نظام الملفات وتحديث الصورة فوراً
-        "-i", mainFramePath,        // مدخل الأوفرلاي الثابت
+    // ── تأخير إقلاع FFmpeg لمدة ثانيتين للتأكد من حفظ الفريم الأول بالكامل ──
+    console.log("Waiting 2 seconds for first stable frame setup...");
+    setTimeout(() => {
+        console.log("Launching FFmpeg with Atomic Single-Frame Engine...");
         
-        "-stream_loop", "-1",       // تكرار فيديو الخلفية
-        "-i", videoPath,
-        
-        "-i", audioPath,            // ملف الصوت المدمج
-        
-        "-filter_complex",
-        `[0:v]fps=${FPS}[overlay_v];[1:v]fps=${FPS}[bg_v];[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
-        
-        "-map", "[out_v]",
-        "-map", "2:a",
-        "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-tune", "zerolatency",     // لتقليل كاش المعالجة وضمان قراءة الفريم أولاً بأول
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        "-f", "flv",
-        `rtmp://live.restream.io/live/${STREAM_KEY}`
-    ];
+        const ffmpegArgs = [
+            "-loop", "1",               // تكرار قراءة الملف الثابت باستمرار
+            "-f", "image2",
+            "-re-file-loop", "1",       // إجبار الفلتر على إعادة فحص نظام الملفات وتحديث الصورة فوراً
+            "-i", mainFramePath,        // مدخل الأوفرلاي الثابت
+            
+            "-stream_loop", "-1",       // تكرار فيديو الخلفية
+            "-i", videoPath,
+            
+            "-i", audioPath,            // ملف الصوت المدمج
+            
+            "-filter_complex",
+            `[0:v]fps=${FPS}[overlay_v];[1:v]fps=${FPS}[bg_v];[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
+            
+            "-map", "[out_v]",
+            "-map", "2:a",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-tune", "zerolatency",     // لتقليل كاش المعالجة وضمان قراءة الفريم أولاً بأول
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            "-f", "flv",
+            `rtmp://live.restream.io/live/${STREAM_KEY}`
+        ];
 
-    const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+        const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
-    ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
-    ffmpegProcess.stderr.on("data", (data) => {
-        if (data.toString().includes("frame=")) {
-            console.log(`ffmpeg status: ${data.toString().trim()}`);
-        }
-    });
+        ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
+        ffmpegProcess.stderr.on("data", (data) => {
+            if (data.toString().includes("frame=")) {
+                console.log(`ffmpeg status: ${data.toString().trim()}`);
+            }
+        });
 
-    ffmpegProcess.on("close", (code) => {
-        console.log(`FFmpeg process exited with code ${code}`);
-        browser.close();
-        process.exit(code);
-    });
+        ffmpegProcess.on("close", (code) => {
+            console.log(`FFmpeg process exited with code ${code}`);
+            browser.close();
+            process.exit(code);
+        });
+    }, 2000); // تأخير تشغيل FFmpeg ثانيتين للحماية
 }
 
 // تشغيل النظام الموحد الجديد تلقائياً
@@ -227,4 +230,3 @@ tiktok.on("gift", (data) => {
 
 // تشغيل ربط التيك توك الأصلي بعد دقيقتين كما كان في نظامك المستقر تماماً
 setTimeout(connectTikTok, 120000);
-        
