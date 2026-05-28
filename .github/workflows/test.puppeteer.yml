@@ -32,41 +32,46 @@ jobs:
       - name: Install Node tools
         run: npm install tiktok-live-connector puppeteer ws
 
-      # ── الكاش يحفظ مجلد downloads (الأصوات الأصلية فقط) ──
+      # ── الكاش يحفظ مجلد downloads (الأصوات كـ MP3 حقيقية) ──
       - name: Cache downloaded audio
         id: audio-cache
         uses: actions/cache@v3
         with:
           path: downloads
-          key: audio-downloads-v2
+          key: audio-downloads-v3
 
-      # ── تحميل الأصوات الأصلية (يحدث في أول رن فقط، ثم يُستدعى من الكاش) ──
+      # ── تحميل وتحويل الأصوات إلى MP3 حقيقي (في أول رن فقط) ──
       - name: Download multiple audio files
         if: steps.audio-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p downloads
-          gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O downloads/audio1.mp3
-          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O downloads/audio2.mp3
-          gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O downloads/audio3.mp3
-          gdown 1E6THGzxM3_Heaxp4Zh-KIIr5n59aqdtW -O downloads/audio4.mp3
-          gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O downloads/audio5.mp3
-          gdown 1LWeZNOiCz4ZLeHIw3Ga8tAX8WWDlr7r3 -O downloads/audio6.mp3
-          gdown 17nqAmBYExskUmySAzB51NAxic5XJRuLj -O downloads/audio7.mp3
-          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O downloads/audio8.mp3
-          gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O downloads/audio9.mp3
-          gdown 1MxcrvN0GUGAdXMKYW1r3zOQ3Fmluk6mI -O downloads/audio10.mp3
-          gdown 1TXbWo89v0e8RMkwuuwkilB24LdCc0Xkn -O downloads/audio11.mp3
-          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O downloads/audio12.mp3
-          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O downloads/audio13.mp3
-          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O downloads/audio14.mp3
-          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O downloads/audio15.mp3
-          gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O downloads/audio16.mp3
-          gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O downloads/audio17.mp3
+          
+          # نقوم بتحميل الملف المؤقت ثم تحويله برمجياً إلى MP3 حقيقي لضمان سلامة الدمج لاحقاً
+          gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
+          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
+          gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O downloads/t3.tmp && ffmpeg -i downloads/t3.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio3.mp3 -y
+          gdown 1E6THGzxM3_Heaxp4Zh-KIIr5n59aqdtW -O downloads/t4.tmp && ffmpeg -i downloads/t4.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio4.mp3 -y
+          gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O downloads/t5.tmp && ffmpeg -i downloads/t5.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio5.mp3 -y
+          gdown 1LWeZNOiCz4ZLeHIw3Ga8tAX8WWDlr7r3 -O downloads/t6.tmp && ffmpeg -i downloads/t6.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio6.mp3 -y
+          gdown 17nqAmBYExskUmySAzB51NAxic5XJRuLj -O downloads/t7.tmp && ffmpeg -i downloads/t7.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio7.mp3 -y
+          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O downloads/t8.tmp && ffmpeg -i downloads/t8.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio8.mp3 -y
+          gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O downloads/t9.tmp && ffmpeg -i downloads/t9.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio9.mp3 -y
+          gdown 1MxcrvN0GUGAdXMKYW1r3zOQ3Fmluk6mI -O downloads/t10.tmp && ffmpeg -i downloads/t10.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio10.mp3 -y
+          gdown 1TXbWo89v0e8RMkwuuwkilB24LdCc0Xkn -O downloads/t11.tmp && ffmpeg -i downloads/t11.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio11.mp3 -y
+          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O downloads/t12.tmp && ffmpeg -i downloads/t12.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio12.mp3 -y
+          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O downloads/t13.tmp && ffmpeg -i downloads/t13.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio13.mp3 -y
+          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O downloads/t14.tmp && ffmpeg -i downloads/t14.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio14.mp3 -y
+          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O downloads/t15.tmp && ffmpeg -i downloads/t15.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio15.mp3 -y
+          gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O downloads/t16.tmp && ffmpeg -i downloads/t16.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio16.mp3 -y
+          gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O downloads/t17.tmp && ffmpeg -i downloads/t17.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio17.mp3 -y
+          
+          # تنظيف الملفات المؤقتة ليبقى مجلد الكاش صافي
+          rm -f downloads/*.tmp
 
-      # ── الخلط والدمج يتم بالخارج في كل رن بشكل مستقل تماماً ──
+      # ── إنشاء قائمة تشغيل عشوائية ودمجها (تتغير وتخلط الأصوات في كل مرة) ──
       - name: Create playlist and merge
         run: |
-          # نأخذ الملفات من مجلد الكاش ونخلط الترتيب
+          # قراءة الأصوات الجاهزة من مجلد الكاش وخلط الترتيب
           ls downloads/audio*.mp3 | shuf > playlist.txt
           
           # تجهيز القائمة لـ ffmpeg
@@ -74,10 +79,11 @@ jobs:
             echo "file '$file'"
           done < playlist.txt > concat.txt
           
-          # إنتاج ملف الصوت المخلوط الجديد في المجلد الرئيسي (خارج مجلد الكاش)
+          # الدمج السريع جداً والآمن الآن لأن جميع المدخلات بصيغة MP3 متطابقة كلياً
           ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3 -y
 
       - name: Run Puppeteer Stream Server
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
         run: node .github/workflows/server.js
+        
