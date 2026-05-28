@@ -102,7 +102,7 @@
     align-items: center;
     gap: 24px; 
     box-shadow: 0 15px 50px rgba(255, 188, 0, 0.25), 0 0 25px rgba(255, 188, 0, 0.15);
-    animation: bounceIn 0.15s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: bounceIn 0.05s linear forwards;
     will-change: transform, opacity;
     min-width: 420px; 
 }
@@ -199,7 +199,7 @@
     min-width: 320px;
     box-sizing: border-box;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    animation: slideUp 0.15s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+    animation: slideUp 0.05s linear forwards !important;
     will-change: transform, opacity;
 }
 
@@ -313,7 +313,7 @@
             align-items: flex-start; /* 🛠️ السماح للصندوق بالتمدد لأسفل مع الأسطر الكثيرة */
             gap: 10px;
             /* استخدام نفس نظام أنيميشن الـ الانضمام الناعم والمريح للعين */
-            animation: slideInRight 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+            animation: slideInRight 0.05s linear forwards;
          }
         #chat-container .chat-msg:nth-child(1) { opacity: 1; }
         #chat-container .chat-msg:nth-child(2) { opacity: 0.75; }
@@ -369,7 +369,7 @@
             align-items: center;
             gap: 13px;
             box-shadow: 0 6px 24px rgba(0,0,0,0.3);
-            animation: slideInLeft 0.15s cubic-bezier(0.25, 1, 0.5, 1) forwards, fadeOut 0.15s linear 5.5s forwards;
+            animation: slideInLeft 0.05s linear forwards, fadeOut 0.05s linear 5.5s forwards;
 
         }
         .join-notification .avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
