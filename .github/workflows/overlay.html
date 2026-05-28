@@ -74,67 +74,98 @@
        }
 
         /* ── بنر الهدايا الذكي والمطور ── */
-        #gift-banner-container {
-          position: absolute;
-          top: 160px;
-          left: 0;
-          right: 0;
-          margin: 0 auto;
-          width: 620px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          pointer-events: none;
-          z-index: 900;
-       }
+  #gift-banner-container {
+    position: absolute;
+    top: 160px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: max-content; 
+    max-width: 90%; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    z-index: 900;
+}
 
-        .gift-banner {
-            background: rgba(20, 15, 30, 0.85); /* 🛠️ خلفية داكنة فخمة مع تلميحة بنفسجية ملكية زجاجية */
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 188, 0, 0.25); /* 🛠️ حافة مضيئة خفيفة باللون الذهبي */
-            border-radius: 20px; /* 🛠️ حواف دائرية ناعمة متناسقة مع الشات وبنر المتابعة */
-            padding: 14px 28px;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 15px rgba(255, 188, 0, 0.1);
-            animation: bounceIn 0.15s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
-            will-change: transform, opacity;
 
-        }
-        .gift-banner img { 
-            width: 48px; 
-            height: 48px; 
-            border-radius: 50%; 
-            border: 2px solid #ffbc00; /* 🛠️ حافة ذهبية متناسقة حول صورة الداعم */
-            flex-shrink: 0;
-        }
-        .gift-text h2 { 
-            font-size: 18px; 
-            font-weight: 700; 
-            color: #fff; 
-            font-family: 'IBM Plex Sans Arabic', sans-serif; /* 🍏 تطبيق خط أبل النظيف */
-        }
-        .gift-text p { 
-            font-size: 15px; 
-            color: #ffbc00; /* 🛠️ تحويل اللون للأصفر الذهبي الرسمي المعتمد في البث */
-            font-weight: 700; 
-            margin-top: 3px; 
-            display: inline-block; 
-            font-family: 'IBM Plex Sans Arabic', sans-serif; /* 🍏 تطبيق خط أبل النظيف */
-        }
-        
-        /* تأثير النبض لزيادة العداد حياً */
-        .count-pop { 
-            animation: popScale 0.3s ease-out; 
-            color: #fff !important; 
-            background: #ff0055; 
-            padding: 2px 8px; 
-            border-radius: 8px; 
-            font-weight: 800;
-        }
+.gift-banner {
+    background: rgba(30, 20, 50, 0.92); 
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 2px solid #ffbc00; 
+    border-radius: 24px; 
+    padding: 18px 32px; 
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 24px; 
+    box-shadow: 0 15px 50px rgba(255, 188, 0, 0.25), 0 0 25px rgba(255, 188, 0, 0.15);
+    animation: bounceIn 0.15s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    will-change: transform, opacity;
+    min-width: 420px; 
+}
+
+/* صورة المرسل (صغيرة وجانبية لكي لا تسرق الأضواء) */
+.gift-banner img:first-of-type {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
+    animation: none !important;
+    transform: scale(1) !important;
+}
+
+/* 👑 صورة الهدية - جعلناها العنصر الأكبر والأضخم في البنر مع مساحة حرة */
+.gift-banner .gift-img, 
+.gift-banner img:last-of-type {
+    width: 85px !important; 
+    height: 85px !important;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 15px #ffbc00); 
+    animation: none !important;
+    transform: scale(1) !important;
+    margin-left: auto; 
+}
+
+.gift-text h2 {
+    font-size: 22px; 
+    font-weight: 800;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    margin: 0;
+}
+
+.gift-text p {
+    font-size: 17px; 
+    color: #ffff00; 
+    font-weight: 700;
+    margin-top: 4px;
+    margin-bottom: 0;
+    display: inline-block;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+/* 🔥 عداد التكرار والـ X - وضوح خارق وحجم ضخم ينبض بحماس */
+.count-pop {
+    animation: popScale 0.15s ease-out;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #ff0055, #ff00aa); 
+    padding: 6px 16px; 
+    border-radius: 14px; 
+    font-size: 28px; 
+    font-weight: 900; 
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.6);
+    display: inline-block;
+    margin-left: 10px;
+    font-family: Arial, sans-serif; 
+}
+
 
             /* ─── بنر المتابعة الذكي والمطور (نسخة السنتر والأفاتار اليميني) ─── */
 #follow-banner-container {
