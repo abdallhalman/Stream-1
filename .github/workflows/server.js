@@ -187,16 +187,30 @@ tiktok.on("follow", data => {
     });
 });
 
-tiktok.on("gift", data => {
+tiktok.on("gift", (data) => {
+    // نقرأ الحدث عندما ينتهي التكرار أو إذا كانت الهدية فردية
     if (data.repeatEnd || data.repeatCount === 1) {
+        
+        // 🛠️ فحص شامل وتأمين كل الاحتمالات لروابط صور الهدايا من تيك توك
+        let officialGiftIcon = "";
+        if (data.giftPictureUrl) {
+            officialGiftIcon = data.giftPictureUrl;
+        } else if (data.image && data.image.url_list && data.image.url_list[0]) {
+            officialGiftIcon = data.image.url_list[0];
+        } else if (data.extendedGiftInfo && data.extendedGiftInfo.image && data.extendedGiftInfo.image.url_list) {
+            officialGiftIcon = data.extendedGiftInfo.image.url_list[0];
+        }
+
         sendToOverlay("gift", {
             name: data.nickname || data.uniqueId,
             giftName: data.giftName,
             count: data.repeatCount || 1,
-            avatar: data.profilePictureUrl
+            avatar: data.profilePictureUrl,
+            giftIcon: officialGiftIcon // تمرير الرابط المضمون للأوفرلاي
         });
     }
 });
+
 
 setTimeout(connectTikTok, 120000);
 startPuppeteer();
