@@ -301,7 +301,7 @@
 } 
     .chat-msg .text { 
     color: rgba(255, 255, 255, 0.95); 
-    font-size: 16px; 
+    font-size: 18px; 
     word-break: break-word; 
     font-weight: 600; 
     display: inline; 
@@ -336,18 +336,18 @@
             align-items: center;
             gap: 13px;
             box-shadow: 0 6px 24px rgba(0,0,0,0.3);
-            animation: slideInLeft 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards, fadeOut 0.8s ease-out 5.5s forwards;
+            animation: slideInLeft 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards, fadeOut 0.4s ease-out 5.5s forwards;
 
         }
         .join-notification .avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
         .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 16px; }
         .join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 13px; margin-top: 2px; font-weight: 600; }
 
-        /* ── جرافيكس الأنيميشنز الثابتة والمريحة ── */
+    
         @keyframes slideInRight { from { opacity: 0; transform: translate3d(30px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
-        @keyframes slideInLeft  { 0% { opacity: 0; transform: translate3d(-30px, 0, 0); } 20% { opacity: 0; transform: translate3d(-30px, 0, 0); } 100% { opacity: 1; transform: translate3d(0, 0, 0); } }
+        @keyframes slideInLeft  { 0% { opacity: 0; transform: translate3d(-30px, 0, 0); } 100% { opacity: 1; transform: translate3d(0, 0, 0); } }
         @keyframes slideUp      { 0% { opacity: 0; transform: translateY(50px); } 100% { opacity: 1; transform: translateY(0); } }
-        @keyframes bounceIn     { 0% { opacity: 0; transform: scale3d(0.3, 0.3, 0.3); } 20% { opacity: 0; transform: scale3d(0.5, 0.5, 0.5); } 40% { opacity: 0.4; transform: scale3d(0.8, 0.8, 0.8); } 70% { opacity: 0.9; transform: scale3d(1.03, 1.03, 1.03); } 100% { opacity: 1; transform: scale3d(1, 1, 1); } }
+        @keyframes bounceIn     { 0% { opacity: 0; transform: scale3d(0.3, 0.3, 0.3); } 70% { opacity: 0.9; transform: scale3d(1.05, 1.05, 1.05); } 100% { opacity: 1; transform: scale3d(1, 1, 1); } }
         @keyframes fadeOut      { from { opacity:1; } to { opacity:0; max-height:0; padding:0; margin:0; border:none; } }
         @keyframes popScale     { 0% { transform: scale(1); } 50% { transform: scale(1.3); color: #fff; } 100% { transform: scale(1); } }
     </style>
