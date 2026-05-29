@@ -381,9 +381,161 @@
         @keyframes bounceIn     { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes fadeOut      { from { opacity: 1; } to { opacity: 0; } }
         @keyframes popScale     { 0% { transform: scale(1); } 50% { transform: scale(1.3); color: #fff; } 100% { transform: scale(1); } }
+
+              /* ─── 1. تصميم عداد التسبيح الزجاجي المطور ─── */
+        .tasbih-container {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .tasbih-progress-bg {
+            position: relative;
+            width: 100%;
+            height: 44px;
+            background: rgba(255, 192, 203, 0.25); /* خلفية زهرية زجاجية خفيفة */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 182, 193, 0.4);
+            border-radius: 22px; /* حواف غير حادة */
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(255, 105, 180, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tasbih-progress-bar {
+            position: absolute;
+            top: 0;
+            right: 0; /* يمتلئ من اليمين لليسار */
+            height: 100%;
+            background: #39FF14; /* أخضر فسفوري مشع */
+            box-shadow: 0 0 15px #39FF14, inset 0 0 8px rgba(255,255,255,0.6);
+            transition: width 0.25s cubic-bezier(0.1, 0.8, 0.3, 1);
+            z-index: 1;
+        }
+
+        .tasbih-numbers {
+            position: relative;
+            z-index: 2;
+            font-family: 'Inter', 'IBM Plex Sans Arabic', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.8);
+            transition: transform 0.1s ease;
+        }
+
+        .tasbih-numbers.bump { transform: scale(1.15); }
+
+        .tasbih-subtext {
+            width: 80%;
+            text-align: center;
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* ─── 2. فقاعات التسبيح المتطايرة ─── */
+        .subhan-bubble {
+            position: absolute;
+            top: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 90;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            will-change: transform, opacity;
+            animation: bubbleFloatUp var(--duration) ease-out forwards;
+        }
+
+        @keyframes bubbleFloatUp {
+            0% { transform: translate(var(--start-x), 0) scale(0.6); opacity: 0; }
+            15% { opacity: 0.95; }
+            100% { transform: translate(var(--target-x), var(--target-y)) scale(1.05); opacity: 0; }
+        }
+
+        /* ─── 3. القلوب النيونية المتطايرة من الزاوية ─── */
+        .heart-glow {
+            position: absolute;
+            bottom: 20px;
+            right: 40px;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.75;
+            will-change: transform, opacity;
+            animation: flyAndFade var(--duration) cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
+        @keyframes flyAndFade {
+            0% { transform: translate(0, 0) scale(0.3) rotate(0deg); opacity: 0; }
+            15% { opacity: 0.85; }
+            100% { transform: translate(var(--target-x), var(--target-y)) scale(var(--scale)) rotate(var(--rotate)); opacity: 0; }
+        }
+
+        /* ─── 4. بنر الهدف اللحظي المتفجر ─── */
+        .milestone-banner {
+            position: absolute;
+            top: 0; left: 0; width: 1280px; height: 720px;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .milestone-banner.show { opacity: 1; }
+        .milestone-content {
+            background: linear-gradient(135deg, rgba(255, 20, 147, 0.9), rgba(139, 0, 139, 0.9));
+            border: 3px solid #39FF14;
+            box-shadow: 0 0 50px rgba(57, 255, 20, 0.6), 0 0 20px rgba(255, 20, 147, 0.8);
+            padding: 40px 60px;
+            border-radius: 30px;
+            transform: scale(0.5);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+        }
+        .milestone-banner.show .milestone-content { transform: scale(1); }
+        .milestone-content h1 { color: #fff; font-size: 36px; font-weight: 700; font-family: 'IBM Plex Sans Arabic', sans-serif; }
+            
     </style>
 </head>
 <body>
+    <div class="tasbih-container">
+    <div class="tasbih-progress-bg">
+        <div id="tasbih-bar" class="tasbih-progress-bar" style="width: 0%;"></div>
+        <div id="tasbih-text" class="tasbih-numbers">0 / 1000</div>
+    </div>
+    <div class="tasbih-subtext">سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ 🌿</div>
+</div>
+
+<div id="milestone-banner" class="milestone-banner">
+    <div class="milestone-content">
+        <h1 id="milestone-title">كفووو! وصلنا إلى 1,000 تسبيحة! 🎉</h1>
+    </div>
+</div>
 
     <div class="clock-box">
         <div class="clock-time" id="clock-time">00:00</div>
@@ -436,9 +588,105 @@
                     document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
                 }
 
-                if (msg.type === "like") {
-                    document.getElementById("likes-count").innerText = `❤️ ${msg.data.toLocaleString()}`;
+                            // ─── متغيرات نظام عداد التسبيح التنافسي ───
+            let currentLikes = 0;
+            const STEP_TARGET = 1000; // الهدف المتكرر
+
+            if (msg.type === "like") {
+                // تحديث العداد المستقر العلوي التقليدي
+                const topLikes = document.getElementById("likes-count");
+                if (topLikes) topLikes.innerText = `❤️ ${msg.data.toLocaleString()}`;
+
+                // حساب العداد الحالي الفعلي للمرحلة الحالية
+                currentLikes = msg.data % STEP_TARGET;
+                if (currentLikes === 0 && msg.data > 0) { currentLikes = STEP_TARGET; }
+
+                // [أولاً] تحديث شريط العداد الفسفوري والأرقام
+                const percentage = (currentLikes / STEP_TARGET) * 100;
+                const bar = document.getElementById("tasbih-bar");
+                const txt = document.getElementById("tasbih-text");
+                
+                if (bar) bar.style.width = `${percentage}%`;
+                if (txt) {
+                    txt.innerText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
+                    txt.classList.add("bump");
+                    setTimeout(() => txt.classList.remove("bump"), 100);
                 }
+
+                // الألوان الفاتحة المشتركة للفقاعات والقلوب
+                const neonColors = [
+                    'rgba(255, 105, 180, 0.85)', // وردي
+                    'rgba(0, 255, 242, 0.85)',   // سماوي
+                    'rgba(174, 0, 255, 0.85)',   // بنفسجي
+                    'rgba(255, 230, 0, 0.85)',   // أصفر
+                    'rgba(57, 255, 20, 0.9)'     // أخضر فسفوري
+                ];
+                const randomColor = neonColors[Math.floor(Math.random() * neonColors.length)];
+
+                // [ثانياً] توليد فقاعة التسبيح في المنتصف أعلى الشاشة
+                const bubble = document.createElement('div');
+                bubble.className = 'subhan-bubble';
+                bubble.innerText = 'سبحان الله ✨';
+                bubble.style.background = randomColor;
+                bubble.style.border = `1.5px solid rgba(255,255,255,0.7)`;
+                
+                const bStartX = (Math.random() * 40 - 20) + 'px';
+                const bTargetX = (Math.random() * 160 - 80) + 'px';
+                const bTargetY = -(Math.random() * 180 + 100) + 'px';
+                const bDuration = (Math.random() * 1.2 + 1.5) + 's';
+
+                bubble.style.setProperty('--start-x', bStartX);
+                bubble.style.setProperty('--target-x', bTargetX);
+                bubble.style.setProperty('--target-y', bTargetY);
+                bubble.style.setProperty('--duration', bDuration);
+                document.body.appendChild(bubble);
+                setTimeout(() => bubble.remove(), 2500);
+
+                // [ثالثاً] توليد القلوب النيونية الشفافة المنبثقة بحرية من الزاوية اليمنى
+                for (let i = 0; i < 2; i++) {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart-glow';
+                    const hColor = neonColors[Math.floor(Math.random() * neonColors.length)];
+
+                    heart.innerHTML = `
+                        <svg width="35" height="35" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 8px ${hColor});">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" 
+                                  stroke="${hColor}" stroke-width="2" fill="none"/>
+                        </svg>
+                    `;
+
+                    const hTargetX = -(Math.random() * 420 + 120) + 'px'; 
+                    const hTargetY = -(Math.random() * 480 + 180) + 'px'; 
+                    const hDuration = (Math.random() * 1.3 + 1.8) + 's';
+                    const hScale = (Math.random() * 0.5 + 0.6).toFixed(2);
+                    const hRotate = (Math.random() * 60 - 30) + 'deg';
+
+                    heart.style.setProperty('--target-x', hTargetX);
+                    heart.style.setProperty('--target-y', hTargetY);
+                    heart.style.setProperty('--duration', hDuration);
+                    heart.style.setProperty('--scale', hScale);
+                    heart.style.setProperty('--rotate', hRotate);
+
+                    document.body.appendChild(heart);
+                    setTimeout(() => heart.remove(), 3500);
+                }
+
+                // [رابعاً] التحقق من اكتمال الهدف لتفجير البنر الاحتفالي
+                if (currentLikes === STEP_TARGET) {
+                    const banner = document.getElementById("milestone-banner");
+                    const bTitle = document.getElementById("milestone-title");
+                    if (banner && bTitle) {
+                        bTitle.innerText = `كفووو! وصلنا إلى ${msg.data.toLocaleString()} تسبيحة! 🎉`;
+                        banner.classList.add("show");
+                        
+                        setTimeout(() => {
+                            banner.classList.remove("show");
+                            if (bar) bar.style.width = "0%";
+                            if (txt) txt.innerText = `0 / ${STEP_TARGET.toLocaleString()}`;
+                        }, 3500);
+                    }
+                }
+            }
 
                 if (msg.type === "comment") {
                     const msgDiv = document.createElement("div");
