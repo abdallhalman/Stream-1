@@ -467,7 +467,24 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             will-change: transform, opacity;
             animation: bubbleFloatUp var(--duration) ease-out forwards;
-        }
+            .subhan-bubble {
+             /* ... الأكواد القديمة حقتك مثل البوزيشن والأنيميشن اتركها كما هي ... */
+
+             /* 🌟 هذا الجزء المسؤول عن وضوح النص فقط 🌟 */
+            color: #ffffff !important;        /* جعل لون الحروف أبيض ناصع */
+            font-size: 18px !important;        /* حجم الخط (تقدر تكبره أو تصغره من هنا) */
+            font-weight: 800 !important;        /* جعل الخط سميك وعريض جداً (Bold) */
+    
+           /* تحديد حواف الحروف بظل أسود حاد يعزل الكلمة عن لون الفقاعة الخلفي */
+            text-shadow: 
+           -1.5px -1.5px 0 #000,  
+            1.5px -1.5px 0 #000,
+           -1.5px  1.5px 0 #000,
+            1.5px  1.5px 0 #000,
+            0px 2px 4px rgba(0, 0, 0, 0.8);
+         
+            white-space: nowrap; /* يمنع الكلمة من الانقسام أو النزول لسطر جديد */
+            }
 
         @keyframes bubbleFloatUp {
             0% { transform: translate(var(--start-x), 0) scale(0.6); opacity: 0; }
