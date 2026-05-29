@@ -68,14 +68,51 @@ jobs:
       - name: Download Video
         run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
 
-      # ── إنشاء قائمة تشغيل عشوائية ودمجها ──
+            # ── 4. فحص الكاش، خلط الملفات، حسم الـ 6 ساعات، وتطبيق فلاتر كسر البصمة القوية ──
       - name: Create playlist and merge
         run: |
-          ls downloads/audio*.mp3 | shuf > playlist.txt
+          # 1. خلط ترتيب كل ملفات الكاش الـ 17 عشوائياً وحفظ القائمة في ملف مؤقت
+          ls downloads/audio*.mp3 | shuf > all_shuffled.txt
+          
+          # 2. فحص المدة الزمنية واختيار ما يكفي لـ 6 ساعات فقط (21600 ثانية) دون تكرار
+          TOTAL_DURATION=0
+          MAX_DURATION=21600 # 6 ساعات بالثواني
+          
+          rm -f selected_list.txt
+          touch selected_list.txt
+          
           while IFS= read -r file; do
-            echo "file '$file'"
-          done < playlist.txt > concat.txt
-          ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3 -y
+            # حساب مدة الملف الحالي بالثواني باستخدام ffprobe
+            DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:noclipping=1 "$file" | awk '{print int($1)}')
+            
+            # إضافة المدة للمجموع الإجمالي
+            TOTAL_DURATION=$((TOTAL_DURATION + DURATION))
+            
+            # تسجيل الملف في قائمة الدمج
+            echo "file '$file'" >> selected_list.txt
+            
+            # إذا وصلنا أو تجاوزنا الـ 6 ساعات تتوقف الحلقة فوراً ولا تأخذ باقي الملفات
+            if [ $TOTAL_DURATION -ge $MAX_DURATION ]; then
+              echo "Reached 6 hours threshold ($TOTAL_DURATION seconds)."
+              break
+            fi
+          done < all_shuffled.txt
+
+          # 3. دمج الملفات المختارة عشوائياً بشكل مبدئي وسريع
+          ffmpeg -f concat -safe 0 -i selected_list.txt -c copy temp_raw.mp3 -y
+          
+          # 4. توليد قيم عشوائية متغيرة لكسر البصمة (السرعة والنبرة والتردد)
+          # توليد سرعة عشوائية خفيفة جداً بين 0.985 و 1.015
+          TEMPO=$(awk "BEGIN {srand(); print 0.985 + (rand() * 0.03)}")
+          # توليد طبقة صوت (Pitch) عشوائية لتغيير هوية الموجة الصوتية
+          PITCH=$(awk "BEGIN {srand(); print 0.99 + (rand() * 0.02)}")
+          
+          # 5. قَص الملف الناتج عند 6 ساعات بالضبط وتطبيق أقوى فلاتر هندسة صوتية لكسر البصمة
+          ffmpeg -i temp_raw.mp3 -t 21600 -af "asetrate=44100*$PITCH,atempo=$TEMPO,aresample=44100,dynaudnorm" -b:a 192k merged_audio.mp3 -y
+          
+          # 6. تنظيف كافة الملفات المؤقتة
+          rm -f temp_raw.mp3 all_shuffled.txt selected_list.txt
+
 
       # ── تشغيل السيرفر والبث ──
       - name: Run Puppeteer Stream Server
