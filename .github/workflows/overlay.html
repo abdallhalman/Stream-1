@@ -439,7 +439,7 @@
             width: 80%;
             text-align: center;
             margin-top: 6px;
-            font-size: 16px;
+            font-size: 20px;
             font-weight: 600;
             color: rgba(255, 255, 255, 0.9);
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
@@ -460,7 +460,7 @@
             padding: 6px 14px;
             border-radius: 20px;
             font-family: 'IBM Plex Sans Arabic', sans-serif;
-            font-size: 14px;
+            font-size: 18px;
             font-weight: 700;
             color: #fff;
             white-space: nowrap;
@@ -594,13 +594,14 @@
             const STEP_TARGET = 1000; // الهدف المتكرر
             
             // قائمة الأذكار المرتبطة (الذكر الأساسي + الجملة الفرعية الشاملة له)
-            const azkarList = [
-                { main: "سُبْحَانَ اللَّهِ", sub: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ 🌿" },
-                { main: "الْحَمْدُ لِلَّهِ", sub: "الْحَمْدُ لِلَّهِ حَمْدًا كَثِيرًا طَيِّبًا مُبَارَكًا فِيهِ 🤍" },
-                { main: "لَا إِلَهَ إِلَّا اللَّهُ", sub: "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ 🌌" },
-                { main: "اللَّهُ أَكْبَرُ", sub: "اللَّهُ أَكْبَرُ كَبِيرًا، وَالْحَمْدُ لِلَّهِ كَثِيرًا ⚔️" },
-                { main: "أَسْتَغْفِرُ اللَّهَ", sub: "أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ وَأَتُوبُ إِلَيْهِ 🕋" }
+              const azkarList = [
+                { main: "سبحان الله", sub: "سبحان الله وبحمده، سبحان الله العظيم 🌿" },
+                { main: "الحمد لله", sub: "الحمد لله حمدا كثيرا طيبا مباركا فيه 🤍" },
+                { main: "لا إله إلا الله", sub: "لا إله إلا الله وحده لا شريك له 🌌" },
+                { main: "الله أكبر", sub: "الله أكبر كبيرا، والحمد لله كثيرا ⚔️" },
+                { main: "أستغفر الله", sub: "أستغفر الله العظيم وأتوب إليه 🕋" }
             ];
+
 
             if (msg.type === "like") {
                 // تحديث العداد المستقر العلوي التقليدي إن وجد
@@ -650,7 +651,7 @@
                 
                 const bubble = document.createElement('div');
                 bubble.className = 'subhan-bubble';
-                bubble.innerText = `${currentItem.main} ✨`; // تأخذ العنوان الأساسي الخفيف للفقاعات
+                bubble.innerText = `${currentItem.main}`; // تأخذ العنوان الأساسي الخفيف للفقاعات
                 bubble.style.background = randomColor;
                 bubble.style.border = `1.5px solid rgba(255,255,255,0.7)`;
                 
