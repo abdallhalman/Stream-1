@@ -416,8 +416,8 @@
             top: 0;
             right: 0; /* يمتلئ من اليمين لليسار */
             height: 100%;
-            background: #00E676; /* أخضر فسفوري مشع */
-            box-shadow: 0 0 15px #00E676, inset 0 0 8px rgba(255,255,255,0.6);
+            background: #39FF14; /* أخضر فسفوري مشع */
+            box-shadow: 0 0 15px #39FF14, inset 0 0 8px rgba(255,255,255,0.6);
             transition: width 0.25s cubic-bezier(0.1, 0.8, 0.3, 1);
             z-index: 1;
         }
@@ -460,9 +460,9 @@
             padding: 6px 14px;
             border-radius: 20px;
             font-family: 'IBM Plex Sans Arabic', sans-serif;
-            font-size: 12px;
-            font-weight: 600;
-            color: #555555;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
             white-space: nowrap;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             will-change: transform, opacity;
@@ -589,10 +589,11 @@
                     document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
                 }
 
-                            // ─── متغيرات نظام تعاقب الأذكار الذكي مع عداد تنازلي ───
+        
+            // ─── متغيرات نظام تعاقب الأذكار الذكي المطور ───
             const STEP_TARGET = 1000; // الهدف المتكرر
-            let isCountingDown = false; // لمنع الكبس أثناء التجميد والعد التنازلي
             
+            // قائمة الأذكار المرتبطة (الذكر الأساسي + الجملة الفرعية الشاملة له)
             const azkarList = [
                 { main: "سُبْحَانَ اللَّهِ", sub: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ 🌿" },
                 { main: "الْحَمْدُ لِلَّهِ", sub: "الْحَمْدُ لِلَّهِ حَمْدًا كَثِيرًا طَيِّبًا مُبَارَكًا فِيهِ 🤍" },
@@ -602,54 +603,60 @@
             ];
 
             if (msg.type === "like") {
-                // تحديث العداد المستقر العلوي التقليدي يميناً
+                // تحديث العداد المستقر العلوي التقليدي إن وجد
                 const topLikes = document.getElementById("likes-count");
                 if (topLikes) topLikes.innerText = `❤️ ${msg.data.toLocaleString()}`;
 
-                // إذا كنا في فترة العد التنازلي (الـ 10 ثوانٍ)، نرفض تحديث عداد التسبيح مؤقتاً
-                if (isCountingDown) return;
-
-                // 1. تحديد المرحلة الحالية بناءً على إجمالي اللايكات
+                // 1. تحديد المرحلة الحالية بناءً على إجمالي اللايكات لتبديل الأذكار
                 let currentStage = Math.floor(msg.data / STEP_TARGET);
                 let currentLikes = msg.data % STEP_TARGET;
                 
                 if (currentLikes === 0 && msg.data > 0) { 
                     currentLikes = STEP_TARGET; 
-                    currentStage = currentStage - 1; 
+                    currentStage = currentStage - 1; // تثبيت المرحلة الحالية عند لحظة الامتلاء التام
                 }
 
+                // سحب الكائن (Object) الخاص بالذكر الحالي والذكر القادم من القائمة المترابطة
                 const currentItem = azkarList[currentStage % azkarList.length];
                 const nextItem = azkarList[(currentStage + 1) % azkarList.length];
 
-                // 2. تحديث شريط التقدم الفسفوري والنصوص
+                // 2. تحديث شريط التقدم الفسفوري والأرقام والنص السفلي المترابط
+                const percentage = (currentLikes / STEP_TARGET) * 100;
                 const bar = document.getElementById("tasbih-bar");
                 const txt = document.getElementById("tasbih-text");
                 const subtxt = document.querySelector(".tasbih-subtext");
                 
-                // في الحالة الطبيعية نقوم بملء الشريط وتحديث الأرقام
-                if (bar) bar.style.width = `${(currentLikes / STEP_TARGET) * 100}%`;
+                if (bar) bar.style.width = `${percentage}%`;
                 if (txt) {
                     txt.innerText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
                     txt.classList.add("bump");
                     setTimeout(() => txt.classList.remove("bump"), 100);
                 }
+                
+                // [التحديث الذكي لقفل الجملة] يغير النص الفرعي بناءً على الذكر الحالي بدقة وبطول 80%
                 if (subtxt) {
                     subtxt.innerText = currentItem.sub;
                 }
 
-                // 3. إطلاق فقاعة التسبيح اللطيفة لتسقط للأسفل
-                const bubbleColors = ['rgba(255,105,180,0.85)', 'rgba(0,206,209,0.85)', 'rgba(148,0,211,0.85)', 'rgba(255,165,0,0.85)', 'rgba(57,255,20,0.9)'];
+                // 3. إطلاق فقاعة التسبيح اللطيفة تحمل (الذكر الأساسي) وهي تتساقط للأسفل
+                const bubbleColors = [
+                    'rgba(255, 105, 180, 0.85)', /* وردي */
+                    'rgba(0, 206, 209, 0.85)',   /* فيروزي */
+                    'rgba(148, 0, 211, 0.85)',   /* بنفسجي */
+                    'rgba(255, 165, 0, 0.85)',   /* برتقالي ناعم */
+                    'rgba(57, 255, 20, 0.9)'     /* أخضر فسفوري */
+                ];
                 const randomColor = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
                 
                 const bubble = document.createElement('div');
                 bubble.className = 'subhan-bubble';
-                bubble.innerText = `${currentItem.main} `;
+                bubble.innerText = `${currentItem.main} ✨`; // تأخذ العنوان الأساسي الخفيف للفقاعات
                 bubble.style.background = randomColor;
                 bubble.style.border = `1.5px solid rgba(255,255,255,0.7)`;
                 
                 const bStartX = (Math.random() * 60 - 30) + 'px'; 
                 const bTargetX = (Math.random() * 180 - 90) + 'px'; 
-                const bTargetY = (Math.random() * 200 + 120) + 'px'; 
+                const bTargetY = (Math.random() * 200 + 120) + 'px'; // سقوط ناعم لأسفل العداد
                 const bDuration = (Math.random() * 1.2 + 1.5) + 's';
 
                 bubble.style.setProperty('--start-x', bStartX);
@@ -660,35 +667,24 @@
                 document.body.appendChild(bubble);
                 setTimeout(() => bubble.remove(), 2500);
 
-                // 4. الدخول في وضع الـ 10 ثوانٍ التنازلية فوراً عند اكتمال الـ 1000
+                // 4. تفعيل البنر الانفجاري عند اكتمال الـ 1000 والإعلان عن الانتقال للذكر الجديد
                 if (currentLikes === STEP_TARGET) {
-                    isCountingDown = true; // تفعيل الحظر المؤقت للكبسات
-                    
-                    // إفراغ خط العداد فوراً وجعله 0%
-                    if (bar) bar.style.width = "0%";
-                    
-                    let secondsLeft = 10;
-                    if (txt) txt.innerText = `⏳ الاستعداد للذكر التالي خلال: ${secondsLeft}`;
-                    if (subtxt) subtxt.innerText = `مبارك اكتمال عداد (${currentItem.main}) 🎉`;
-
-                    // حلقة التنازل اللحظي كل ثانية
-                    const countdownInterval = setInterval(() => {
-                        secondsLeft--;
-                        if (secondsLeft > 0) {
-                            if (txt) txt.innerText = `⏳ الاستعداد للذكر التالي خلال: ${secondsLeft}`;
-                        } else {
-                            // انتهت الـ 10 ثوانٍ بنجاح!
-                            clearInterval(countdownInterval);
-                            isCountingDown = false; // فك الحظر عن الكبسات
-                            
-                            // قلب الشاشة تلقائياً للهدف والذكر الجديد
+                    const banner = document.getElementById("milestone-banner");
+                    const bTitle = document.getElementById("milestone-title");
+                    if (banner && bTitle) {
+                        bTitle.innerHTML = `كفووو! تم اكتمال عداد <span style="color:#39FF14;">(${currentItem.main})</span> 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${nextItem.main} 🌿</span>`;
+                        banner.classList.add("show");
+                        
+                        setTimeout(() => {
+                            banner.classList.remove("show");
+                            if (bar) bar.style.width = "0%";
                             if (txt) txt.innerText = `0 / ${STEP_TARGET.toLocaleString()}`;
-                            if (subtxt) subtxt.innerText = nextItem.sub;
-                        }
-                    }, 1000);
+                            if (subtxt) subtxt.innerText = nextItem.sub; // يقلب النص الفرعي فوراً للهدف التالي
+                        }, 4000);
+                    }
                 }
             }
-                
+
 
                 if (msg.type === "comment") {
                     const msgDiv = document.createElement("div");
