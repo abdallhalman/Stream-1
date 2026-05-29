@@ -107,36 +107,31 @@
     min-width: 420px; 
 }
 
-/* صورة المرسل (صغيرة وجانبية لكي لا تسرق الأضواء) */
-.gift-banner img:first-of-type {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    flex-shrink: 0;
-    animation: none !important;
-    transform: scale(1) !important;
-}
-/* 👤 صورة المرسل (الداعم) - حماية مطلقة للدائرة الفخمة */
-.gift-banner img {
+/* 👤 صورة المرسل (الداعم) - موجودة في جهة اليمين دائرية ومحمية */
+.gift-banner img:last-of-type {
+    width: 44px !important;
+    height: 44px !important;
     border-radius: 50% !important;  
     object-fit: cover !important;
+    border: 2px solid rgba(255, 255, 255, 0.6) !important;
+    animation: none !important;
+    transform: scale(1) !important;
+    margin-left: 0 !important;
 }
 
-/* 👑 صورة الهدية - استهداف مباشر بالكلاس لمنع أي تداخل، ومساحة حرة بالكامل */
-.gift-banner .gift-img {
+/* 👑 صورة الهدية - موجودة في جهة اليسار (أكبر عنصر، حرة، وبدون أي اقتطاع) */
+.gift-banner img:first-of-type {
     width: 85px !important; 
     height: 85px !important;
     object-fit: contain !important; 
     border-radius: 0% !important;  
     border: none !important;        
-    flex-shrink: 0;
-    filter: drop-shadow(0 0 15px #ffbc00); 
+    flex-shrink: 0 !important;
+    filter: drop-shadow(0 0 15px #ffbc00) !important; 
     animation: none !important;
     transform: scale(1) !important;
-    margin-left: auto; 
+    margin-right: auto !important;
 }
-
 
 .gift-text h2 {
     font-size: 22px; 
