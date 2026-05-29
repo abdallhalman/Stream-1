@@ -107,11 +107,12 @@
     min-width: 420px; 
 }
 
-/* 👤 صورة المرسل (الداعم) - موجودة في جهة اليمين دائرية ومحمية */
-.gift-banner img:last-of-type {
+/* 👤 1️⃣ كود صورة الشخص (المرسل) فقط: جعلناها دائرية ومحمية بشكل مستقل تماماً */
+.gift-banner img:not([src*="gift"]), 
+.gift-banner img:first-of-type {
     width: 44px !important;
     height: 44px !important;
-    border-radius: 50% !important;  
+    border-radius: 50% !important;  /* 🎯 دائرية كاملة لشخص */
     object-fit: cover !important;
     border: 2px solid rgba(255, 255, 255, 0.6) !important;
     animation: none !important;
@@ -119,12 +120,13 @@
     margin-left: 0 !important;
 }
 
-/* 👑 صورة الهدية - موجودة في جهة اليسار (أكبر عنصر، حرة، وبدون أي اقتطاع) */
-.gift-banner img:first-of-type {
+/* 👑 2️⃣ كود صورة الهدية فقط: حرة بالكامل، ضخمة، وبدون أي اقتطاع أو دائرية */
+.gift-banner img[src*="gift"], 
+.gift-banner img:last-of-type {
     width: 85px !important; 
     height: 85px !important;
-    object-fit: contain !important; 
-    border-radius: 0% !important;  
+    object-fit: contain !important; /* 🎯 تظهر كاملة بدون تمطيط */
+    border-radius: 0% !important;  /* 🚫 ألغينا الدائرية عنها تماماً لتصبح حرة */
     border: none !important;        
     flex-shrink: 0 !important;
     filter: drop-shadow(0 0 15px #ffbc00) !important; 
@@ -132,6 +134,7 @@
     transform: scale(1) !important;
     margin-right: auto !important;
 }
+
 
 .gift-text h2 {
     font-size: 22px; 
