@@ -381,6 +381,32 @@
         @keyframes bounceIn     { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes fadeOut      { from { opacity: 1; } to { opacity: 0; } }
         @keyframes popScale     { 0% { transform: scale(1); } 50% { transform: scale(1.3); color: #fff; } 100% { transform: scale(1); } }
+              /* ─── منظومة القلوب النيونية المتطايرة ─── */
+        .heart-glow {
+            position: absolute;
+            bottom: 20px; /* نقطة الانطلاق القريبة من الزاوية السفلية */
+            right: 40px;  /* مائلة لليمين لتجنب تغطية المنتصف فوراً */
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.75; /* شفافة نسبياً كما طلبت */
+            will-change: transform, opacity;
+            animation: flyAndFade var(--duration) cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
+        @keyframes flyAndFade {
+            0% {
+                transform: translate(0, 0) scale(0.3) rotate(0deg);
+                opacity: 0;
+            }
+            15% {
+                opacity: 0.85; /* تظهر سريعاً عند الانبثاق */
+            }
+            100% {
+                /* الـ CSS سيقرأ هذه المتغيرات العشوائية من الجافا سكريبت ليعطي حركية حرة تماماً */
+                transform: translate(var(--target-x), var(--target-y)) scale(var(--scale)) rotate(var(--rotate));
+                opacity: 0; /* تتلاشى تماماً في النهاية */
+            }
+            } 
     </style>
 </head>
 <body>
@@ -437,7 +463,59 @@
                 }
 
                 if (msg.type === "like") {
+                    // 1. تحديث العداد العلوي المستقر
                     document.getElementById("likes-count").innerText = `❤️ ${msg.data.toLocaleString()}`;
+
+                    // 2. إطلاق موجة من القلوب النيونية الفاتحة (مثلاً 4 قلوب لكل ضغطة/تحديث)
+                    const colors = [
+                        'rgba(0, 255, 242, 0.8)',   /* سماوي نيون فاتح */
+                        'rgba(255, 0, 128, 0.8)',   /* وردي نيون */
+                        'rgba(174, 0, 255, 0.8)',   /* بنفسجي فاتح */
+                        'rgba(255, 230, 0, 0.8)',   /* أصفر مشع */
+                        'rgba(57, 255, 20, 0.8)'    /* أخضر ليموني نيون */
+                    ];
+
+                    for (let i = 0; i < 4; i++) {
+                        const heart = document.createElement('div');
+                        heart.className = 'heart-glow';
+
+                        // اختيار لون عشوائي من القائمة الفاتحة
+                        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+                        // تصميم قلب مفرغ وشفاف وله توهج (Neon Glow) متناسق مع لونه
+                        heart.innerHTML = `
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 8px ${randomColor});">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" 
+                                      stroke="${randomColor}" stroke-width="2" fill="none"/>
+                            </svg>
+                        `;
+
+                        // ── هندسة المسار الحر والعشوائي ──
+                        // الاندفاع باتجاه وسط الشاشة (محور X يسير لليسار بقيم عشوائية واسعة)
+                        const targetX = -(Math.random() * 400 + 150) + 'px'; 
+                        // الصعود للأعلى (محور Y يسير للأعلى بقيم مختلفة)
+                        const targetY = -(Math.random() * 450 + 200) + 'px'; 
+                        // مدة الطيران عشوائية بين ثانيتين إلى 3.5 ثانية لجعل الحركة طبيعية وغير ميكانيكية
+                        const duration = (Math.random() * 1.5 + 2) + 's';
+                        // حجم عشوائي لكل قلب لتوليد عمق بصري (3D Perspective)
+                        const scale = (Math.random() * 0.6 + 0.6).toFixed(2);
+                        // زاوية دوران عشوائية أثناء الطيران
+                        const rotate = (Math.random() * 60 - 30) + 'deg';
+
+                        // زرع القيم العشوائية داخل أنيميشن الـ CSS الخاص بهذا القلب تحديداً
+                        heart.style.setProperty('--target-x', targetX);
+                        heart.style.setProperty('--target-y', targetY);
+                        heart.style.setProperty('--duration', duration);
+                        heart.style.setProperty('--scale', scale);
+                        heart.style.setProperty('--rotate', rotate);
+
+                        document.body.appendChild(heart);
+
+                        // تنظيف الذاكرة وحذف عنصر القلب فور انتهاء حركته تماماً لضمان خفة المتصفح
+                        setTimeout(() => {
+                            heart.remove();
+                        }, 4000);
+                    }
                 }
 
                 if (msg.type === "comment") {
