@@ -588,23 +588,42 @@
                     document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
                 }
 
-                            // ─── متغيرات نظام عداد التسبيح التنافسي ───
-            let currentLikes = 0;
+        
+            // ─── متغيرات نظام تعاقب الأذكار الذكي المطور ───
             const STEP_TARGET = 1000; // الهدف المتكرر
+            
+            // قائمة الأذكار المرتبطة (الذكر الأساسي + الجملة الفرعية الشاملة له)
+            const azkarList = [
+                { main: "سُبْحَانَ اللَّهِ", sub: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ 🌿" },
+                { main: "الْحَمْدُ لِلَّهِ", sub: "الْحَمْدُ لِلَّهِ حَمْدًا كَثِيرًا طَيِّبًا مُبَارَكًا فِيهِ 🤍" },
+                { main: "لَا إِلَهَ إِلَّا اللَّهُ", sub: "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ 🌌" },
+                { main: "اللَّهُ أَكْبَرُ", sub: "اللَّهُ أَكْبَرُ كَبِيرًا، وَالْحَمْدُ لِلَّهِ كَثِيرًا ⚔️" },
+                { main: "أَسْتَغْفِرُ اللَّهَ", sub: "أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ وَأَتُوبُ إِلَيْهِ 🕋" }
+            ];
 
             if (msg.type === "like") {
-                // تحديث العداد المستقر العلوي التقليدي
+                // تحديث العداد المستقر العلوي التقليدي إن وجد
                 const topLikes = document.getElementById("likes-count");
                 if (topLikes) topLikes.innerText = `❤️ ${msg.data.toLocaleString()}`;
 
-                // حساب العداد الحالي الفعلي للمرحلة الحالية
-                currentLikes = msg.data % STEP_TARGET;
-                if (currentLikes === 0 && msg.data > 0) { currentLikes = STEP_TARGET; }
+                // 1. تحديد المرحلة الحالية بناءً على إجمالي اللايكات لتبديل الأذكار
+                let currentStage = Math.floor(msg.data / STEP_TARGET);
+                let currentLikes = msg.data % STEP_TARGET;
+                
+                if (currentLikes === 0 && msg.data > 0) { 
+                    currentLikes = STEP_TARGET; 
+                    currentStage = currentStage - 1; // تثبيت المرحلة الحالية عند لحظة الامتلاء التام
+                }
 
-                // [أولاً] تحديث شريط العداد الفسفوري والأرقام
+                // سحب الكائن (Object) الخاص بالذكر الحالي والذكر القادم من القائمة المترابطة
+                const currentItem = azkarList[currentStage % azkarList.length];
+                const nextItem = azkarList[(currentStage + 1) % azkarList.length];
+
+                // 2. تحديث شريط التقدم الفسفوري والأرقام والنص السفلي المترابط
                 const percentage = (currentLikes / STEP_TARGET) * 100;
                 const bar = document.getElementById("tasbih-bar");
                 const txt = document.getElementById("tasbih-text");
+                const subtxt = document.querySelector(".tasbih-subtext");
                 
                 if (bar) bar.style.width = `${percentage}%`;
                 if (txt) {
@@ -612,81 +631,59 @@
                     txt.classList.add("bump");
                     setTimeout(() => txt.classList.remove("bump"), 100);
                 }
+                
+                // [التحديث الذكي لقفل الجملة] يغير النص الفرعي بناءً على الذكر الحالي بدقة وبطول 80%
+                if (subtxt) {
+                    subtxt.innerText = currentItem.sub;
+                }
 
-                // الألوان الفاتحة المشتركة للفقاعات والقلوب
-                const neonColors = [
-                    'rgba(255, 105, 180, 0.85)', // وردي
-                    'rgba(0, 255, 242, 0.85)',   // سماوي
-                    'rgba(174, 0, 255, 0.85)',   // بنفسجي
-                    'rgba(255, 230, 0, 0.85)',   // أصفر
-                    'rgba(57, 255, 20, 0.9)'     // أخضر فسفوري
+                // 3. إطلاق فقاعة التسبيح اللطيفة تحمل (الذكر الأساسي) وهي تتساقط للأسفل
+                const bubbleColors = [
+                    'rgba(255, 105, 180, 0.85)', /* وردي */
+                    'rgba(0, 206, 209, 0.85)',   /* فيروزي */
+                    'rgba(148, 0, 211, 0.85)',   /* بنفسجي */
+                    'rgba(255, 165, 0, 0.85)',   /* برتقالي ناعم */
+                    'rgba(57, 255, 20, 0.9)'     /* أخضر فسفوري */
                 ];
-                const randomColor = neonColors[Math.floor(Math.random() * neonColors.length)];
-
-                // [ثانياً] توليد فقاعة التسبيح في المنتصف أعلى الشاشة
+                const randomColor = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
+                
                 const bubble = document.createElement('div');
                 bubble.className = 'subhan-bubble';
-                bubble.innerText = 'سبحان الله ✨';
+                bubble.innerText = `${currentItem.main} ✨`; // تأخذ العنوان الأساسي الخفيف للفقاعات
                 bubble.style.background = randomColor;
                 bubble.style.border = `1.5px solid rgba(255,255,255,0.7)`;
                 
-                const bStartX = (Math.random() * 40 - 20) + 'px';
-                const bTargetX = (Math.random() * 160 - 80) + 'px';
-                const bTargetY = -(Math.random() * 180 + 100) + 'px';
+                const bStartX = (Math.random() * 60 - 30) + 'px'; 
+                const bTargetX = (Math.random() * 180 - 90) + 'px'; 
+                const bTargetY = (Math.random() * 200 + 120) + 'px'; // سقوط ناعم لأسفل العداد
                 const bDuration = (Math.random() * 1.2 + 1.5) + 's';
 
                 bubble.style.setProperty('--start-x', bStartX);
                 bubble.style.setProperty('--target-x', bTargetX);
                 bubble.style.setProperty('--target-y', bTargetY);
                 bubble.style.setProperty('--duration', bDuration);
+
                 document.body.appendChild(bubble);
                 setTimeout(() => bubble.remove(), 2500);
 
-                // [ثالثاً] توليد القلوب النيونية الشفافة المنبثقة بحرية من الزاوية اليمنى
-                for (let i = 0; i < 2; i++) {
-                    const heart = document.createElement('div');
-                    heart.className = 'heart-glow';
-                    const hColor = neonColors[Math.floor(Math.random() * neonColors.length)];
-
-                    heart.innerHTML = `
-                        <svg width="35" height="35" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 8px ${hColor});">
-                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" 
-                                  stroke="${hColor}" stroke-width="2" fill="none"/>
-                        </svg>
-                    `;
-
-                    const hTargetX = -(Math.random() * 420 + 120) + 'px'; 
-                    const hTargetY = -(Math.random() * 480 + 180) + 'px'; 
-                    const hDuration = (Math.random() * 1.3 + 1.8) + 's';
-                    const hScale = (Math.random() * 0.5 + 0.6).toFixed(2);
-                    const hRotate = (Math.random() * 60 - 30) + 'deg';
-
-                    heart.style.setProperty('--target-x', hTargetX);
-                    heart.style.setProperty('--target-y', hTargetY);
-                    heart.style.setProperty('--duration', hDuration);
-                    heart.style.setProperty('--scale', hScale);
-                    heart.style.setProperty('--rotate', hRotate);
-
-                    document.body.appendChild(heart);
-                    setTimeout(() => heart.remove(), 3500);
-                }
-
-                // [رابعاً] التحقق من اكتمال الهدف لتفجير البنر الاحتفالي
+                // 4. تفعيل البنر الانفجاري عند اكتمال الـ 1000 والإعلان عن الانتقال للذكر الجديد
                 if (currentLikes === STEP_TARGET) {
                     const banner = document.getElementById("milestone-banner");
                     const bTitle = document.getElementById("milestone-title");
                     if (banner && bTitle) {
-                        bTitle.innerText = `كفووو! وصلنا إلى ${msg.data.toLocaleString()} تسبيحة! 🎉`;
+                        bTitle.innerHTML = `كفووو! تم اكتمال عداد <span style="color:#39FF14;">(${currentItem.main})</span> 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${nextItem.main} 🌿</span>`;
                         banner.classList.add("show");
                         
                         setTimeout(() => {
                             banner.classList.remove("show");
                             if (bar) bar.style.width = "0%";
                             if (txt) txt.innerText = `0 / ${STEP_TARGET.toLocaleString()}`;
-                        }, 3500);
+                            if (subtxt) subtxt.innerText = nextItem.sub; // يقلب النص الفرعي فوراً للهدف التالي
+                        }, 4000);
                     }
                 }
             }
+
 
                 if (msg.type === "comment") {
                     const msgDiv = document.createElement("div");
