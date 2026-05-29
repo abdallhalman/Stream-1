@@ -106,13 +106,11 @@
     will-change: transform, opacity;
     min-width: 420px; 
 }
-
-/* 👤 1️⃣ كود صورة الشخص (المرسل) فقط: جعلناها دائرية ومحمية بشكل مستقل تماماً */
-.gift-banner img:not([src*="gift"]), 
-.gift-banner img:first-of-type {
+/* 👤 كود صورة الشخص (الداعم) - استهداف مباشر للصورة داخل صندوق النصوص لتظل دائرية ومحمية */
+.gift-banner div img {
     width: 44px !important;
     height: 44px !important;
-    border-radius: 50% !important;  /* 🎯 دائرية كاملة لشخص */
+    border-radius: 50% !important;  /* 🎯 دائرية كاملة وصارمة للشخص فقط */
     object-fit: cover !important;
     border: 2px solid rgba(255, 255, 255, 0.6) !important;
     animation: none !important;
@@ -120,21 +118,18 @@
     margin-left: 0 !important;
 }
 
-/* 👑 2️⃣ كود صورة الهدية فقط: حرة بالكامل، ضخمة، وبدون أي اقتطاع أو دائرية */
-.gift-banner img[src*="gift"], 
-.gift-banner img:last-of-type {
+/* 👑 كود صورة الهدية - استهداف مباشر وحصري عبر الكلاس النيون اللي وفره الجافا سكريبت */
+.gift-banner .gift-icon-neon {
     width: 85px !important; 
     height: 85px !important;
-    object-fit: contain !important; /* 🎯 تظهر كاملة بدون تمطيط */
-    border-radius: 0% !important;  /* 🚫 ألغينا الدائرية عنها تماماً لتصبح حرة */
+    object-fit: contain !important; /* 🎯 تظهر كاملة بدون أي تمطيط أو اقتطاع */
+    border-radius: 0% !important;  /* 🚫 إلغاء الدائرة تماماً لتتحرر أطراف الهدية الشفافة */
     border: none !important;        
     flex-shrink: 0 !important;
     filter: drop-shadow(0 0 15px #ffbc00) !important; 
     animation: none !important;
     transform: scale(1) !important;
-    margin-right: auto !important;
 }
-
 
 .gift-text h2 {
     font-size: 22px; 
