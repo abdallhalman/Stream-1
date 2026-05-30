@@ -86,7 +86,8 @@ async function startOverlayStream() {
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-        const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع لكسر البصمة الرقمية
+        
+    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع لكسر البصمة
     const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين لكسر البصمة
     const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
     const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
@@ -103,32 +104,30 @@ async function startOverlayStream() {
         "-i", audioPath,            // المدخل [2] ملف الصوت
         
         "-loop", "1",
-        "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري المرفق
+        "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري
         
         "-filter_complex",
-        // 1. استنساخ قنوات الصوت: نسخة للبث المباشر ونسخة نأخذ منها بيانات التفاعل والتحليل اللحظي
+        // 1. فصل مسار الصوت الأصلي للبث النقي بدون تعديلات ترددية
         `[2:a]asplit=2[a_visual][a_out];` +
         
-        // 2. معالجة وتطبيق نبض الإضاءة على الخلفية: يتأثر السطوع طردياً بقوة إشارة الصوت اللحظية (f=rt)
+        // 2. معالجة السطوع الديناميكي (نبض الإضاءة مع الوقت): يتأرجح السطوع بنعومة وسلاسة فائقة
         `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
-        `eq=brightness='${randBrightness}+0.04*sin(t*2*PI)*between(t,0,pow(10,10))':contrast=${randContrast}:saturation=${randSaturation},` +
+        `eq=brightness='${randBrightness}+0.03*sin(t*2*PI)':contrast=${randContrast}:saturation=${randSaturation},` +
         `hue=h=${randHue},` +
         `noise=alls=${randNoise}:allf=t+p[bg_pulsing];` +
         
-        // 3. تطبيق نبض حجم اللوجو: يتمدد وينكمش بنعومة وسلاسة متناهية متزامناً مع استمرار القراءة والأصوات
-        `[3:v]scale='245+20*abs(sin(t*2*PI))':'245+20*abs(sin(t*2*PI))',format=rgba[logo_pulsing];` +
+        // 3. الحل الجذري: إجبار فلتر التصغير على تقييم الحركة مع كل فريم (eval=frame) لجعل اللوجو ينبض ويتنفس بشكل حقيقي ومستمر
+        `[3:v]scale=w='245+20*abs(sin(t*2*PI))':h='245+20*abs(sin(t*2*PI))':eval=frame,format=rgba[logo_pulsing];` +
         
-        // 4. التوسيط الديناميكي المطلق: دمج اللوجو النابض في السنتر تماماً فوق الخلفية المتوهجة بالنبض
+        // 4. دمج اللوجو في السنتر المطلق بنظام الحساب المرن للأبعاد المتغيرة تلقائياً
         `[bg_pulsing][logo_pulsing]overlay=(W-w)/2:(H-h)/2[bg_with_logo];` +
         
-        // 5. تهيئة طبقة شفافية التفاعل والتعليقات المباشرة من المتصفح (Puppeteer)
+        // 5. تركيب طبقة شفافية التفاعل والتعليقات المباشرة لـ Puppeteer فوق البث
         `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
-        
-        // 6. تجميع المشهد السينمائي النهائي المستقر والمقاوم للحظر
         `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
         
         "-map", "[out_v]",
-        "-map", "[a_out]", // إرسال الصوت الأصلي النقي للبث بدون أي معالجة أو تأثير عليه
+        "-map", "[a_out]", // تمرير قناة الصوت المستقلة المخصصة للمستمعين بأعلى نقاء
         "-c:v", "libx264",
         "-r", "30",
         "-preset", "veryfast",
