@@ -97,34 +97,48 @@ async function startOverlayStream() {
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
     const ffmpegArgs = [
-    "-re",                      // <--- لضبط سرعة القراءة
+    "-re",                      // لضبط سرعة القراءة متزامنة مع الوقت الفعلي
     "-loop", "1",
     "-f", "image2",
-    "-i", mainFramePath,
+    "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف
     
     "-stream_loop", "-1",
-    "-i", videoPath,
-    "-i", audioPath,
+    "-i", videoPath,            // المدخل [1] فيديو الخلفية الأساسي
     
-    "-filter_complex",
-    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
-    `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
-    `hue=h=${randHue},` +
-    `noise=alls=${randNoise}:allf=t[bg_v];` +
-    `[0:v]fps=30[overlay_v];` +
-    `[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
+    "-i", audioPath,            // المدخل [2] ملف الصوت المدمج
     
-    "-map", "[out_v]",
-    "-map", "2:a",
+    "-filter_complex", 
+    // 1. تجهيز فيديو الخلفية بالأبعاد المطلوبة
+    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg];` +
+    
+    // 2. تحويل الصوت الفعلي (المدخل 2) إلى موجات صوتية متحركة نيون
+    // يمكنك تعديل الأبعاد (600x150) واللون (0x00FFFF) والسماكة ونمط الموجة (p2p أو cline)
+    `[2:a]showwaves=s=700x180:mode=line:rate=30:colors=0x00FFFF@0.8:scale=sqrt[audio_wave];` +
+    
+    // 3. وضع موجة الصوت فوق فيديو الخلفية في المنتصف أسفل الشاشة بقليل (x=290, y=500)
+    `[bg][audio_wave]overlay=290:500:shortest=1[bg_with_waves];` +
+    
+    // 4. دمج طبقة الأوفرلاي الشفاف (التعليقات والهدايا) في المقدمة فوق كل شيء
+    `[bg_with_waves][0:v]overlay=0:0[out_v]`,
+    
+    "-map", "[out_v]",          // توجيه الفيديو النهائي المدمج للبث
+    "-map", "2:a",              // توجيه الصوت الأصلي للبث
+    
     "-c:v", "libx264",
-    "-r", "30",                 // <--- لضبط سرعة البث النهائي
-    "-preset", "veryfast",
-    "-tune", "zerolatency",
+    "-r", "30",
+    "-profile:v", "baseline",
+    "-g", "60",                 // Keyframe كل ثانيتين لثبات البث
+    "-b:v", "2500k",            // البتريت الخاص بالفيديو
+    "-maxrate", "2500k",
+    "-bufsize", "5000k",
     "-pix_fmt", "yuv420p",
+    
     "-c:a", "aac",
-    "-b:a", "128k",
+    "-b:a", "128k",             // البتريت الخاص بالصوت
+    "-ar", "44100",
+    
     "-f", "flv",
-    `rtmp://live.restream.io/live/${STREAM_KEY}`
+    `rtmp://localhost/live/${STREAM_KEY}` // رابط السيرفر المحلي أو سيرفر البث الخاص بك
 ];
 
 
