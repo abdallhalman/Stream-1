@@ -97,7 +97,7 @@ async function startOverlayStream() {
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
             // تحديد مسار اللوجو الدائري الموجود في المجلد الرئيسي للمستودع
-    const logoPath = path.join(__dirname, '../../logo.png'); 
+    const logoPath = path.join(__dirname, 'logo.png'); 
 
     const ffmpegArgs = [
     "-re",                      // لضبط سرعة القراءة متزامنة مع الوقت الفعلي
