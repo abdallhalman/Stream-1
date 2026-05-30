@@ -96,15 +96,21 @@ async function startOverlayStream() {
     const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
-        const ffmpegArgs = [
+            // تحديد مسار اللوجو الدائري الموجود في المجلد الرئيسي للمستودع
+    const logoPath = path.join(__dirname, '../../logo.png'); 
+
+    const ffmpegArgs = [
     "-re",                      // لضبط سرعة القراءة متزامنة مع الوقت الفعلي
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف (التعليقات والهدايا)
     
     "-stream_loop", "-1",
-    "-i", videoPath,            // المدخل [1] فيديو الخلفية الأساسي
-    "-i", audioPath,            // المدخل [2] ملف الصوت المدمج
+    "-i", videoPath,            // المدخل [1] فيديو الخلفية القادم من درايف
+    "-i", audioPath,            // المدخل [2] ملف الصوت القادم من درايف
+    
+    "-loop", "1",
+    "-i", logoPath,             // المدخل [3] اللوجو الثابت الخاص بك (أبعاد 250x250)
     
     "-filter_complex",
     // 1. فيديو الخلفية: ضبط الأبعاد وتطبيق فلاتر كسر البصمة (الألوان، السطوع، والتشويش المتحرك)
@@ -113,20 +119,24 @@ async function startOverlayStream() {
     `hue=h=${randHue},` +
     `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
     
-    // 2. الموجة الصوتية العصرية: تحويل الصوت إلى أمواج ناعمة متصلة (cline)، متزنة الحركة (log)، وبتدرج لوني نيون (فيروزي وأزرق)
-    `[2:a]showwaves=s=760x140:mode=cline:rate=30:colors=0x00FFFF@0.9|0x0088FF@0.6:scale=log[audio_wave];` +
+    // 2. الهالة الدائرية المتوهجة: تحويل ترددات الصوت إلى موجات نيون زاهية دائرية (أبعاد 400x400 لتخرج من أطراف اللوجو)
+    // دمج الألوان (الأرجواني والفيروزي والوردي) لتعطي توهجاً حياً ممتداً ومتغيراً مع الصوت
+    `[2:a]avectorscope=s=400x400:mode=lissajous:rate=30:colors=0xFF00FF|0x00FFFF|0xFF00AA:scale=log,format=yuv420p[audio_circle];` +
     
-    // 3. الدمج: وضع موجة الصوت المتزنة أسفل الشاشة (تم تعديل الإحداثيات لتتوسط الشاشة تماماً x=260, y=530)
-    `[bg_encoded][audio_wave]overlay=260:530:shortest=1[bg_with_waves];` +
+    // 3. دمج الهالة الصوتية: توسيط الهالة الدائرية في منتصف الشاشة تماماً (إحداثيات المنتصف هي x=440, y=160)
+    `[bg_encoded][audio_circle]overlay=440:160:shortest=1[bg_with_circle];` +
     
-    // 4. الأوفرلاي الشفاف: ضبط أبعاد الفريمات القادمة من Puppeteer لضمان مطابقتها
+    // 4. دمج اللوجو: وضع اللوجو (250x250) في المنتصف فوق الهالة مباشرة ليغطي مركزها وتخرج الأمواج من أطرافه (x=515, y=235)
+    `[bg_with_circle][3:v]overlay=515:235[bg_with_logo];` +
+    
+    // 5. الأوفرلاي الشفاف: ضبط أبعاد فريمات تيك توك القادمة من Puppeteer لضمان مطابقتها
     `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
     
-    // 5. الإنتاج النهائي: دمج التعليقات والهدايا فوق الخلفية وأمواج الصوت
-    `[bg_with_waves][overlay_v]overlay=0:0[out_v]`,
+    // 6. الإنتاج النهائي: دمج التعليقات والتفاعلات في المقدمة فوق كل الطبقات السابقة
+    `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
     
-    "-map", "[out_v]",          // توجيه الفيديو المدمج والنهائي للبث
-    "-map", "2:a",              // توجيه الصوت الأصلي النظيف للبث
+    "-map", "[out_v]",          // توجيه الفيديو النهائي المدمج بالكامل للبث
+    "-map", "2:a",              // توجيه الصوت الأصلي النظيف للبث ليسمعه المتابعون
     
     "-c:v", "libx264",
     "-r", "30",
@@ -146,6 +156,7 @@ async function startOverlayStream() {
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
 ];
+
 
 
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
