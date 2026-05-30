@@ -36,6 +36,7 @@ const videoPath   = path.join(__dirname, '../../video.mp4');
 const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
 const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png'); // الملف المؤقت المعزول للـ Puppeteer
 const mainFramePath = path.join(__dirname, '../../overlay.png');     // الملف المستقر الذي يقرأه FFmpeg
+const logoPath      = path.join(__dirname, 'logo.png');               // مسار اللوجو المباشر بجانب السكربت
 
 // تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
@@ -43,7 +44,7 @@ if (fs.existsSync(mainFramePath)) fs.unlinkSync(mainFramePath);
 
 // إنشاء فريم شفاف تماماً كبداية بأبعاد صحيحة حتى لا يتعطل FFmpeg عند الإقلاع
 const transparentBuffer = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAAD9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
+    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAaad9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
     "base64"
 );
 fs.writeFileSync(mainFramePath, transparentBuffer);
@@ -70,21 +71,16 @@ async function startOverlayStream() {
     // ── حلقة التقاط الصور والـ Atomic Rename لمنع الـ Flicker ──
     async function captureLoop() {
         try {
-            // 1. التقاط الشاشة وحفظها في الملف المؤقت المعزول عن الـ FFmpeg
             await page.screenshot({ path: tmpFramePath, type: "png", omitBackground: true });
-            
-            // 2. عملية الـ Rename السريعة جداً (تستبدل الملف الرئيسي فوراً في 0 ملي ثانية)
             if (fs.existsSync(tmpFramePath)) {
                 fs.renameSync(tmpFramePath, mainFramePath);
             }
         } catch (err) {
             console.error("Error in capture loop:", err.message);
         }
-        // الاستمرار في التقاط الفريم التالي بناءً على السرعة المتاحة للمتصفح
         setTimeout(captureLoop, 1000 / FPS);
     }
 
-    // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
     captureLoop();
 
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
@@ -96,75 +92,61 @@ async function startOverlayStream() {
     const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
-            // تحديد مسار اللوجو الدائري الموجود في المجلد الرئيسي للمستودع
-    const logoPath = path.join(__dirname, 'logo.png'); 
-
     const ffmpegArgs = [
-    "-re",                      // لضبط سرعة القراءة متزامنة مع الوقت الفعلي
-    "-loop", "1",
-    "-f", "image2",
-    "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف (التعليقات والهدايا)
-    
-    "-stream_loop", "-1",
-    "-i", videoPath,            // المدخل [1] فيديو الخلفية القادم من درايف
-    "-i", audioPath,            // المدخل [2] ملف الصوت القادم من درايف
-    
-    "-loop", "1",
-    "-i", logoPath,             // المدخل [3] اللوجو الثابت الخاص بك (أبعاد 250x250)
-    
-    "-filter_complex",
-    // 1. فيديو الخلفية: ضبط الأبعاد وتطبيق فلاتر كسر البصمة (الألوان، السطوع، والتشويش المتحرك)
-    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
-    `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
-    `hue=h=${randHue},` +
-    `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
-    
-    // 2. الهالة الدائرية المتوهجة: تحويل ترددات الصوت إلى موجات نيون زاهية دائرية (أبعاد 400x400 لتخرج من أطراف اللوجو)
-    // دمج الألوان (الأرجواني والفيروزي والوردي) لتعطي توهجاً حياً ممتداً ومتغيراً مع الصوت
-    `[2:a]avectorscope=s=400x400:mode=lissajous:rate=30:colors=0xFF00FF|0x00FFFF|0xFF00AA:scale=log,format=yuv420p[audio_circle];` +
-    
-    // 3. دمج الهالة الصوتية: توسيط الهالة الدائرية في منتصف الشاشة تماماً (إحداثيات المنتصف هي x=440, y=160)
-    `[bg_encoded][audio_circle]overlay=440:160:shortest=1[bg_with_circle];` +
-    
-    // 4. دمج اللوجو: وضع اللوجو (250x250) في المنتصف فوق الهالة مباشرة ليغطي مركزها وتخرج الأمواج من أطرافه (x=515, y=235)
-    `[bg_with_circle][3:v]overlay=515:235[bg_with_logo];` +
-    
-    // 5. الأوفرلاي الشفاف: ضبط أبعاد فريمات تيك توك القادمة من Puppeteer لضمان مطابقتها
-    `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
-    
-    // 6. الإنتاج النهائي: دمج التعليقات والتفاعلات في المقدمة فوق كل الطبقات السابقة
-    `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
-    
-    "-map", "[out_v]",          // توجيه الفيديو النهائي المدمج بالكامل للبث
-    "-map", "2:a",              // توجيه الصوت الأصلي النظيف للبث ليسمعه المتابعون
-    
-    "-c:v", "libx264",
-    "-r", "30",
-    "-preset", "veryfast",
-    "-tune", "zerolatency",
-    "-profile:v", "baseline",
-    "-g", "60",                 // Keyframe كل ثانيتين لثبات البث
-    "-b:v", "2500k",            // البتريت الخاص بالفيديو لضمان جودة مستقرة
-    "-maxrate", "2500k",
-    "-bufsize", "5000k",
-    "-pix_fmt", "yuv420p",
-    
-    "-c:a", "aac",
-    "-b:a", "128k",             // البتريت الخاص بالصوت
-    "-ar", "44100",
-    
-    "-f", "flv",
-    `rtmp://live.restream.io/live/${STREAM_KEY}`
-];
-
-
+        "-re",
+        "-loop", "1",
+        "-f", "image2",
+        "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف
+        
+        "-stream_loop", "-1",
+        "-i", videoPath,            // المدخل [1] فيديو الخلفية الاساسي
+        "-i", audioPath,            // المدخل [2] ملف الصوت
+        
+        "-loop", "1",
+        "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري المرفق
+        
+        "-filter_complex",
+        // 1. معالجة وتشفير فيديو الخلفية لكسر البصمة الرقمية
+        `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
+        `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
+        `hue=h=${randHue},` +
+        `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
+        
+        // 2. توليد الهالة الدائرية النيون المتفاعلة لوغاريتمياً مع إيقاع وترددات الصوت
+        `[2:a]avectorscope=s=400x400:mode=lissajous:rate=30:colors=0xFF00FF|0x00FFFF|0xFF00AA:scale=log,format=yuv420p[audio_circle];` +
+        
+        // 3. دمج الهالة الدائرية وتوسيطها بالكامل في منتصف الشاشة فوق الخلفية المعالجة
+        `[bg_encoded][audio_circle]overlay=440:160:shortest=1[bg_with_circle];` +
+        
+        // 4. دمج وتوسيط اللوجو الدائري (250x250) فوق الهالة الصوتية لتخرج الأمواج الزاهية من حوافه
+        `[bg_with_circle][3:v]overlay=515:235[bg_with_logo];` +
+        
+        // 5. تهيئة طبقة شفافية التفاعل والتعليقات من المتصفح الافتراضي
+        `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
+        
+        // 6. إنتاج المشهد المجمع النهائي للبث التلفزيوني
+        `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
+        
+        "-map", "[out_v]",
+        "-map", "2:a",
+        "-c:v", "libx264",
+        "-r", "30",
+        "-preset", "veryfast",
+        "-tune", "zerolatency",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        "-f", "flv",
+        `rtmp://live.restream.io/live/${STREAM_KEY}`
+    ];
 
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
     ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
     ffmpegProcess.stderr.on("data", (data) => {
-        if (data.toString().includes("frame=")) {
-            console.log(`ffmpeg status: ${data.toString().trim()}`);
+        // طباعة سجلات الأخطاء والتحذيرات الهامة بالكامل من محرك الفلاتر لتسهيل المراقبة
+        if (data.toString().includes("Error") || data.toString().includes("frame=")) {
+            console.log(`ffmpeg log: ${data.toString().trim()}`);
         }
     });
 
@@ -175,7 +157,6 @@ async function startOverlayStream() {
     });
 }
 
-// تشغيل النظام الموحد الجديد تلقائياً وبأمان
 startOverlayStream();
 // ==================== [نهاية نظام التشغيل الجديد المطور] ====================
 
@@ -268,5 +249,5 @@ tiktok.on("gift", (data) => {
     }
 });
 
-// تشغيل ربط التيك توك الأصلي بعد دقيقتين كما كان في نظامك المستقر تماماً
 setTimeout(connectTikTok, 120000);
+                            
