@@ -106,25 +106,29 @@ async function startOverlayStream() {
         "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري المرفق
         
         "-filter_complex",
-        // 1. معالجة وتشفير فيديو الخلفية لكسر البصمة الرقمية
+        // 1. معالجة فيديو الخلفية لكسر البصمة الرقمية البصرية
         `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
         `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
         `hue=h=${randHue},` +
         `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
         
-        // 2. توليد الموجة الدائرية المتوهجة بالصيغة المتوافقة لغوياً مع قنوات الألوان المدمجة (اللون الفيروزي النيوني والبنفسجي)
-        `[2:a]avectorscope=s=400x400:mode=lissajous:rate=30:rc=0:gc=255:bc=255:scale=log,format=yuv420p[audio_circle];` +
+        // 2. توليد الموجة الدائرية مع حذف الخلفية السوداء تماماً (جعلها شفافة colorkey) لتظهر كضوء نيون فوق الفيديو
+        `[2:a]avectorscope=s=450x450:mode=lissajous:rate=30:rc=0:gc=255:bc=255:scale=log,` +
+        `format=rgba,colorkey=0x000000:0.1:0.1[audio_circle];` +
         
-        // 3. دمج الهالة الدائرية وتوسيطها بالكامل في منتصف الشاشة فوق الخلفية المعالجة (X=440, Y=160)
-        `[bg_encoded][audio_circle]overlay=440:160:shortest=1[bg_with_circle];` +
+        // 3. إجبار اللوجو الدائري على التصغير والحجم المناسب تماماً (250x250 بكسل) مع دعم الشفافية
+        `[3:v]scale=250:250,format=rgba[logo_resized];` +
         
-        // 4. دمج وتوسيط اللوجو الدائري (250x250) فوق الهالة الصوتية (X=515, Y=235)
-        `[bg_with_circle][3:v]overlay=515:235[bg_with_logo];` +
+        // 4. دمج الهالة الدائرية الشفافة وتوسيطها بالكامل في منتصف الشاشة (الإحداثيات المعدلة للأبعاد الجديدة x=415, y=135)
+        `[bg_encoded][audio_circle]overlay=415:135:shortest=1[bg_with_circle];` +
         
-        // 5. تهيئة طبقة شفافية التفاعل والتعليقات من المتصفح الافتراضي
+        // 5. دمج اللوجو المصغر (250x250) في السنتر فوق الهالة الصوتية مباشرة (x=515, y=235) لتخرج الأمواج من أطرافه هندسياً
+        `[bg_with_circle][logo_resized]overlay=515:235[bg_with_logo];` +
+        
+        // 6. تهيئة طبقة شفافية التفاعل والتعليقات من المتصفح الافتراضي
         `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
         
-        // 6. إنتاج المشهد المجمع النهائي للبث
+        // 7. إنتاج المشهد المجمع النهائي المستقر للبث
         `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
         
         "-map", "[out_v]",
@@ -139,7 +143,7 @@ async function startOverlayStream() {
         "-f", "flv",
         `rtmp://live.restream.io/live/${STREAM_KEY}`
     ];
-
+    
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
     ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
