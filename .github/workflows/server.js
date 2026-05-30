@@ -65,7 +65,7 @@ const GLOW_B = 255;
 async function generateGlowFrame(volume) {
     // volume: 0.0 → 1.0
     // opacity يتراوح بين 0 (بدون نبضة) و 0.6 (أعلى نبضة)
-    const opacity = (volume * 0.6).toFixed(3);
+    const opacity = (volume * 0.25).toFixed(3);
 
     const svgGlow = `<svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
       <rect width="${WIDTH}" height="${HEIGHT}" fill="rgb(${GLOW_R},${GLOW_G},${GLOW_B})" opacity="${opacity}"/>
@@ -107,7 +107,7 @@ function startAudioAnalysis() {
 
         // النبضة = الفرق بين الـ peak والـ baseline فقط
         const diff = Math.max(0, peak - baselineVolume);
-        currentVolume = Math.min(1, diff * 15);
+        currentVolume = Math.min(1, diff * 6);
 
         if (!glowBusy) {
             glowBusy = true;
