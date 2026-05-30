@@ -4,7 +4,6 @@ const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
-const sharp = require("sharp");
 
 const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
@@ -37,9 +36,6 @@ const videoPath   = path.join(__dirname, '../../video.mp4');
 const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
 const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png'); // الملف المؤقت المعزول للـ Puppeteer
 const mainFramePath = path.join(__dirname, '../../overlay.png');     // الملف المستقر الذي يقرأه FFmpeg
-const logoPath      = path.join(__dirname, 'logo.png');               // مسار اللوجو المباشر بجانب السكربت
-
-const glowFramePath = path.join(__dirname, '../../glow.png'); // طبقة الإضاءة الصوتية
 
 // تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
@@ -51,79 +47,6 @@ const transparentBuffer = Buffer.from(
     "base64"
 );
 fs.writeFileSync(mainFramePath, transparentBuffer);
-fs.writeFileSync(glowFramePath, transparentBuffer); // بداية شفافة للـ glow
-
-// ==================== [نظام تحليل الصوت وتوليد طبقة الإضاءة] ====================
-let currentVolume = 0;
-let baselineVolume = 0;
-
-// لون الإضاءة: أبيض
-const GLOW_R = 255;
-const GLOW_G = 255;
-const GLOW_B = 255;
-
-async function generateGlowFrame(volume) {
-    // volume: 0.0 → 1.0
-    // opacity يتراوح بين 0 (بدون نبضة) و 0.6 (أعلى نبضة)
-    const opacity = (volume * 0.25).toFixed(3);
-
-    const svgGlow = `<svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${WIDTH}" height="${HEIGHT}" fill="rgb(${GLOW_R},${GLOW_G},${GLOW_B})" opacity="${opacity}"/>
-    </svg>`;
-
-    await sharp(Buffer.from(svgGlow))
-        .png()
-        .toFile(glowFramePath + '.tmp');
-
-    if (fs.existsSync(glowFramePath + '.tmp')) {
-        fs.renameSync(glowFramePath + '.tmp', glowFramePath);
-    }
-}
-
-function startAudioAnalysis() {
-    console.log("Starting audio analysis for glow effect...");
-
-    const ffAudio = spawn("ffmpeg", [
-        "-stream_loop", "-1",
-        "-i", audioPath,
-        "-f", "s16le",
-        "-ar", "22050",
-        "-ac", "1",
-        "pipe:1"
-    ]);
-
-    let glowBusy = false;
-
-    ffAudio.stdout.on("data", (chunk) => {
-        // إيجاد أعلى peak في الـ chunk
-        let peak = 0;
-        for (let i = 0; i < chunk.length - 1; i += 2) {
-            const sample = Math.abs(chunk.readInt16LE(i) / 32768.0);
-            if (sample > peak) peak = sample;
-        }
-
-        // baseline يتكيف ببطء مع متوسط مستوى الموسيقى
-        baselineVolume = baselineVolume * 0.97 + peak * 0.03;
-
-        // النبضة = الفرق بين الـ peak والـ baseline فقط
-        const diff = Math.max(0, peak - baselineVolume);
-        currentVolume = Math.min(1, diff * 6);
-
-        if (!glowBusy) {
-            glowBusy = true;
-            generateGlowFrame(currentVolume).finally(() => {
-                glowBusy = false;
-            });
-        }
-    });
-
-    ffAudio.stderr.on("data", () => {});
-    ffAudio.on("close", (code) => {
-        console.log("Audio analysis process closed, restarting...");
-        setTimeout(startAudioAnalysis, 2000);
-    });
-}
-// ==================== [نهاية نظام تحليل الصوت] ====================
 
 async function startOverlayStream() {
     console.log("Starting Puppeteer Browser...");
@@ -147,86 +70,70 @@ async function startOverlayStream() {
     // ── حلقة التقاط الصور والـ Atomic Rename لمنع الـ Flicker ──
     async function captureLoop() {
         try {
+            // 1. التقاط الشاشة وحفظها في الملف المؤقت المعزول عن الـ FFmpeg
             await page.screenshot({ path: tmpFramePath, type: "png", omitBackground: true });
+            
+            // 2. عملية الـ Rename السريعة جداً (تستبدل الملف الرئيسي فوراً في 0 ملي ثانية)
             if (fs.existsSync(tmpFramePath)) {
                 fs.renameSync(tmpFramePath, mainFramePath);
             }
         } catch (err) {
             console.error("Error in capture loop:", err.message);
         }
+        // الاستمرار في التقاط الفريم التالي بناءً على السرعة المتاحة للمتصفح
         setTimeout(captureLoop, 1000 / FPS);
     }
 
+    // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
     captureLoop();
 
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-
-    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);
-    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);
-    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);
-    const randNoise      = (2 + Math.floor(Math.random() * 4));
-    const randHue        = (Math.random() * 4 - 2).toFixed(2);
+    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع
+    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين
+    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
+    const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
+    const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
     const ffmpegArgs = [
-        "-re",
-        "-loop", "1",
-        "-f", "image2",
-        "-i", mainFramePath,        // [0] الأوفرلاي
+    "-re",                      // <--- لضبط سرعة القراءة
+    "-loop", "1",
+    "-f", "image2",
+    "-i", mainFramePath,
+    
+    "-stream_loop", "-1",
+    "-i", videoPath,
+    "-i", audioPath,
+    
+    "-filter_complex",
+    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
+    `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
+    `hue=h=${randHue},` +
+    `noise=alls=${randNoise}:allf=t[bg_v];` +
+    `[0:v]fps=30[overlay_v];` +
+    `[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
+    
+    "-map", "[out_v]",
+    "-map", "2:a",
+    "-c:v", "libx264",
+    "-r", "30",                 // <--- لضبط سرعة البث النهائي
+    "-preset", "veryfast",
+    "-tune", "zerolatency",
+    "-pix_fmt", "yuv420p",
+    "-c:a", "aac",
+    "-b:a", "128k",
+    "-f", "flv",
+    `rtmp://live.restream.io/live/${STREAM_KEY}`
+];
 
-        "-stream_loop", "-1",
-        "-i", videoPath,            // [1] الفيديو القديم وموجته الأصلية بالأسفل
-        "-i", audioPath,            // [2] ملف الصوت
 
-        "-loop", "1",
-        "-i", logoPath,             // [3] صورة اللوجو الدائري
-
-        "-loop", "1",
-        "-f", "image2",
-        "-i", glowFramePath,        // [4] طبقة الإضاءة الصوتية
-
-        "-filter_complex",
-        // 1. معالجة الفيديو لكسر البصمة
-        `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
-        `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
-        `hue=h=${randHue},` +
-        `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
-
-        // 2. تصغير حجم اللوجو فقط ليتناسب مع السنتر (250x250 بكسل)
-        `[3:v]scale=250:250,format=rgba[logo_resized];` +
-
-        // 3. دمج اللوجو المصغر فوق الخلفية مباشرة في السنتر الثابت
-        `[bg_encoded][logo_resized]overlay=515:235[bg_with_logo];` +
-
-        // 4. دمج طبقة الإضاءة الصوتية فوق الفيديو بـ screen blend (يضيء بدون تغطية)
-        `[4:v]fps=30,scale=${WIDTH}:${HEIGHT},format=gbrp[glow_v];` +
-        `[bg_with_logo][glow_v]blend=all_mode=screen[bg_with_glow];` +
-
-        // 5. دمج طبقة التعليقات والهدايا الشفافة فوق كل شيء
-        `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
-        `[bg_with_glow][overlay_v]overlay=0:0[out_v]`,
-        
-        "-map", "[out_v]",
-        "-map", "2:a",
-        "-c:v", "libx264",
-        "-r", "30",
-        "-preset", "veryfast",
-        "-tune", "zerolatency",
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        "-f", "flv",
-        `rtmp://live.restream.io/live/${STREAM_KEY}`
-    ];
-
-        
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
     ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
     ffmpegProcess.stderr.on("data", (data) => {
-        if (data.toString().includes("Error") || data.toString().includes("frame=")) {
-            console.log(`ffmpeg log: ${data.toString().trim()}`);
+        if (data.toString().includes("frame=")) {
+            console.log(`ffmpeg status: ${data.toString().trim()}`);
         }
     });
 
@@ -237,8 +144,8 @@ async function startOverlayStream() {
     });
 }
 
+// تشغيل النظام الموحد الجديد تلقائياً وبأمان
 startOverlayStream();
-startAudioAnalysis();
 // ==================== [نهاية نظام التشغيل الجديد المطور] ====================
 
 // ==================== [اتصال تيك توك والأحداث الأصلية كاملة ومطابقة 100%] ====================
@@ -330,4 +237,5 @@ tiktok.on("gift", (data) => {
     }
 });
 
+// تشغيل ربط التيك توك الأصلي بعد دقيقتين كما كان في نظامك المستقر تماماً
 setTimeout(connectTikTok, 120000);
