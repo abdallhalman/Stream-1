@@ -86,49 +86,41 @@ async function startOverlayStream() {
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع
-    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين
-    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
-    const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
-    const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
+
+    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);
+    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);
+    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);
+    const randNoise      = (2 + Math.floor(Math.random() * 4));
+    const randHue        = (Math.random() * 4 - 2).toFixed(2);
     
     const ffmpegArgs = [
         "-re",
         "-loop", "1",
         "-f", "image2",
-        "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف
+        "-i", mainFramePath,        // [0] الأوفرلاي
         
         "-stream_loop", "-1",
-        "-i", videoPath,            // المدخل [1] فيديو الخلفية الاساسي
-        "-i", audioPath,            // المدخل [2] ملف الصوت
+        "-i", videoPath,            // [1] الفيديو القديم وموجته الأصلية بالأسفل
+        "-i", audioPath,            // [2] ملف الصوت
         
         "-loop", "1",
-        "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري
+        "-i", logoPath,             // [3] صورة اللوجو الدائري
         
         "-filter_complex",
-        // 1. معالجة فيديو الخلفية لكسر البصمة الرقمية البصرية
+        // 1. معالجة الفيديو لكسر البصمة
         `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
         `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
         `hue=h=${randHue},` +
         `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
         
-        // 2. توليد الموجة العريضة المستقرة مع تحويلها لصيغة تدعم الشفافية الكاملة وحذف الخلفية السوداء
-        `[2:a]showwaves=s=450x250:mode=cline:rate=30:colors=0x00FFFF,` +
-        `format=rgba,colorkey=0x000000:0.1:0.1[audio_wave];` +
-        
-        // 3. تصغير حجم اللوجو الدائري إلى أبعاد (250x250 بكسل) ودعم الشفافية
+        // 2. تصغير حجم اللوجو فقط ليتناسب مع السنتر (250x250 بكسل)
         `[3:v]scale=250:250,format=rgba[logo_resized];` +
         
-        // 4. خطوة الدمج الأولى: نضع الموجة العريضة أولاً فوق فيديو الخلفية وتوسيطها (x=415, y=235)
-        `[bg_encoded][audio_wave]overlay=415:235:shortest=1[bg_with_wave];` +
+        // 3. دمج اللوجو المصغر فوق الخلفية مباشرة في السنتر الثابت
+        `[bg_encoded][logo_resized]overlay=515:235[bg_with_logo];` +
         
-        // 5. خطوة الدمج الثانية: نضع اللوجو المصغر فوق (الخلفية + الموجة) في السنتر تماماً (x=515, y=235) ليغطي منتصفها وتخرج من أطرافه
-        `[bg_with_wave][logo_resized]overlay=515:235[bg_with_logo];` +
-        
-        // 6. تهيئة طبقة شفافية التفاعل والتعليقات من Puppeteer
+        // 4. دمج طبقة التعليقات والهدايا الشفافة فوق كل شيء
         `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
-        
-        // 7. إنتاج المشهد النهائي المجمع المستقر للبث
         `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
         
         "-map", "[out_v]",
