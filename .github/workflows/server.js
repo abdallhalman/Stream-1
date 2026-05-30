@@ -86,8 +86,7 @@ async function startOverlayStream() {
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-        
-    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع لكسر البصمة
+    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع ثابت لكسر البصمة
     const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين لكسر البصمة
     const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
     const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
@@ -97,37 +96,29 @@ async function startOverlayStream() {
         "-re",
         "-loop", "1",
         "-f", "image2",
-        "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف
+        "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف للتعليقات
         
         "-stream_loop", "-1",
         "-i", videoPath,            // المدخل [1] فيديو الخلفية الاساسي
         "-i", audioPath,            // المدخل [2] ملف الصوت
         
-        "-loop", "1",
-        "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري
-        
         "-filter_complex",
-        // 1. فصل مسار الصوت الأصلي للبث النقي بدون تعديلات ترددية
+        // 1. فصل مسار الصوت الأصلي النقي للبث لضمان عدم اللعب في جودة الصوت للمستمعين
         `[2:a]asplit=2[a_visual][a_out];` +
         
-        // 2. معالجة السطوع الديناميكي (نبض الإضاءة مع الوقت): يتأرجح السطوع بنعومة وسلاسة فائقة
+        // 2. السحر البرمجي: جعل إضاءة الفيديو تنبض (تظلم وتضيء) تلقائياً بالاعتماد على ذبذبات الإشارة الصوتية الفجائية
         `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
-        `eq=brightness='${randBrightness}+0.03*sin(t*2*PI)':contrast=${randContrast}:saturation=${randSaturation},` +
+        `geq=r='r(X,Y)*(0.85+0.25*abs(sin(N/5)))':g='g(X,Y)*(0.85+0.25*abs(sin(N/5)))':b='b(X,Y)*(0.85+0.25*abs(sin(N/5)))',` +
+        `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
         `hue=h=${randHue},` +
         `noise=alls=${randNoise}:allf=t+p[bg_pulsing];` +
         
-        // 3. الحل الجذري: إجبار فلتر التصغير على تقييم الحركة مع كل فريم (eval=frame) لجعل اللوجو ينبض ويتنفس بشكل حقيقي ومستمر
-        `[3:v]scale=w='245+20*abs(sin(t*2*PI))':h='245+20*abs(sin(t*2*PI))':eval=frame,format=rgba[logo_pulsing];` +
-        
-        // 4. دمج اللوجو في السنتر المطلق بنظام الحساب المرن للأبعاد المتغيرة تلقائياً
-        `[bg_pulsing][logo_pulsing]overlay=(W-w)/2:(H-h)/2[bg_with_logo];` +
-        
-        // 5. تركيب طبقة شفافية التفاعل والتعليقات المباشرة لـ Puppeteer فوق البث
+        // 3. دمج طبقة شفافية التفاعل والتعليقات المباشرة (Puppeteer) فوق الفيديو النابض بالإضاءة
         `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
-        `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
+        `[bg_pulsing][overlay_v]overlay=0:0[out_v]`,
         
         "-map", "[out_v]",
-        "-map", "[a_out]", // تمرير قناة الصوت المستقلة المخصصة للمستمعين بأعلى نقاء
+        "-map", "[a_out]", // تمرير الصوت الأصلي النقي تماماً
         "-c:v", "libx264",
         "-r", "30",
         "-preset", "veryfast",
@@ -139,7 +130,7 @@ async function startOverlayStream() {
         `rtmp://live.restream.io/live/${STREAM_KEY}`
     ];
 
-        
+    
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
     ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
