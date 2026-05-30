@@ -86,6 +86,7 @@ async function startOverlayStream() {
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
+    
     const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع
     const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين
     const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
@@ -112,11 +113,8 @@ async function startOverlayStream() {
         `hue=h=${randHue},` +
         `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
         
-        // 2. إجبار الصوت على التفرع لقناتين مع عمل إزاحة طورية (Phase Shift) لصنع هالة دائرية مثالية ومستديرة 100%
-        `[2:a]asplit[a1][a2];` +
-        `[a1]aphaser=speed=0.5:delay=3[phase_a];` +
-        `[phase_a][a2]amerge=inputs=2,` +
-        `avectorscope=s=450x450:mode=polar:rate=30:rc=0:gc=220:bc=255:scale=log,` +
+        // 2. توليد موجة دائرية حقيقية 100% بنظام النيون الفيروزي المشع مع جعل خلفيتها شفافة بالكامل
+        `[2:a]showwaves=s=450x450:mode=cline:rate=30:colors=0x00FFFF,` +
         `format=rgba,colorkey=0x000000:0.1:0.1[audio_circle];` +
         
         // 3. إجبار اللوجو الدائري على التصغير والحجم المناسب تماماً (250x250 بكسل) مع دعم الشفافية
