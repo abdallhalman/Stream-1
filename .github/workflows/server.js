@@ -86,41 +86,50 @@ async function startOverlayStream() {
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-    
-    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);
-    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);
-    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);
-    const randNoise      = (2 + Math.floor(Math.random() * 4));
-    const randHue        = (Math.random() * 4 - 2).toFixed(2);
+        const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع
+    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين
+    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
+    const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
+    const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
     const ffmpegArgs = [
         "-re",
         "-loop", "1",
         "-f", "image2",
-        "-i", mainFramePath,        // [0] الأوفرلاي
+        "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف
         
         "-stream_loop", "-1",
-        "-i", videoPath,            // [1] الفيديو القديم وموجته الأصلية بالأسفل
-        "-i", audioPath,            // [2] ملف الصوت
+        "-i", videoPath,            // المدخل [1] فيديو الخلفية الاساسي
+        "-i", audioPath,            // المدخل [2] ملف الصوت
         
         "-loop", "1",
-        "-i", logoPath,             // [3] صورة اللوجو الدائري
+        "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري المرفق
         
         "-filter_complex",
-        // 1. معالجة الفيديو لكسر البصمة
+        // 1. معالجة فيديو الخلفية لكسر البصمة الرقمية البصرية
         `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
         `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
         `hue=h=${randHue},` +
         `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
         
-        // 2. تصغير حجم اللوجو فقط ليتناسب مع السنتر (250x250 بكسل)
+        // 2. توليد الموجة الدائرية مع حذف الخلفية السوداء تماماً (جعلها شفافة colorkey) لتظهر كضوء نيون فوق الفيديو
+        // 2. موجة دائرية حقيقية بـ polar mode
+       `[2:a]avectorscope=s=450x450:mode=polar:rate=30:rc=0:gc=220:bc=255:scale=log,` +
+       `format=rgba,colorkey=0x000000:0.15:0.1[audio_circle];` +
+        
+        // 3. إجبار اللوجو الدائري على التصغير والحجم المناسب تماماً (250x250 بكسل) مع دعم الشفافية
         `[3:v]scale=250:250,format=rgba[logo_resized];` +
         
-        // 3. دمج اللوجو المصغر فوق الخلفية مباشرة في السنتر الثابت
-        `[bg_encoded][logo_resized]overlay=515:235[bg_with_logo];` +
+        // 4. دمج الهالة الدائرية الشفافة وتوسيطها بالكامل في منتصف الشاشة (الإحداثيات المعدلة للأبعاد الجديدة x=415, y=135)
+        `[bg_encoded][audio_circle]overlay=415:135:shortest=1[bg_with_circle];` +
         
-        // 4. دمج طبقة التعليقات والهدايا الشفافة فوق كل شيء
+        // 5. دمج اللوجو المصغر (250x250) في السنتر فوق الهالة الصوتية مباشرة (x=515, y=235) لتخرج الأمواج من أطرافه هندسياً
+        `[bg_with_circle][logo_resized]overlay=515:235[bg_with_logo];` +
+        
+        // 6. تهيئة طبقة شفافية التفاعل والتعليقات من المتصفح الافتراضي
         `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
+        
+        // 7. إنتاج المشهد المجمع النهائي المستقر للبث
         `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
         
         "-map", "[out_v]",
@@ -135,6 +144,7 @@ async function startOverlayStream() {
         "-f", "flv",
         `rtmp://live.restream.io/live/${STREAM_KEY}`
     ];
+
 
     
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
