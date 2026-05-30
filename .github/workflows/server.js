@@ -86,39 +86,45 @@ async function startOverlayStream() {
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع ثابت لكسر البصمة
-    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين لكسر البصمة
-    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
-    const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
-    const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
+    
+    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);
+    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);
+    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);
+    const randNoise      = (2 + Math.floor(Math.random() * 4));
+    const randHue        = (Math.random() * 4 - 2).toFixed(2);
     
     const ffmpegArgs = [
         "-re",
         "-loop", "1",
         "-f", "image2",
-        "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف للتعليقات
+        "-i", mainFramePath,        // [0] الأوفرلاي
         
         "-stream_loop", "-1",
-        "-i", videoPath,            // المدخل [1] فيديو الخلفية الاساسي
-        "-i", audioPath,            // المدخل [2] ملف الصوت
+        "-i", videoPath,            // [1] الفيديو القديم وموجته الأصلية بالأسفل
+        "-i", audioPath,            // [2] ملف الصوت
+        
+        "-loop", "1",
+        "-i", logoPath,             // [3] صورة اللوجو الدائري
         
         "-filter_complex",
-        // 1. فصل مسار الصوت الأصلي النقي للبث لضمان عدم اللعب في جودة الصوت للمستمعين
-        `[2:a]asplit=2[a_visual][a_out];` +
-        
-        // 2. السحر البرمجي: جعل إضاءة الفيديو تنبض (تظلم وتضيء) تلقائياً بالاعتماد على ذبذبات الإشارة الصوتية الفجائية
+        // 1. معالجة الفيديو لكسر البصمة
         `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
-        `geq=r='r(X,Y)*(0.85+0.25*abs(sin(N/5)))':g='g(X,Y)*(0.85+0.25*abs(sin(N/5)))':b='b(X,Y)*(0.85+0.25*abs(sin(N/5)))',` +
         `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
         `hue=h=${randHue},` +
-        `noise=alls=${randNoise}:allf=t+p[bg_pulsing];` +
+        `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
         
-        // 3. دمج طبقة شفافية التفاعل والتعليقات المباشرة (Puppeteer) فوق الفيديو النابض بالإضاءة
+        // 2. تصغير حجم اللوجو فقط ليتناسب مع السنتر (250x250 بكسل)
+        `[3:v]scale=250:250,format=rgba[logo_resized];` +
+        
+        // 3. دمج اللوجو المصغر فوق الخلفية مباشرة في السنتر الثابت
+        `[bg_encoded][logo_resized]overlay=515:235[bg_with_logo];` +
+        
+        // 4. دمج طبقة التعليقات والهدايا الشفافة فوق كل شيء
         `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
-        `[bg_pulsing][overlay_v]overlay=0:0[out_v]`,
+        `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
         
         "-map", "[out_v]",
-        "-map", "[a_out]", // تمرير الصوت الأصلي النقي تماماً
+        "-map", "2:a",
         "-c:v", "libx264",
         "-r", "30",
         "-preset", "veryfast",
