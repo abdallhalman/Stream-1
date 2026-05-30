@@ -65,7 +65,7 @@ const GLOW_B = 255;
 async function generateGlowFrame(volume) {
     // volume: 0.0 → 1.0
     // opacity يتراوح بين 0 (صامت) و 0.75 (أعلى صوت)
-    const opacity = (volume * 0.75).toFixed(3);
+    const opacity = (volume * 0.35).toFixed(3);
 
     // طبقة uniform شفافة بلون ثابت — opacity فقط يتغير مع الصوت
     // blend=screen في FFmpeg يضيف إضاءة بدون تغطية
@@ -107,8 +107,8 @@ function startAudioAnalysis() {
         const rms = Math.sqrt(sum / samples);
 
         // smoothing: لا يقفز فجأة بل ينزل تدريجياً
-        currentVolume = currentVolume * 0.7 + Math.min(1, rms * 8) * 0.3;
-
+        currentVolume = currentVolume * 0.85 + Math.min(1, rms * 4) * 0.15;
+        
         if (!glowBusy) {
             glowBusy = true;
             generateGlowFrame(currentVolume).finally(() => {
