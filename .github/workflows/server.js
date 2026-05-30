@@ -96,7 +96,7 @@ async function startOverlayStream() {
     const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
-    const ffmpegArgs = [
+        const ffmpegArgs = [
     "-re",                      // لضبط سرعة القراءة متزامنة مع الوقت الفعلي
     "-loop", "1",
     "-f", "image2",
@@ -107,33 +107,33 @@ async function startOverlayStream() {
     "-i", audioPath,            // المدخل [2] ملف الصوت المدمج
     
     "-filter_complex",
-    // 1. تجهيز فيديو الخلفية (المدخل 1) وضبط أبعاده وتطبيق فلاتر كسر البصمة (السطوع، التباين، الألوان والتشويش المتحرك المطور)
+    // 1. فيديو الخلفية: ضبط الأبعاد وتطبيق فلاتر كسر البصمة (الألوان، السطوع، والتشويش المتحرك)
     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
     `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
     `hue=h=${randHue},` +
     `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
     
-    // 2. تحويل ترددات وقوة الصوت الفعلي (المدخل 2) إلى أمواج متحركة نيون مضيئة باللون الفيروزي (Cyan)
-    `[2:a]showwaves=s=700x180:mode=line:rate=30:colors=0x00FFFF@0.8:scale=sqrt[audio_wave];` +
+    // 2. الموجة الصوتية العصرية: تحويل الصوت إلى أمواج ناعمة متصلة (cline)، متزنة الحركة (log)، وبتدرج لوني نيون (فيروزي وأزرق)
+    `[2:a]showwaves=s=760x140:mode=cline:rate=30:colors=0x00FFFF@0.9|0x0088FF@0.6:scale=log[audio_wave];` +
     
-    // 3. دمج موجة الصوت النيون فوق فيديو الخلفية المشفر في المكان المناسب (الإحداثيات x=290, y=500)
-    `[bg_encoded][audio_wave]overlay=290:500:shortest=1[bg_with_waves];` +
+    // 3. الدمج: وضع موجة الصوت المتزنة أسفل الشاشة (تم تعديل الإحداثيات لتتوسط الشاشة تماماً x=260, y=530)
+    `[bg_encoded][audio_wave]overlay=260:530:shortest=1[bg_with_waves];` +
     
-    // 4. تجهيز طبقة الأوفرلاي الشفافة (المدخل 0) وضبط أبعادها لضمان المطابقة الكاملة
+    // 4. الأوفرلاي الشفاف: ضبط أبعاد الفريمات القادمة من Puppeteer لضمان مطابقتها
     `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
     
-    // 5. دمج طبقة الأوفرلاي الشفافة (التعليقات) في المقدمة فوق كل شيء لإنتاج الفيديو النهائي
+    // 5. الإنتاج النهائي: دمج التعليقات والهدايا فوق الخلفية وأمواج الصوت
     `[bg_with_waves][overlay_v]overlay=0:0[out_v]`,
     
-    "-map", "[out_v]",          // توجيه الفيديو النهائي المدمج بالكامل للبث
-    "-map", "2:a",              // توجيه الصوت الأصلي النظيف والمستقر للبث لكي يسمعه المتابعون
+    "-map", "[out_v]",          // توجيه الفيديو المدمج والنهائي للبث
+    "-map", "2:a",              // توجيه الصوت الأصلي النظيف للبث
     
     "-c:v", "libx264",
     "-r", "30",
     "-preset", "veryfast",
     "-tune", "zerolatency",
     "-profile:v", "baseline",
-    "-g", "60",                 // Keyframe كل ثانيتين لثبات البث على المنصات
+    "-g", "60",                 // Keyframe كل ثانيتين لثبات البث
     "-b:v", "2500k",            // البتريت الخاص بالفيديو لضمان جودة مستقرة
     "-maxrate", "2500k",
     "-bufsize", "5000k",
@@ -146,7 +146,6 @@ async function startOverlayStream() {
     "-f", "flv",
     `rtmp://live.restream.io/live/${STREAM_KEY}`
 ];
-
 
 
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
