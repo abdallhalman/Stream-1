@@ -112,17 +112,20 @@ async function startOverlayStream() {
         `hue=h=${randHue},` +
         `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
         
-        // 2. توليد الموجة الدائرية مع حذف الخلفية السوداء تماماً (جعلها شفافة colorkey) لتظهر كضوء نيون فوق الفيديو
-        `[2:a]avectorscope=s=450x450:mode=lissajous:rate=30:rc=0:gc=255:bc=255:scale=log,` +
+        // 2. إجبار الصوت على التفرع لقناتين مع عمل إزاحة طورية (Phase Shift) لصنع هالة دائرية مثالية ومستديرة 100%
+        `[2:a]asplit[a1][a2];` +
+        `[a1]aphaser=speed=0.5:delay=3[phase_a];` +
+        `[phase_a][a2]amerge=inputs=2,` +
+        `avectorscope=s=450x450:mode=polar:rate=30:rc=0:gc=220:bc=255:scale=log,` +
         `format=rgba,colorkey=0x000000:0.1:0.1[audio_circle];` +
         
         // 3. إجبار اللوجو الدائري على التصغير والحجم المناسب تماماً (250x250 بكسل) مع دعم الشفافية
         `[3:v]scale=250:250,format=rgba[logo_resized];` +
         
-        // 4. دمج الهالة الدائرية الشفافة وتوسيطها بالكامل في منتصف الشاشة (الإحداثيات المعدلة للأبعاد الجديدة x=415, y=135)
+        // 4. دمج الهالة الدائرية الشفافة وتوسيطها بالكامل في منتصف الشاشة (x=415, y=135)
         `[bg_encoded][audio_circle]overlay=415:135:shortest=1[bg_with_circle];` +
         
-        // 5. دمج اللوجو المصغر (250x250) في السنتر فوق الهالة الصوتية مباشرة (x=515, y=235) لتخرج الأمواج من أطرافه هندسياً
+        // 5. دمج اللوجو المصغر (250x250) في السنتر فوق الهالة الصوتية مباشرة (x=515, y=235)
         `[bg_with_circle][logo_resized]overlay=515:235[bg_with_logo];` +
         
         // 6. تهيئة طبقة شفافية التفاعل والتعليقات من المتصفح الافتراضي
@@ -143,7 +146,7 @@ async function startOverlayStream() {
         "-f", "flv",
         `rtmp://live.restream.io/live/${STREAM_KEY}`
     ];
-    
+
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
     ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
