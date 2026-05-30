@@ -44,7 +44,7 @@ if (fs.existsSync(mainFramePath)) fs.unlinkSync(mainFramePath);
 
 // إنشاء فريم شفاف تماماً كبداية بأبعاد صحيحة حتى لا يتعطل FFmpeg عند الإقلاع
 const transparentBuffer = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAaad9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
+    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAAD9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
     "base64"
 );
 fs.writeFileSync(mainFramePath, transparentBuffer);
@@ -112,19 +112,19 @@ async function startOverlayStream() {
         `hue=h=${randHue},` +
         `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
         
-        // 2. توليد الهالة الدائرية النيون المتفاعلة لوغاريتمياً مع إيقاع وترددات الصوت
-        `[2:a]avectorscope=s=400x400:mode=lissajous:rate=30:colors=0xFF00FF|0x00FFFF|0xFF00AA:scale=log,format=yuv420p[audio_circle];` +
+        // 2. توليد الموجة الدائرية المتوهجة بالصيغة المتوافقة لغوياً مع قنوات الألوان المدمجة (اللون الفيروزي النيوني والبنفسجي)
+        `[2:a]avectorscope=s=400x400:mode=lissajous:rate=30:rc=0:gc=255:bc=255:scale=log,format=yuv420p[audio_circle];` +
         
-        // 3. دمج الهالة الدائرية وتوسيطها بالكامل في منتصف الشاشة فوق الخلفية المعالجة
+        // 3. دمج الهالة الدائرية وتوسيطها بالكامل في منتصف الشاشة فوق الخلفية المعالجة (X=440, Y=160)
         `[bg_encoded][audio_circle]overlay=440:160:shortest=1[bg_with_circle];` +
         
-        // 4. دمج وتوسيط اللوجو الدائري (250x250) فوق الهالة الصوتية لتخرج الأمواج الزاهية من حوافه
+        // 4. دمج وتوسيط اللوجو الدائري (250x250) فوق الهالة الصوتية (X=515, Y=235)
         `[bg_with_circle][3:v]overlay=515:235[bg_with_logo];` +
         
         // 5. تهيئة طبقة شفافية التفاعل والتعليقات من المتصفح الافتراضي
         `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
         
-        // 6. إنتاج المشهد المجمع النهائي للبث التلفزيوني
+        // 6. إنتاج المشهد المجمع النهائي للبث
         `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
         
         "-map", "[out_v]",
@@ -144,7 +144,6 @@ async function startOverlayStream() {
 
     ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
     ffmpegProcess.stderr.on("data", (data) => {
-        // طباعة سجلات الأخطاء والتحذيرات الهامة بالكامل من محرك الفلاتر لتسهيل المراقبة
         if (data.toString().includes("Error") || data.toString().includes("frame=")) {
             console.log(`ffmpeg log: ${data.toString().trim()}`);
         }
@@ -250,4 +249,3 @@ tiktok.on("gift", (data) => {
 });
 
 setTimeout(connectTikTok, 120000);
-                            
