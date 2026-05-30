@@ -100,35 +100,41 @@ async function startOverlayStream() {
     "-re",                      // لضبط سرعة القراءة متزامنة مع الوقت الفعلي
     "-loop", "1",
     "-f", "image2",
-    "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف
+    "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف (التعليقات والهدايا)
     
     "-stream_loop", "-1",
     "-i", videoPath,            // المدخل [1] فيديو الخلفية الأساسي
-    
     "-i", audioPath,            // المدخل [2] ملف الصوت المدمج
     
-    "-filter_complex", 
-    // 1. تجهيز فيديو الخلفية بالأبعاد المطلوبة
-    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg];` +
+    "-filter_complex",
+    // 1. تجهيز فيديو الخلفية (المدخل 1) وضبط أبعاده وتطبيق فلاتر كسر البصمة (السطوع، التباين، الألوان والتشويش المتحرك المطور)
+    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
+    `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
+    `hue=h=${randHue},` +
+    `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
     
-    // 2. تحويل الصوت الفعلي (المدخل 2) إلى موجات صوتية متحركة نيون
-    // يمكنك تعديل الأبعاد (600x150) واللون (0x00FFFF) والسماكة ونمط الموجة (p2p أو cline)
+    // 2. تحويل ترددات وقوة الصوت الفعلي (المدخل 2) إلى أمواج متحركة نيون مضيئة باللون الفيروزي (Cyan)
     `[2:a]showwaves=s=700x180:mode=line:rate=30:colors=0x00FFFF@0.8:scale=sqrt[audio_wave];` +
     
-    // 3. وضع موجة الصوت فوق فيديو الخلفية في المنتصف أسفل الشاشة بقليل (x=290, y=500)
-    `[bg][audio_wave]overlay=290:500:shortest=1[bg_with_waves];` +
+    // 3. دمج موجة الصوت النيون فوق فيديو الخلفية المشفر في المكان المناسب (الإحداثيات x=290, y=500)
+    `[bg_encoded][audio_wave]overlay=290:500:shortest=1[bg_with_waves];` +
     
-    // 4. دمج طبقة الأوفرلاي الشفاف (التعليقات والهدايا) في المقدمة فوق كل شيء
-    `[bg_with_waves][0:v]overlay=0:0[out_v]`,
+    // 4. تجهيز طبقة الأوفرلاي الشفافة (المدخل 0) وضبط أبعادها لضمان المطابقة الكاملة
+    `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
     
-    "-map", "[out_v]",          // توجيه الفيديو النهائي المدمج للبث
-    "-map", "2:a",              // توجيه الصوت الأصلي للبث
+    // 5. دمج طبقة الأوفرلاي الشفافة (التعليقات) في المقدمة فوق كل شيء لإنتاج الفيديو النهائي
+    `[bg_with_waves][overlay_v]overlay=0:0[out_v]`,
+    
+    "-map", "[out_v]",          // توجيه الفيديو النهائي المدمج بالكامل للبث
+    "-map", "2:a",              // توجيه الصوت الأصلي النظيف والمستقر للبث لكي يسمعه المتابعون
     
     "-c:v", "libx264",
     "-r", "30",
+    "-preset", "veryfast",
+    "-tune", "zerolatency",
     "-profile:v", "baseline",
-    "-g", "60",                 // Keyframe كل ثانيتين لثبات البث
-    "-b:v", "2500k",            // البتريت الخاص بالفيديو
+    "-g", "60",                 // Keyframe كل ثانيتين لثبات البث على المنصات
+    "-b:v", "2500k",            // البتريت الخاص بالفيديو لضمان جودة مستقرة
     "-maxrate", "2500k",
     "-bufsize", "5000k",
     "-pix_fmt", "yuv420p",
@@ -138,8 +144,9 @@ async function startOverlayStream() {
     "-ar", "44100",
     
     "-f", "flv",
-    `rtmp://localhost/live/${STREAM_KEY}` // رابط السيرفر المحلي أو سيرفر البث الخاص بك
+    `rtmp://live.restream.io/live/${STREAM_KEY}`
 ];
+
 
 
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
