@@ -86,7 +86,6 @@ async function startOverlayStream() {
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-    
     const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع
     const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين
     const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
@@ -104,7 +103,7 @@ async function startOverlayStream() {
         "-i", audioPath,            // المدخل [2] ملف الصوت
         
         "-loop", "1",
-        "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري المرفق
+        "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري
         
         "-filter_complex",
         // 1. معالجة فيديو الخلفية لكسر البصمة الرقمية البصرية
@@ -113,23 +112,23 @@ async function startOverlayStream() {
         `hue=h=${randHue},` +
         `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
         
-        // 2. توليد موجة دائرية حقيقية 100% بنظام النيون الفيروزي المشع مع جعل خلفيتها شفافة بالكامل
-        `[2:a]showwaves=s=450x450:mode=cline:rate=30:colors=0x00FFFF,` +
-        `format=rgba,colorkey=0x000000:0.1:0.1[audio_circle];` +
+        // 2. توليد الموجة العريضة المستقرة مع تحويلها لصيغة تدعم الشفافية الكاملة وحذف الخلفية السوداء
+        `[2:a]showwaves=s=450x250:mode=cline:rate=30:colors=0x00FFFF,` +
+        `format=rgba,colorkey=0x000000:0.1:0.1[audio_wave];` +
         
-        // 3. إجبار اللوجو الدائري على التصغير والحجم المناسب تماماً (250x250 بكسل) مع دعم الشفافية
+        // 3. تصغير حجم اللوجو الدائري إلى أبعاد (250x250 بكسل) ودعم الشفافية
         `[3:v]scale=250:250,format=rgba[logo_resized];` +
         
-        // 4. دمج الهالة الدائرية الشفافة وتوسيطها بالكامل في منتصف الشاشة (x=415, y=135)
-        `[bg_encoded][audio_circle]overlay=415:135:shortest=1[bg_with_circle];` +
+        // 4. خطوة الدمج الأولى: نضع الموجة العريضة أولاً فوق فيديو الخلفية وتوسيطها (x=415, y=235)
+        `[bg_encoded][audio_wave]overlay=415:235:shortest=1[bg_with_wave];` +
         
-        // 5. دمج اللوجو المصغر (250x250) في السنتر فوق الهالة الصوتية مباشرة (x=515, y=235)
-        `[bg_with_circle][logo_resized]overlay=515:235[bg_with_logo];` +
+        // 5. خطوة الدمج الثانية: نضع اللوجو المصغر فوق (الخلفية + الموجة) في السنتر تماماً (x=515, y=235) ليغطي منتصفها وتخرج من أطرافه
+        `[bg_with_wave][logo_resized]overlay=515:235[bg_with_logo];` +
         
-        // 6. تهيئة طبقة شفافية التفاعل والتعليقات من المتصفح الافتراضي
+        // 6. تهيئة طبقة شفافية التفاعل والتعليقات من Puppeteer
         `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
         
-        // 7. إنتاج المشهد المجمع النهائي المستقر للبث
+        // 7. إنتاج المشهد النهائي المجمع المستقر للبث
         `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
         
         "-map", "[out_v]",
@@ -145,6 +144,7 @@ async function startOverlayStream() {
         `rtmp://live.restream.io/live/${STREAM_KEY}`
     ];
 
+        
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
     ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
