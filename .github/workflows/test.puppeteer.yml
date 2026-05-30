@@ -115,6 +115,10 @@ jobs:
 
 
       # ── تشغيل السيرفر والبث ──
+      - name: Install sharp
+        run: npm install sharp
+        working-directory: .github/workflows
+  
       - name: Run Puppeteer Stream Server
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
