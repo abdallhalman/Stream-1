@@ -86,45 +86,47 @@ async function startOverlayStream() {
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-
-    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);
-    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);
-    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);
-    const randNoise      = (2 + Math.floor(Math.random() * 4));
-    const randHue        = (Math.random() * 4 - 2).toFixed(2);
+    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع لكسر البصمة
+    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين لكسر البصمة
+    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
+    const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
+    const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
     const ffmpegArgs = [
         "-re",
         "-loop", "1",
         "-f", "image2",
-        "-i", mainFramePath,        // [0] الأوفرلاي
+        "-i", mainFramePath,        // المدخل [0] الأوفرلاي الشفاف
         
         "-stream_loop", "-1",
-        "-i", videoPath,            // [1] الفيديو القديم وموجته الأصلية بالأسفل
-        "-i", audioPath,            // [2] ملف الصوت
+        "-i", videoPath,            // المدخل [1] فيديو الخلفية الاساسي
+        "-i", audioPath,            // المدخل [2] ملف الصوت
         
         "-loop", "1",
-        "-i", logoPath,             // [3] صورة اللوجو الدائري
+        "-i", logoPath,             // المدخل [3] صورة اللوجو الدائري
         
         "-filter_complex",
-        // 1. معالجة الفيديو لكسر البصمة
+        // 1. تقييم حجم الصوت اللحظي وتحويله إلى متغير رياضي اسمه (volume)
+        `[2:a]aselect=expand,asplit[a_visual][a_out];` +
+        
+        // 2. تطبيق نبض الإضاءة: جعل سطوع فيديو الخلفية يتأثر ديناميكياً بقوة الصوت (يرتفع وينخفض مع النبرات)
         `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
-        `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
+        `eq=brightness='${randBrightness}+between(val,0,1)*0.05*astate(volume)':contrast=${randContrast}:saturation=${randSaturation},` +
         `hue=h=${randHue},` +
-        `noise=alls=${randNoise}:allf=t+p[bg_encoded];` +
+        `noise=alls=${randNoise}:allf=t+p[bg_pulsing];` +
         
-        // 2. تصغير حجم اللوجو فقط ليتناسب مع السنتر (250x250 بكسل)
-        `[3:v]scale=250:250,format=rgba[logo_resized];` +
+        // 3. تطبيق نبض اللوجو: جعل حجم اللوجو يتضخم وينكمش ديناميكياً بين مقاس 240 إلى 275 بكسل بناءً على قوة التلاوة
+        `[3:v]scale='240+35*astate(volume)':'240+35*astate(volume)',format=rgba[logo_pulsing];` +
         
-        // 3. دمج اللوجو المصغر فوق الخلفية مباشرة في السنتر الثابت
-        `[bg_encoded][logo_resized]overlay=515:235[bg_with_logo];` +
+        // 4. دمج اللوجو النابض في السنتر فوق الخلفية النابضة بالإضاءة (حسابات التوسيط مرنة لتواكب تغير الحجم تلقائياً)
+        `[bg_pulsing][logo_pulsing]overlay=(W-w)/2:(H-h)/2[bg_with_logo];` +
         
-        // 4. دمج طبقة التعليقات والهدايا الشفافة فوق كل شيء
+        // 5. تهيئة طبقة شفافية التفاعل والتعليقات من Puppeteer فوق كل شيء
         `[0:v]fps=30,scale=${WIDTH}:${HEIGHT}[overlay_v];` +
         `[bg_with_logo][overlay_v]overlay=0:0[out_v]`,
         
         "-map", "[out_v]",
-        "-map", "2:a",
+        "-map", "[a_out]", // تمرير الصوت النقي للبث بدون تلاعب بالترددات السمعية
         "-c:v", "libx264",
         "-r", "30",
         "-preset", "veryfast",
@@ -135,7 +137,6 @@ async function startOverlayStream() {
         "-f", "flv",
         `rtmp://live.restream.io/live/${STREAM_KEY}`
     ];
-
         
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
