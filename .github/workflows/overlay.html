@@ -11,6 +11,17 @@
             height: 720px;
             background: transparent !important;
             overflow: hidden;
+            /* ── طبقة تأثير الصوت ── */
+    #audio-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 1280px; height: 720px;
+    background: #000000;
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.1s ease;
+}
             position: relative;
             font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
            -webkit-font-smoothing: antialiased;
@@ -525,6 +536,7 @@
     </style>
 </head>
 <body>
+    <div id="audio-overlay"></div>
     <div class="tasbih-container">
     <div class="tasbih-progress-bg">
         <div id="tasbih-bar" class="tasbih-progress-bar" style="width: 0%;"></div>
@@ -586,11 +598,14 @@
             try {
                 const msg = JSON.parse(event.data);
 
-                if (msg.type === "viewerCount") {
-                    document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
+                 if (msg.type === "viewerCount") {
+                 document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
+                 }
+                if (msg.type === "audioLevel") {
+                const level = msg.data;
+                const overlay = document.getElementById("audio-overlay");
+                if (overlay) overlay.style.opacity = 0.15 - (level * 0.15);
                 }
-
-        
             // ─── متغيرات نظام تعاقب الأذكار الذكي المطور ───
             const STEP_TARGET = 1000; // الهدف المتكرر
             
