@@ -286,7 +286,7 @@
             position: absolute;
             bottom: 40px;
             right: 30px;
-            width: 440px;
+            width: 380px;
             height: 600px; /* تقصير الصندوق لحمايته من التمدد للأعلى */
             display: flex;
             flex-direction: column-reverse;
@@ -334,7 +334,7 @@
     color: rgba(255, 255, 255, 0.95); 
     font-size: 16px; 
     word-break: break-word; 
-    font-weight: 600; 
+    font-weight: 500; 
     display: inline; 
     margin-right: 6px; 
     font-family: 'IBM Plex Sans Arabic', sans-serif; /* 🍏 خط أبل المتناسق */
@@ -439,8 +439,8 @@
             width: 80%;
             text-align: center;
             margin-top: 6px;
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: 400;
             color: rgba(255, 255, 255, 0.9);
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
             font-family: 'IBM Plex Sans Arabic', sans-serif;
@@ -471,10 +471,11 @@
             }
 
         @keyframes bubbleFloatUp {
-            0% { transform: translate(var(--start-x), 0) scale(0.6); opacity: 0; }
-            15% { opacity: 0.95; }
-            100% { transform: translate(var(--target-x), var(--target-y)) scale(1.05); opacity: 0; }
-        }
+          0% { transform: translateY(-50px); opacity: 0; }
+          15% { opacity: 1; }
+          100% { transform: translateY(500px); opacity: 0; }
+    }
+
 
         /* ─── 3. القلوب النيونية المتطايرة من الزاوية ─── */
         .heart-glow {
