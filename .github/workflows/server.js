@@ -90,7 +90,7 @@ async function startOverlayStream() {
     console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
     // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع
+    const randBrightness = 0.15;        // ±0.03 سطوع
     const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين
     const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
     const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
@@ -116,6 +116,7 @@ async function startOverlayStream() {
     
     "-map", "[out_v]",
     "-map", "2:a",
+    "-af", "astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level",
     "-c:v", "libx264",
     "-r", "30",                 // <--- لضبط سرعة البث النهائي
     "-preset", "veryfast",
@@ -130,12 +131,18 @@ async function startOverlayStream() {
 
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
-    ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
     ffmpegProcess.stderr.on("data", (data) => {
-        if (data.toString().includes("frame=")) {
-            console.log(`ffmpeg status: ${data.toString().trim()}`);
-        }
-    });
+    const str = data.toString();
+    if (str.includes("frame=")) {
+        console.log(`ffmpeg status: ${str.trim()}`);
+    }
+    const rmsMatch = str.match(/lavfi\.astats\.Overall\.RMS_level=(-?\d+\.?\d*)/);
+    if (rmsMatch) {
+        const rmsDb = parseFloat(rmsMatch[1]);
+        const level = Math.max(0, Math.min(1, (rmsDb + 50) / 50));
+        sendToOverlay("audioLevel", level);
+    }
+});
 
     ffmpegProcess.on("close", (code) => {
         console.log(`FFmpeg process exited with code ${code}`);
