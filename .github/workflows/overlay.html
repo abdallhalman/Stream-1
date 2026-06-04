@@ -11,17 +11,6 @@
             height: 720px;
             background: transparent !important;
             overflow: hidden;
-            /* ── طبقة تأثير الصوت ── */
-    #audio-overlay {
-    position: absolute;
-    top: 0; left: 0;
-    width: 1280px; height: 720px;
-    background: #000000;
-    opacity: 0.15;
-    pointer-events: none;
-    z-index: 1;
-    transition: opacity 0.1s ease;
-}
             position: relative;
             font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
            -webkit-font-smoothing: antialiased;
@@ -345,7 +334,7 @@
     color: rgba(255, 255, 255, 0.95); 
     font-size: 16px; 
     word-break: break-word; 
-    font-weight: 500; 
+    font-weight: 600; 
     display: inline; 
     margin-right: 6px; 
     font-family: 'IBM Plex Sans Arabic', sans-serif; /* 🍏 خط أبل المتناسق */
@@ -450,8 +439,8 @@
             width: 80%;
             text-align: center;
             margin-top: 6px;
-            font-size: 18px;
-            font-weight: 400;
+            font-size: 20px;
+            font-weight: 600;
             color: rgba(255, 255, 255, 0.9);
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
             font-family: 'IBM Plex Sans Arabic', sans-serif;
@@ -482,11 +471,10 @@
             }
 
         @keyframes bubbleFloatUp {
-          0% { transform: translateY(-50px); opacity: 0; }
-          15% { opacity: 1; }
-          100% { transform: translateY(500px); opacity: 0; }
-    }
-
+            0% { transform: translate(var(--start-x), 0) scale(0.6); opacity: 0; }
+            15% { opacity: 0.95; }
+            100% { transform: translate(var(--target-x), var(--target-y)) scale(1.05); opacity: 0; }
+        }
 
         /* ─── 3. القلوب النيونية المتطايرة من الزاوية ─── */
         .heart-glow {
@@ -536,7 +524,6 @@
     </style>
 </head>
 <body>
-    <div id="audio-overlay"></div>
     <div class="tasbih-container">
     <div class="tasbih-progress-bg">
         <div id="tasbih-bar" class="tasbih-progress-bar" style="width: 0%;"></div>
@@ -598,14 +585,11 @@
             try {
                 const msg = JSON.parse(event.data);
 
-                 if (msg.type === "viewerCount") {
-                 document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
-                 }
-                if (msg.type === "audioLevel") {
-                const level = msg.data;
-                const overlay = document.getElementById("audio-overlay");
-                if (overlay) overlay.style.opacity = 0.15 - (level * 0.15);
+                if (msg.type === "viewerCount") {
+                    document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
                 }
+
+        
             // ─── متغيرات نظام تعاقب الأذكار الذكي المطور ───
             const STEP_TARGET = 1000; // الهدف المتكرر
             
