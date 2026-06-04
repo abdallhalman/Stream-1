@@ -33,6 +33,11 @@ jobs:
         run: |
          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
          sudo apt-get install -y nodejs
+
+      - name: Install Python tools
+        run: |
+         sudo apt-get install -y python3-pip
+         pip install gdown
     
       - name: Install Node tools
         run: npm install tiktok-live-connector puppeteer ws
