@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Find audios
-        run: find /home -name "*.mp3" 2>/dev/null | head -5
+        run: find /data -name "*.mp3" 2>/dev/null | head -5
 
       - name: Install system dependencies
         run: |
