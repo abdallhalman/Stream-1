@@ -12,6 +12,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Find audios
+        run: find /home/runner/audios_permanent -name "*.mp3" | head -5
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
