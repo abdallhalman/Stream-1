@@ -47,40 +47,43 @@ jobs:
           mkdir -p downloads
           gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
-
-      # ── تحميل الفيديو الرئيسي خارج الكاش ──
+  
+          # ── تحميل الفيديو الرئيسي خارج الكاش ──
       - name: Download Video
         run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
-
-            # ── 4. فحص الكاش، خلط الملفات، حسم الـ 6 ساعات، وتطبيق فلاتر كسر البصمة القوية ──
+          
       - name: Create playlist and merge
         run: |
-          # 1. خلط ترتيب كل ملفات الكاش الـ 17 عشوائياً وحفظ القائمة في ملف مؤقت
-          ls downloads/audio*.mp3 | shuf > all_shuffled.txt
+         ls downloads/audio*.mp3 | shuf > all_shuffled.txt
 
-          # 3. دمج الملفات المختارة عشوائياً بشكل مبدئي وسريع
-          ffmpeg -f concat -safe 0 -i selected_list.txt -c copy temp_raw.mp3 -y
-          
-          # 4. توليد قيم عشوائية متغيرة لكسر البصمة (السرعة والنبرة والتردد)
-          # توليد سرعة عشوائية خفيفة جداً بين 0.985 و 1.015
-          TEMPO=$(awk "BEGIN {srand(); print 0.985 + (rand() * 0.03)}")
-          # توليد طبقة صوت (Pitch) عشوائية لتغيير هوية الموجة الصوتية
-          PITCH=$(awk "BEGIN {srand(); print 0.99 + (rand() * 0.02)}")
-          
-          # 6. تنظيف كافة الملفات المؤقتة
-          rm -f temp_raw.mp3 all_shuffled.txt selected_list.txt
+         TOTAL_DURATION=0
+         MAX_DURATION=21600
+         rm -f selected_list.txt
+         touch selected_list.txt
 
+         while IFS= read -r file; do
+         DURATION=$(ffprobe -v error -show_entries format=duration \
+         -of default=noprint_wrappers=1:noclipping=1 "$file" | awk '{print int($1)}')
+         TOTAL_DURATION=$((TOTAL_DURATION + DURATION))
+         echo "file '$file'" >> selected_list.txt
+         if [ $TOTAL_DURATION -ge $MAX_DURATION ]; then
+         echo "Reached 6 hours ($TOTAL_DURATION seconds)."
+         break
+         fi
+         done < all_shuffled.txt
 
+         ffmpeg -f concat -safe 0 -i selected_list.txt -c copy temp_raw.mp3 -y
+
+         TEMPO=$(awk "BEGIN {srand(); print 0.985 + (rand() * 0.03)}")
+         PITCH=$(awk "BEGIN {srand(); print 0.99 + (rand() * 0.02)}")
+
+         ffmpeg -i temp_raw.mp3 -t 21600 \
+         -af "asetrate=44100*$PITCH,atempo=$TEMPO,aresample=44100,dynaudnorm" \
+         -b:a 192k merged_audio.mp3 -y
+
+         rm -f temp_raw.mp3 all_shuffled.txt selected_list.txt
       # ── تشغيل السيرفر والبث ──
       - name: Run Puppeteer Stream Server
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
         run: node .github/workflows/server.js
-
-      # 2. خطوة الحفظ الإجبارية: ستعمل دائماً حتى لو ضغطت Cancel يدويّاً!
-      - name: Save audio cache forced
-        uses: actions/cache/save@v3
-        if: always() && steps.audio-cache.outputs.cache-hit != 'true'
-        with:
-          path: downloads
-          key: audio-downloads-v4
