@@ -1,54 +1,80 @@
-name: test.01
+name: test13
+
 on:
   workflow_dispatch:
 
 jobs:
   stream:
-    runs-on: ubuntu-latest
-    timeout-minutes: 359
+    runs-on: self-hosted
+    timeout-minutes: 2880
     steps:
-
-      - name: Install tools
+      - name: Install dependencies
         run: |
-          sudo apt-get install -y ffmpeg
-          pip install gdown
-        
-     
-      - name: Download video
-        run: gdown 1QVMlr8fj3-qOR7EgVCtSxLeFYHADK4fk -O video.mp4
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+          npm install canvas node-fetch@2
 
-      - name: Download audio files
+      - name: Download Media
         run: |
-          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
-          gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
-          gdown 17nqAmBYExskUmySAzB51NAxic5XJRuLj -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
-          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a4.tmp && ffmpeg -i a4.tmp audio4.mp3 -y
-          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O a5.tmp && ffmpeg -i a5.tmp audio5.mp3 -y
-          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O a6.tmp && ffmpeg -i a6.tmp audio6.mp3 -y
-          gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O a7.tmp && ffmpeg -i a7.tmp audio7.mp3 -y
-          gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O a8.tmp && ffmpeg -i a8.tmp audio8.mp3 -y
-          gdown 1TXbWo89v0e8RMkwuuwkilB24LdCc0Xkn -O a9.tmp && ffmpeg -i a9.tmp audio9.mp3 -y
-          gdown 1E6THGzxM3_Heaxp4Zh-KIIr5n59aqdtW -O a10.tmp && ffmpeg -i a10.tmp audio10.mp3 -y
-          gdown 1lI1QjxrDFraxniv2Dzvs3O9s0w_kRuqx -O a11.tmp && ffmpeg -i a11.tmp audio11.mp3 -y
-          gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O a12.tmp && ffmpeg -i a12.tmp audio12.mp3 -y
-          gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O a13.tmp && ffmpeg -i a13.tmp audio13.mp3 -y
-          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O a14.tmp && ffmpeg -i a14.tmp audio14.mp3 -y
-          gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O a15.tmp && ffmpeg -i a15.tmp audio15.mp3 -y
-          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O a16.tmp && ffmpeg -i a16.tmp audio16.mp3 -y
-
-      - name: Create playlist and merge
-        run: |
+          # تحميل الخلفية (استبدل الرابط برابط صورتك)
+          gdown 1u2rg5rui0RcaT2Tv4zXyPOpCqQcj9ezk -O background.png
+          # تحميل الملفات الصوتية ودمجها
+          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
+          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
           ls audio*.mp3 | shuf > playlist.txt
-          while IFS= read -r file; do
-            echo "file '$file'"
-          done < playlist.txt > concat.txt
-          ffmpeg -f concat -safe 0 -i concat.txt -c copy merged_audio.mp3
+          ffmpeg -f concat -safe 0 -i <(sed 's/^/file /' playlist.txt) -c copy merged_audio.mp3 -y
 
-      - name: Start Stream
+      - name: Create overlay script
         run: |
-         ffmpeg -stream_loop -1 -re -i video.mp4 \
-         -stream_loop -1 -re -i merged_audio.mp3 \
-         -map 0:v -map 1:a \
-         -vf "drawtext=font=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white:box=1:boxcolor=red@1.0:boxborderw=8:x=10:y=10:text='LIVE',drawtext=font=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white:box=1:boxcolor=black@1.0:boxborderw=8:x=60:y=10:text='%{eif\\:t/3600\\:d\\:2}\\:%{eif\\:mod(t/60\\,60)\\:d\\:2}',drawtext=font=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=18:fontcolor=white:box=1:boxcolor=black@1.0:boxborderw=8:x=w-150:y=h-25:text='%{localtime\\:%d/%m/%Y}'" \
-         -c:v libx264 -c:a aac -b:a 128k \
-         -f flv rtmp://live.restream.io/live/${{ secrets.STREAM_KEY }}
+          cat << 'EOF' > overlay.js
+          const { createCanvas, loadImage } = require("canvas");
+          const { spawn } = require("child_process");
+          const WIDTH = 720, HEIGHT = 1280, FPS = 30;
+          let angle = 0, particles = [], logoImg = null, bgImg = null;
+          
+          loadImage("logo.png").then(img => { logoImg = img; });
+          loadImage("background.png").then(img => { bgImg = img; });
+
+          const ffmpeg = spawn("ffmpeg", [
+            "-thread_queue_size", "1024", "-f", "rawvideo", "-pixel_format", "bgra",
+            "-video_size", `${WIDTH}x${HEIGHT}`, "-framerate", `${FPS}`, "-i", "pipe:0",
+            "-stream_loop", "-1", "-re", "-i", "merged_audio.mp3",
+            "-c:v", "libx264", "-preset", "veryfast", "-b:v", "2000k",
+            "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+            "-f", "flv", `rtmp://live.restream.io/live/${process.env.STREAM_KEY}`
+          ]);
+
+          async function render() {
+            while(true) {
+              const canvas = createCanvas(WIDTH, HEIGHT);
+              const ctx = canvas.getContext("2d");
+              
+              // 1. رسم الخلفية الثابتة
+              if(bgImg) ctx.drawImage(bgImg, 0, 0, WIDTH, HEIGHT);
+              else { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, WIDTH, HEIGHT); }
+
+              // 2. رسم الشعار الدوار
+              if(logoImg) {
+                ctx.save(); ctx.translate(WIDTH/2, HEIGHT/2); ctx.rotate(angle+=0.02);
+                ctx.drawImage(logoImg, -125, -125, 250, 250); ctx.restore();
+              }
+              
+              // 3. رسم الدخان
+              particles.push({x: WIDTH/2, y: HEIGHT/2 + 100, vx: (Math.random()-0.5)*8, vy: -5, life: 1});
+              particles = particles.filter(p => p.life > 0);
+              particles.forEach(p => { 
+                p.life -= 0.02; ctx.fillStyle = `hsl(${Math.random()*360}, 100%, 50%)`; 
+                ctx.globalAlpha = p.life; ctx.beginPath(); ctx.arc(p.x+=p.vx, p.y+=p.vy, 5, 0, Math.PI*2); ctx.fill(); 
+              });
+              
+              ffmpeg.stdin.write(canvas.toBuffer("raw"));
+              await new Promise(r => setTimeout(r, 33));
+            }
+          }
+          render();
+          EOF
+      
+      - name: Start Stream
+        env:
+          STREAM_KEY: ${{ secrets.STREAM_KEY }}
+        run: node overlay.js
