@@ -21,7 +21,7 @@ jobs:
       - name: Copy audios from Space
         run: |
           mkdir -p downloads
-          cp /home/runner/audios_permanent/audios_permanent/*.mp3 downloads/
+          cp /home/runner/audios_permanent/*.mp3 downloads/
 
       - name: Copy audios from Space
         run: |
