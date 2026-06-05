@@ -23,13 +23,17 @@ jobs:
           mkdir -p downloads
           cp /home/runner/audios_permanent/audios_permanent/*.mp3 downloads/
 
-          if [ ! -f "/app/video.mp4" ]; then
-          gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O /app/video.mp4
-          fi
+      - name: Copy audios from Space
+        run: |
+           mkdir -p downloads
+           cp /home/runner/audios_permanent/*.mp3 downloads/
          
       - name: Create playlist and merge
         run: |
           ls downloads/*.mp3 | shuf > all_shuffled.txt
+
+      - name: Copy Video
+        run: cp /home/runner/video.mp4 video.mp4
 
           TOTAL_DURATION=0
           MAX_DURATION=21600
