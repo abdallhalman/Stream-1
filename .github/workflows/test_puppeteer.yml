@@ -25,8 +25,9 @@ jobs:
 
       - name: Download Video
         run: |
-         gdown --fuzzy "https://drive.google.com/file/d/1hJNe8geXbDC0-K7LjDIZRg7eD_AxLJ2r/view" -O video.mp4
-    
+         pip install gdown --upgrade -q
+         gdown 1hJNe8geXbDC0-K7LjDIZRg7eD_AxLJ2r -O video.mp4   
+         
       - name: Create playlist and merge
         run: |
           ls downloads/*.mp3 | shuf > all_shuffled.txt
