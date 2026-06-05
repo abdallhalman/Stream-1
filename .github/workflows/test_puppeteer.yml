@@ -1,0 +1,64 @@
+name: test.puppeteer
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stream:
+    runs-on: self-hosted
+    timeout-minutes: 720
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Find audios
+        run: find /home/runner/audios_permanent -name "*.mp3" | head -5
+
+      - name: Install Node tools
+        run: npm install tiktok-live-connector puppeteer ws
+
+      - name: Copy audios from Space
+        run: |
+          mkdir -p downloads
+          cp /home/runner/audios_permanent/audios_permanent/*.mp3 downloads/
+
+      - name: Download Video
+        run: gdown 1hJNe8geXbDC0-K7LjDIZRg7eD_AxLJ2r -O video.mp4
+
+      - name: Create playlist and merge
+        run: |
+          ls downloads/*.mp3 | shuf > all_shuffled.txt
+
+          TOTAL_DURATION=0
+          MAX_DURATION=21600
+
+          rm -f selected_list.txt
+          touch selected_list.txt
+
+          while IFS= read -r file; do
+            DURATION=$(ffprobe -v error -show_entries format=duration \
+              -of default=noprint_wrappers=1:noclipping=1 "$file" | awk '{print int($1)}')
+            TOTAL_DURATION=$((TOTAL_DURATION + DURATION))
+            echo "file '$file'" >> selected_list.txt
+            if [ $TOTAL_DURATION -ge $MAX_DURATION ]; then
+              echo "Reached 6 hours ($TOTAL_DURATION seconds)."
+              break
+            fi
+          done < all_shuffled.txt
+
+          ffmpeg -f concat -safe 0 -i selected_list.txt -c copy temp_raw.mp3 -y
+
+          TEMPO=$(awk "BEGIN {srand(); print 0.985 + (rand() * 0.03)}")
+          PITCH=$(awk "BEGIN {srand(); print 0.99 + (rand() * 0.02)}")
+
+          ffmpeg -i temp_raw.mp3 -t 21600 \
+            -af "asetrate=44100*$PITCH,atempo=$TEMPO,aresample=44100,dynaudnorm" \
+            -b:a 192k merged_audio.mp3 -y
+
+          rm -f temp_raw.mp3 all_shuffled.txt selected_list.txt
+
+      - name: Run Puppeteer Stream Server
+        env:
+          STREAM_KEY: ${{ secrets.STREAM_KEY }}
+        run: node .github/workflows/server.js
