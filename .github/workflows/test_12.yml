@@ -55,7 +55,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          const TIKTOK_USER = "alarabytv";
+          const TIKTOK_USER = "sl42t";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH  = 1280;
           const HEIGHT = 720;
@@ -193,7 +193,7 @@ jobs:
 
             const rankBg    = ["#2d1200","#141414","#0d1a0d"];
             const rankText  = ["#FFD700","#c084fc","#00ffcc"];
-            const rankLabel = ["🥇 TOP 1","🥈 TOP 2","🥉 TOP 3"];
+            const rankLabel = ["TOP 1","TOP 2","TOP 3"];
 
             for (let i = 0; i < 3; i++) {
               const s  = topSupporters[i];
@@ -386,8 +386,8 @@ jobs:
               floatingHearts.push({
                 startTime: Date.now() + i * (60 + Math.random() * 80),
                 duration:  1500 + Math.random() * 1000,
-                x: (WIDTH - 220) + (Math.random() * 400 - 200),
-                y: HEIGHT - 30,
+                x: Math.random() * WIDTH,
+                y: HEIGHT - ,
                 size:  Math.floor(Math.random() * 16) + 18,
                 color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]
               });
@@ -470,7 +470,7 @@ jobs:
                 const pfp  = data.profilePictureUrl;
                 const giftObj = {
                   startTime: Date.now(),
-                  nameText:  `🤍شكراً لك: ${name}`,
+                  nameText:  `🤍: ${name}`,
                   countText: `${data.giftName} x${data.repeatCount}`,
                   avatarUrl: pfp || null,
                   iconImage: null
