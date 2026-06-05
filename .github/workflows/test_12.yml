@@ -55,7 +55,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          const TIKTOK_USER = "sl42t";
+          const TIKTOK_USER = "alarabytv";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH  = 1280;
           const HEIGHT = 720;
@@ -230,7 +230,7 @@ jobs:
               }
             }
             
-            chatEvents = chatEvents.filter(e => now - e.time < 60000);
+            chatEvents = chatEvents.filter(e => now - e.time < 50000);
             const CHAT_X      = SUP_X;
             const CHAT_W      = SUP_W;
             const CHAT_BOTTOM = SUP_Y - 8;
