@@ -25,9 +25,8 @@ jobs:
 
       - name: Download Video
         run: |
-         aria2c --out=video.mp4 \
-         "https://drive.google.com/uc?export=download&id=1hJNe8geXbDC0-K7LjDIZRg7eD_AxLJ2r&confirm=t"
-
+         gdown --fuzzy "https://drive.google.com/file/d/1hJNe8geXbDC0-K7LjDIZRg7eD_AxLJ2r/view" -O video.mp4
+    
       - name: Create playlist and merge
         run: |
           ls downloads/*.mp3 | shuf > all_shuffled.txt
