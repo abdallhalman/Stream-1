@@ -6,7 +6,7 @@ on:
 jobs:
   stream:
     runs-on: self-hosted
-    timeout-minutes: 1000
+    timeout-minutes: 2880
     steps:
 
       - name: Install system dependencies
