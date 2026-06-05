@@ -6,7 +6,7 @@ on:
 jobs:
   stream:
     runs-on: self-hosted
-    timeout-minutes: 350
+    timeout-minutes: 1000
     steps:
 
       - name: Install system dependencies
@@ -55,7 +55,7 @@ jobs:
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
-          const TIKTOK_USER = "alarabytv";
+          const TIKTOK_USER = "sl42t";
           const STREAM_KEY = process.env.STREAM_KEY;
           const WIDTH  = 1280;
           const HEIGHT = 720;
