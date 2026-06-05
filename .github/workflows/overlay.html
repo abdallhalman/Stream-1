@@ -108,15 +108,15 @@
         const fallbackAvatar = 'https://www.tiktok.com/favicon.ico';
 
         const colors = [
-            'rgba(59,  130, 246, 0.38)',
-            'rgba(168,  85, 247, 0.38)',
-            'rgba(236,  72, 153, 0.38)',
-            'rgba( 20, 184, 166, 0.38)',
-            'rgba(245, 158,  11, 0.38)',
-            'rgba( 34, 197,  94, 0.38)',
-            'rgba(239,  68,  68, 0.38)',
-            'rgba( 99, 102, 241, 0.38)',
-        ];
+          'rgba(147, 197, 253, 0.35)',  // أزرق فاتح
+          'rgba(196, 181, 253, 0.35)',  // بنفسجي فاتح
+          'rgba(249, 168, 212, 0.35)',  // وردي فاتح
+          'rgba(94,  234, 212, 0.35)',  // فيروزي فاتح
+          'rgba(253, 224, 132, 0.35)',  // ذهبي فاتح
+          'rgba(134, 239, 172, 0.35)',  // أخضر فاتح
+          'rgba(252, 165, 165, 0.35)',  // أحمر فاتح
+          'rgba(165, 180, 252, 0.35)',  // نيلي فاتح
+       ];
 
         const MAX = 4; // 4 أشرطة فقط تملأ الشاشة
 
@@ -129,7 +129,7 @@
             div.innerHTML = `
                 <img class="avatar" src="${avatar}" onerror="this.src='${fallbackAvatar}'">
                 <div class="info">
-                    <div class="app-label">🔴 TikTok Live</div>
+                    <div class="app-label">🔴 Quran Live</div>
                     <div class="name">${name}</div>
                     <div class="action">انضم إلى البث ✨</div>
                 </div>`;
