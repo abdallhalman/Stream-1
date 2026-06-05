@@ -51,7 +51,9 @@ jobs:
         run: |
           cat << 'EOF' > overlay.js
           const { WebcastPushConnection } = require("tiktok-live-connector");
-          const { createCanvas, loadImage } = require("canvas");
+          const { createCanvas, loadImage, registerFont } = require("canvas");
+          registerFont("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf", { family: "NotoEmoji" });
+          registerFont("/usr/share/fonts/truetype/noto/NotoSansArabic-Bold.ttf", { family: "Tajawal" });
           const { spawn } = require("child_process");
           const fetch = require("node-fetch");
 
@@ -152,11 +154,11 @@ jobs:
             rr(ctx, 20, 20, 220, 50, 25); ctx.fill();
             ctx.globalAlpha = 1;
             ctx.fillStyle = "#ff0000";
-            ctx.font = "bold 19px sans-serif";
+            ctx.font = "bold 19px Tajawal, NotoEmoji";
             ctx.textAlign = "left"; ctx.direction = "ltr";
             ctx.fillText("● ", 38, 50);
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 19px sans-serif";
+            ctx.font = "bold 19px Tajawal, NotoEmoji";
             ctx.fillText(`LIVE  ${viewerCount.toLocaleString()}`, 58, 52);
 
             ctx.globalAlpha = 0.88;
@@ -164,12 +166,12 @@ jobs:
             rr(ctx, WIDTH - 280, 20, 260, 50, 25); ctx.fill();
             ctx.globalAlpha = 1;
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 18px sans-serif";
+            ctx.font = "bold 18px Tajawal, NotoEmoji";
             ctx.textAlign = "left"; ctx.direction = "ltr";
             ctx.fillStyle = "#00ffff"; ctx.fillText("♥", WIDTH - 260, 52);
             ctx.fillStyle = "#ff4444"; ctx.fillText("♥", WIDTH - 238, 52);
             ctx.fillStyle = "#ffa500"; ctx.fillText("♥", WIDTH - 216, 52);
-            ctx.font = "bold 19px sans-serif";
+            ctx.font = "bold 19px Tajawal, NotoEmoji";
             ctx.textAlign = "left"; ctx.direction = "ltr";
             ctx.fillText(`LIKES ${totalLikes.toLocaleString()}`, WIDTH - 185, 52);
 
@@ -179,7 +181,7 @@ jobs:
               if (age < 0) continue;
               ctx.globalAlpha = 1 - age;
               ctx.fillStyle = h.color;
-              ctx.font = `${h.size}px sans-serif`;
+              ctx.font = `${h.size}px Tajawal, NotoEmoji`;
               ctx.textAlign = "left";
               ctx.fillText("❤️", h.x + Math.sin(age * 7) * 30, h.y - age * 800);
             }
@@ -211,19 +213,19 @@ jobs:
                 drawAvatar(ctx, imageCache.get(s.avatarUrl), bx + 18, SUP_Y + SUP_H / 2, 14);
 
               ctx.fillStyle = rankText[i];
-              ctx.font = "bold 14px sans-serif";
+              ctx.font = "bold 14px Tajawal, NotoEmoji";
               ctx.textAlign = "left"; ctx.direction = "ltr";
               ctx.fillText(rankLabel[i], bx + 36, SUP_Y + 18);
 
               ctx.fillStyle = "#ffffff";
-              ctx.font = "bold 16px sans-serif";
+              ctx.font = "bold 16px Tajawal, NotoEmoji";
               let nm = s ? s.name : "---";
               if (nm.length > 13) nm = nm.substring(0, 12) + ".";
               ctx.fillText(nm, bx + 36, SUP_Y + 38);
 
               if (s) {
                 ctx.fillStyle = rankText[i];
-                ctx.font = "14px sans-serif";
+                ctx.font = "14px Tajawal, NotoEmoji";
                 let gTxt = `${s.giftName} x${s.count}`;
                 if (gTxt.length > 15) gTxt = gTxt.substring(0, 14) + ".";
                 ctx.fillText(gTxt, bx + 36, SUP_Y + 54);
@@ -237,7 +239,7 @@ jobs:
             const LINE_H      = 22;
             const PAD         = 10;
 
-            ctx.font = "bold 16px sans-serif";
+            ctx.font = "bold 16px Tajawal, NotoEmoji";
             const msgMaxW = CHAT_W - 80;
 
             let yCursor = CHAT_BOTTOM;
@@ -247,7 +249,7 @@ jobs:
               const age   = (now - e.time) / 60000;
               const alpha = Math.max(0, 1 - age);
               const fullText = e.text;
-              ctx.font = "bold 16px sans-serif";
+              ctx.font = "bold 16px Tajawal, NotoEmoji";
               const lines = wrapText(ctx, fullText, msgMaxW);
               const boxH  = PAD * 2 + lines.length * LINE_H;
 
@@ -276,7 +278,7 @@ jobs:
               }
 
               ctx.fillStyle = e.color || "#ffffff";
-              ctx.font = "bold 16px sans-serif";
+              ctx.font = "bold 16px Tajawal, NotoEmoji";
               ctx.textAlign = "left"; ctx.direction = "ltr";
               for (let li = 0; li < lines.length; li++) {
                 ctx.fillText(lines[li], xOff + 4, yCursor + PAD + LINE_H * (li + 1) - 4);
@@ -301,11 +303,11 @@ jobs:
                 try { ctx.drawImage(currentGift.iconImage, bX + bW - 105, bY + 25, 80, 80); } catch(e) {}
               }
               ctx.fillStyle = "#ffa500";
-              ctx.font = "bold 22px sans-serif";
+              ctx.font = "bold 22px Tajawal, NotoEmoji";
               ctx.textAlign = "center"; ctx.direction = "rtl";
               ctx.fillText(currentGift.nameText, bX + bW / 2 + 10, bY + 52);
               ctx.fillStyle = "#00ffff";
-              ctx.font = "bold 28px sans-serif";
+              ctx.font = "bold 28px Tajawal, NotoEmoji";
               ctx.fillText(currentGift.countText, bX + bW / 2 + 10, bY + 95);
             } else { currentGift = null; }
 
@@ -325,16 +327,16 @@ jobs:
               if (followBanner.avatarUrl && imageCache.has(followBanner.avatarUrl))
                 drawAvatar(ctx, imageCache.get(followBanner.avatarUrl), bX + 36, bY + 34, 22);
               ctx.fillStyle = "#ffa500";
-              ctx.font = "bold 18px sans-serif";
+              ctx.font = "bold 18px Tajawal, NotoEmoji";
               ctx.textAlign = "left"; ctx.direction = "ltr";
               ctx.fillText("Follow 👤", bX + 66, bY + 26);
-              ctx.font = "bold 20px sans-serif";
+              ctx.font = "bold 20px Tajawal, NotoEmoji";
               ctx.fillStyle = "#1e90ff";
               let fn = followBanner.name;
               if (fn.length > 20) fn = fn.substring(0, 18) + "..";
               ctx.fillText(fn, bX + 66, bY + 52);
               ctx.fillStyle = "#00ffff";
-              ctx.font = "bold 20px sans-serif";
+              ctx.font = "bold 20px Tajawal, NotoEmoji";
               ctx.textAlign = "right"; ctx.direction = "ltr";
               ctx.fillText(`👥 ${followBanner.followerCount.toLocaleString()}`, bX + bW - 20, bY + 42);
             } else { followBanner = null; }
@@ -387,7 +389,7 @@ jobs:
                 startTime: Date.now() + i * (60 + Math.random() * 80),
                 duration:  1500 + Math.random() * 1000,
                 x: Math.random() * WIDTH,
-                y: HEIGHT - ,
+                y: HEIGHT,
                 size:  Math.floor(Math.random() * 16) + 18,
                 color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]
               });
