@@ -41,12 +41,13 @@ jobs:
           key: audio-downloads-v4
 
       # ── تحميل وتحويل الأصوات إلى MP3 حقيقي (في أول رن فقط) ──
-      - name: Download multiple audio files
-        if: steps.audio-cache.outputs.cache-hit != 'true'
+      - name: Download single audio file
         run: |
-          mkdir -p downloads
-          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
-          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
+          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
+          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
+          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
+          gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O a4.tmp && ffmpeg -i a4.tmp audio4.mp3 -y
+          gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O a5.tmp && ffmpeg -i a5.tmp audio5.mp3 -y
   
           # ── تحميل الفيديو الرئيسي خارج الكاش ──
       - name: Download Video
