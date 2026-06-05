@@ -24,9 +24,7 @@ jobs:
           cp /home/runner/audios_permanent/audios_permanent/*.mp3 downloads/
 
       - name: Download Video
-        run: |
-         pip install gdown --upgrade -q
-         gdown 1hJNe8geXbDC0-K7LjDIZRg7eD_AxLJ2r -O video.mp4   
+        run: gdown --no-cookies 1hJNe8geXbDC0-K7LjDIZRg7eD_AxLJ2r -O video.mp4
          
       - name: Create playlist and merge
         run: |
