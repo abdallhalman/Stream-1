@@ -45,8 +45,8 @@ jobs:
         if: steps.audio-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p downloads
-          gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
-          gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
+          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
+          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
   
           # ── تحميل الفيديو الرئيسي خارج الكاش ──
       - name: Download Video
