@@ -5,7 +5,7 @@ on:
 
 jobs:
   stream:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 350
     steps:
 
@@ -19,7 +19,7 @@ jobs:
             fonts-noto-color-emoji \
             curl \
             libgbm1 \
-            libasound2t64 \
+            libasound2 \
             libnss3 \
             libxss1 \
             libgtk-3-0 \
@@ -47,22 +47,6 @@ jobs:
           mkdir -p downloads
           gdown 1HlQRc8k574Uatup7i1Itb8J0AqLOETbG -O downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
           gdown 1TOMytDgeII2GDspmHZ-kbAis-juK2iqp -O downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
-          gdown 1gkoZQ8Imfxorb25N3mRMpwkf7ZPwJwQU -O downloads/t3.tmp && ffmpeg -i downloads/t3.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio3.mp3 -y
-          gdown 1E6THGzxM3_Heaxp4Zh-KIIr5n59aqdtW -O downloads/t4.tmp && ffmpeg -i downloads/t4.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio4.mp3 -y
-          gdown 10Z5lBwM4zr3JsEcd_2KY7vB0qOJRjNjo -O downloads/t5.tmp && ffmpeg -i downloads/t5.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio5.mp3 -y
-          gdown 1LWeZNOiCz4ZLeHIw3Ga8tAX8WWDlr7r3 -O downloads/t6.tmp && ffmpeg -i downloads/t6.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio6.mp3 -y
-          gdown 17nqAmBYExskUmySAzB51NAxic5XJRuLj -O downloads/t7.tmp && ffmpeg -i downloads/t7.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio7.mp3 -y
-          gdown 1fK1m2SBkGOw5hjXnM9bpoTcH0jGdp4AL -O downloads/t8.tmp && ffmpeg -i downloads/t8.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio8.mp3 -y
-          gdown 1JbdI4Tpu_EtfYP3ZMjFZdAj42dVBXfoB -O downloads/t9.tmp && ffmpeg -i downloads/t9.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio9.mp3 -y
-          gdown 1MxcrvN0GUGAdXMKYW1r3zOQ3Fmluk6mI -O downloads/t10.tmp && ffmpeg -i downloads/t10.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio10.mp3 -y
-          gdown 1TXbWo89v0e8RMkwuuwkilB24LdCc0Xkn -O downloads/t11.tmp && ffmpeg -i downloads/t11.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio11.mp3 -y
-          gdown 1UMkrpGqC_E_YB7qmLuBBKRnt2cOOf5HL -O downloads/t12.tmp && ffmpeg -i downloads/t12.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio12.mp3 -y
-          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O downloads/t13.tmp && ffmpeg -i downloads/t13.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio13.mp3 -y
-          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O downloads/t14.tmp && ffmpeg -i downloads/t14.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio14.mp3 -y
-          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O downloads/t15.tmp && ffmpeg -i downloads/t15.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio15.mp3 -y
-          gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O downloads/t16.tmp && ffmpeg -i downloads/t16.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio16.mp3 -y
-          gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O downloads/t17.tmp && ffmpeg -i downloads/t17.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio17.mp3 -y
-          rm -f downloads/*.tmp
 
       # ── تحميل الفيديو الرئيسي خارج الكاش ──
       - name: Download Video
@@ -73,30 +57,6 @@ jobs:
         run: |
           # 1. خلط ترتيب كل ملفات الكاش الـ 17 عشوائياً وحفظ القائمة في ملف مؤقت
           ls downloads/audio*.mp3 | shuf > all_shuffled.txt
-          
-          # 2. فحص المدة الزمنية واختيار ما يكفي لـ 6 ساعات فقط (21600 ثانية) دون تكرار
-          TOTAL_DURATION=0
-          MAX_DURATION=21600 # 6 ساعات بالثواني
-          
-          rm -f selected_list.txt
-          touch selected_list.txt
-          
-          while IFS= read -r file; do
-            # حساب مدة الملف الحالي بالثواني باستخدام ffprobe
-            DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:noclipping=1 "$file" | awk '{print int($1)}')
-            
-            # إضافة المدة للمجموع الإجمالي
-            TOTAL_DURATION=$((TOTAL_DURATION + DURATION))
-            
-            # تسجيل الملف في قائمة الدمج
-            echo "file '$file'" >> selected_list.txt
-            
-            # إذا وصلنا أو تجاوزنا الـ 6 ساعات تتوقف الحلقة فوراً ولا تأخذ باقي الملفات
-            if [ $TOTAL_DURATION -ge $MAX_DURATION ]; then
-              echo "Reached 6 hours threshold ($TOTAL_DURATION seconds)."
-              break
-            fi
-          done < all_shuffled.txt
 
           # 3. دمج الملفات المختارة عشوائياً بشكل مبدئي وسريع
           ffmpeg -f concat -safe 0 -i selected_list.txt -c copy temp_raw.mp3 -y
@@ -106,9 +66,6 @@ jobs:
           TEMPO=$(awk "BEGIN {srand(); print 0.985 + (rand() * 0.03)}")
           # توليد طبقة صوت (Pitch) عشوائية لتغيير هوية الموجة الصوتية
           PITCH=$(awk "BEGIN {srand(); print 0.99 + (rand() * 0.02)}")
-          
-          # 5. قَص الملف الناتج عند 6 ساعات بالضبط وتطبيق أقوى فلاتر هندسة صوتية لكسر البصمة
-          ffmpeg -i temp_raw.mp3 -t 21600 -af "asetrate=44100*$PITCH,atempo=$TEMPO,aresample=44100,dynaudnorm" -b:a 192k merged_audio.mp3 -y
           
           # 6. تنظيف كافة الملفات المؤقتة
           rm -f temp_raw.mp3 all_shuffled.txt selected_list.txt
