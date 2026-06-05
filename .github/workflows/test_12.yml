@@ -387,7 +387,7 @@ jobs:
                 startTime: Date.now() + i * (60 + Math.random() * 80),
                 duration:  1500 + Math.random() * 1000,
                 x: Math.random() * WIDTH,
-                y: HEIGHT - ,
+                y: HEIGHT -,
                 size:  Math.floor(Math.random() * 16) + 18,
                 color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]
               });
