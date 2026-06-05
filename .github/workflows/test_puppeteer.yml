@@ -23,8 +23,9 @@ jobs:
           mkdir -p downloads
           cp /home/runner/audios_permanent/audios_permanent/*.mp3 downloads/
 
-      - name: Download Video
-        run: gdown 1eS1RmjJfxD6EJQVBv_SSIm_QoEHn3Zdu -O video.mp4
+          if [ ! -f "/app/video.mp4" ]; then
+          gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O /app/video.mp4
+          fi
          
       - name: Create playlist and merge
         run: |
