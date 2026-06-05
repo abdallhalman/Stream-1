@@ -6,23 +6,22 @@ const path = require("path");
 const fs = require("fs");
 
 const TIKTOK_USER = "sl42t";
-const STREAM_KEY = process.env.STREAM_KEY;
+const STREAM_KEY  = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
-const FPS    = 30;
 
-let totalLikes = 0;
-let lastJoinTime = 0;
-let lastCommentTime = 0;
-const EVENT_THROTTLE_MS = 1000;
+const videoPath     = path.join(__dirname, '../../video.mp4');
+const audioPath     = path.join(__dirname, '../../merged_audio.mp3');
+const tmpFramePath  = path.join(__dirname, '../../overlay_tmp.png');
+const mainFramePath = path.join(__dirname, '../../overlay.png');
 
-// إنشاء سيرفر الـ WebSocket الثابت بشكل صحيح ونظيف
+// ── WebSocket للأوفرلاي ──
 const wss = new WebSocket.Server({ port: 8080 });
 let wsClient = null;
 
 wss.on("connection", (ws) => {
     wsClient = ws;
-    console.log("Overlay interface connected local.");
+    console.log("Overlay connected.");
 });
 
 function sendToOverlay(type, data) {
@@ -31,25 +30,18 @@ function sendToOverlay(type, data) {
     }
 }
 
-// ==================== [بداية نظام التشغيل الموحد والمطور لكسر البصمة] ====================
-const videoPath   = path.join(__dirname, '../../video.mp4');
-const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
-const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png'); // الملف المؤقت المعزول للـ Puppeteer
-const mainFramePath = path.join(__dirname, '../../overlay.png');     // الملف المستقر الذي يقرأه FFmpeg
-
-// تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
-if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
+// ── تهيئة الفريم الشفاف الأولي ──
+if (fs.existsSync(tmpFramePath))  fs.unlinkSync(tmpFramePath);
 if (fs.existsSync(mainFramePath)) fs.unlinkSync(mainFramePath);
 
-// إنشاء فريم شفاف تماماً كبداية بأبعاد صحيحة حتى لا يتعطل FFmpeg عند الإقلاع
 const transparentBuffer = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAAD9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
+    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAAD9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==",
     "base64"
 );
 fs.writeFileSync(mainFramePath, transparentBuffer);
 
-async function startOverlayStream() {
-    console.log("Starting Puppeteer Browser...");
+// ── Puppeteer + FFmpeg ──
+async function startStream() {
     const browser = await puppeteer.launch({
         headless: "new",
         args: [
@@ -62,180 +54,93 @@ async function startOverlayStream() {
 
     const page = await browser.newPage();
     await page.setViewport({ width: WIDTH, height: HEIGHT });
-    
-    const htmlPath = path.join(__dirname, "overlay.html");
-    await page.goto(`file://${htmlPath}`);
-    console.log("Overlay page loaded in Puppeteer.");
+    await page.goto(`file://${path.join(__dirname, "overlay.html")}`);
+    console.log("Overlay loaded.");
 
-    // ── حلقة التقاط الصور والـ Atomic Rename لمنع الـ Flicker ──
+    // حلقة التقاط بـ 10 FPS — كافية للإشعارات
     async function captureLoop() {
         try {
-            // 1. التقاط الشاشة وحفظها في الملف المؤقت المعزول عن الـ FFmpeg
             await page.screenshot({ path: tmpFramePath, type: "png", omitBackground: true });
-            
-            // 2. عملية الـ Rename السريعة جداً (تستبدل الملف الرئيسي فوراً في 0 ملي ثانية)
-            if (fs.existsSync(tmpFramePath)) {
-                fs.renameSync(tmpFramePath, mainFramePath);
-            }
+            if (fs.existsSync(tmpFramePath)) fs.renameSync(tmpFramePath, mainFramePath);
         } catch (err) {
-            console.error("Error in capture loop:", err.message);
+            console.error("Capture error:", err.message);
         }
-        // الاستمرار في التقاط الفريم التالي بناءً على السرعة المتاحة للمتصفح
-        setTimeout(captureLoop, 1000 / 15);
+        setTimeout(captureLoop, 100); // 10 FPS
     }
-
-    // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
     captureLoop();
 
-    console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
+    // ── FFmpeg — بدون فلاتر بصرية، كسر بصمة الصوت فقط ──
+    const randNoise = (2 + Math.floor(Math.random() * 4)); // نويز بسيط على الفيديو فقط لكسر البصمة
 
-    // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
-    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع
-    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين
-    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
-    const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
-    const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
-    
     const ffmpegArgs = [
-    "-re",                      // <--- لضبط سرعة القراءة
-    "-loop", "1",
-    "-f", "image2",
-    "-i", mainFramePath,
-    
-    "-stream_loop", "-1",
-    "-i", videoPath,
-    "-i", audioPath,
-    
-    "-filter_complex",
-    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
-    `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
-    `hue=h=${randHue},` +
-    `noise=alls=${randNoise}:allf=t[bg_v];` +
-    `[0:v]fps=30[overlay_v];` +
-    `[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
-    
-    "-map", "[out_v]",
-    "-map", "2:a",
-    "-c:v", "libx264",
-    "-r", "30",                 // <--- لضبط سرعة البث النهائي
-    "-preset", "veryfast",
-    "-tune", "zerolatency",
-    "-pix_fmt", "yuv420p",
-    "-c:a", "aac",
-    "-b:a", "128k",
-    "-f", "flv",
-    `rtmp://live.restream.io/live/${STREAM_KEY}`
-];
+        "-re",
+        "-loop", "1", "-f", "image2", "-r", "10", "-i", mainFramePath,
 
+        "-stream_loop", "-1", "-i", videoPath,
+        "-i", audioPath,
 
-    const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+        "-filter_complex",
+        `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},noise=alls=${randNoise}:allf=t[bg_v];` +
+        `[0:v]fps=10[ov];` +
+        `[bg_v][ov]overlay=0:0:shortest=1[out_v]`,
 
-    ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
-    ffmpegProcess.stderr.on("data", (data) => {
-        if (data.toString().includes("frame=")) {
-            console.log(`ffmpeg status: ${data.toString().trim()}`);
-        }
+        "-map", "[out_v]",
+        "-map", "2:a",
+        "-c:v", "libx264",
+        "-r", "30",
+        "-preset", "veryfast",
+        "-tune", "zerolatency",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        "-f", "flv",
+        `rtmp://live.restream.io/live/${STREAM_KEY}`
+    ];
+
+    const ffmpeg = spawn("ffmpeg", ffmpegArgs);
+
+    ffmpeg.stderr.on("data", (d) => {
+        if (d.toString().includes("frame=")) console.log(d.toString().trim());
     });
 
-    ffmpegProcess.on("close", (code) => {
-        console.log(`FFmpeg process exited with code ${code}`);
+    ffmpeg.on("close", (code) => {
+        console.log(`FFmpeg exited: ${code}`);
         browser.close();
         process.exit(code);
     });
 }
 
-// تشغيل النظام الموحد الجديد تلقائياً وبأمان
-startOverlayStream();
-// ==================== [نهاية نظام التشغيل الجديد المطور] ====================
+startStream();
 
-// ==================== [اتصال تيك توك والأحداث الأصلية كاملة ومطابقة 100%] ====================
+// ── TikTok — join فقط ──
 const tiktok = new WebcastPushConnection(TIKTOK_USER);
+
+let lastJoinTime = 0;
+const JOIN_THROTTLE = 1500; // إشعار كل 1.5 ثانية كحد أقصى
 
 function connectTikTok() {
     tiktok.connect()
         .then(() => console.log("TikTok connected: " + TIKTOK_USER))
         .catch(e => {
-            console.error("TikTok failed:", e.message, "- retrying in 20s...");
+            console.error("TikTok error:", e.message, "— retry in 20s");
             setTimeout(connectTikTok, 20000);
         });
 }
 
 tiktok.on("disconnected", () => {
-    console.log("TikTok disconnected, retrying in 20s...");
+    console.log("TikTok disconnected — retry in 20s");
     setTimeout(connectTikTok, 20000);
-});
-
-tiktok.on("roomUser", data => {
-    if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount);
 });
 
 tiktok.on("member", data => {
     const now = Date.now();
-    if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
-        if (data?.nickname || data?.uniqueId) {
-            sendToOverlay("join", {
-                name: data.nickname || data.uniqueId,
-                avatar: data.profilePictureUrl
-            });
-            lastJoinTime = now;
-        }
-    }
-});
-
-tiktok.on("like", data => {
-    if (data.likeCount > 0) {
-        totalLikes += Number(data.likeCount);
-        sendToOverlay("like", totalLikes);
-    }
-});
-
-function handleComment(data) {
-    const now = Date.now();
-    if (now - lastCommentTime >= EVENT_THROTTLE_MS) {
-        const text = data.comment || data.text || "";
-        if (text) {
-            sendToOverlay("comment", {
-                name: data.nickname || data.uniqueId,
-                text: text.replace(/\[heart\]/g, "❤️"),
-                avatar: data.profilePictureUrl,
-                badges: data.badges || []
-            });
-            lastCommentTime = now;
-        }
-    }
-}
-
-tiktok.on("comment", handleComment);
-tiktok.on("chat",    handleComment);
-
-tiktok.on("follow", data => {
-    sendToOverlay("follow", {
-        name: data.nickname || data.uniqueId,
-        avatar: data.profilePictureUrl,
-        followerCount: data.followCount || 0
-    });
-});
-
-tiktok.on("gift", (data) => {
-    if (data.repeatEnd || data.repeatCount === 1) {
-        let officialGiftIcon = "";
-        if (data.giftPictureUrl) {
-            officialGiftIcon = data.giftPictureUrl;
-        } else if (data.image?.url_list?.[0]) {
-            officialGiftIcon = data.image.url_list[0];
-        } else if (data.extendedGiftInfo?.image?.url_list?.[0]) {
-            officialGiftIcon = data.extendedGiftInfo.image.url_list[0];
-        }
-
-        sendToOverlay("gift", {
-            name: data.nickname || data.uniqueId,
-            giftName: data.giftName,
-            count: data.repeatCount || 1,
-            avatar: data.profilePictureUrl,
-            giftIcon: officialGiftIcon
+    if (now - lastJoinTime >= JOIN_THROTTLE && (data?.nickname || data?.uniqueId)) {
+        sendToOverlay("join", {
+            name:   data.nickname || data.uniqueId,
+            avatar: data.profilePictureUrl
         });
+        lastJoinTime = now;
     }
 });
 
-// تشغيل ربط التيك توك الأصلي بعد دقيقتين كما كان في نظامك المستقر تماماً
 setTimeout(connectTikTok, 120000);
