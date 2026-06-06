@@ -1,4 +1,3 @@
-هذا التعديل على الـ HTML:
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -19,136 +18,148 @@
 
         #join-container {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 1280px;
+            height: 720px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
+            padding: 18px 24px;
+            overflow: hidden;
             pointer-events: none;
             z-index: 50;
         }
 
+        /* الكرت — نفس تصميم الأصلي لكن أكبر */
         .join-notification {
             width: 100%;
-            height: 213px;
-            border-radius: 25px;
-            padding: 0 40px;
+            height: 210px;          /* 3 كروت × 210 + gaps تملأ 720 */
+            border-radius: 22px;
+            padding: 0 28px;
             display: flex;
             align-items: center;
-            gap: 30px;
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            animation: slideInCard 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+            animation: slideInCard 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
             flex-shrink: 0;
         }
 
-        /* الصورة */
+        /* ── يمين: أفاتار + معلومات ── */
+        .join-right {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            flex: 1;
+            min-width: 0;
+        }
+
         .join-notification .avatar {
-            width: 90px;
-            height: 90px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.35);
             object-fit: cover;
             flex-shrink: 0;
         }
 
-        /* المنطقة الوسطى — الاسم + الإشارات */
-        .join-notification .info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    overflow: hidden;
-}
-
-.join-notification .name {
-    font-size: 38px;
-    font-weight: 700;
-    color: #222;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-}
-
-.left-stats {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-    min-width: 110px;
-}
-
-        /* الإشارات — تظهر فقط إذا وجدت */
-        .badges-row {
+        .join-info {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            min-height: 0; /* لا تأخذ مكان إذا فاضية */
+            flex-direction: column;
+            min-width: 0;
         }
 
-        .badge-item {
-            background: rgba(0,0,0,0.07);
-            border-radius: 12px;
-            padding: 4px 12px;
-            font-size: 14px;
-            color: #555;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+        .join-app-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.45);
+            margin-bottom: 6px;
         }
 
-        .badge-item img {
-            width: 18px;
-            height: 18px;
-            object-fit: contain;
+        .join-name {
+            font-size: 42px;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            line-height: 1.1;
         }
 
-        /* المنطقة اليسار — المضمونة دايماً */
-        .left-stats {
+        .join-action {
+            font-size: 22px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 8px;
+        }
+
+        /* ── يسار: عدد المتابعين والمستوى ── */
+        .join-left {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 12px;
             flex-shrink: 0;
-            min-width: 110px;
+            padding-left: 10px;
         }
 
-        .stat-item {
+        .followers-box {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 12px 20px;
+            min-width: 120px;
         }
 
-        .stat-value {
+        .followers-icon {
             font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .followers-count {
+            font-size: 26px;
             font-weight: 700;
-            color: #222;
+            color: #ffffff;
+            line-height: 1;
         }
 
-        .stat-label {
+        .followers-label {
             font-size: 13px;
-            color: #888;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+            font-weight: 600;
         }
 
-        .divider {
-            width: 1px;
-            height: 120px;
-            background: rgba(0,0,0,0.1);
-            flex-shrink: 0;
+        .level-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 188, 0, 0.15);
+            border: 1px solid rgba(255, 188, 0, 0.3);
+            border-radius: 14px;
+            padding: 8px 16px;
+        }
+
+        .level-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffbc00;
         }
 
         @keyframes slideInCard {
-            0%   { opacity: 0; transform: translateY(-30px); }
-            100% { opacity: 1; transform: translateY(0); }
+            0%   { opacity: 0; transform: translateY(-28px) scale(0.97); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         @keyframes pushOut {
             0%   { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0.96) translateY(20px); }
+            100% { opacity: 0; transform: scale(0.96) translateY(12px); }
         }
     </style>
 </head>
@@ -156,47 +167,60 @@
     <div id="join-container"></div>
 
     <script>
-        const joinContainer = document.getElementById("join-container");
+        const joinContainer  = document.getElementById("join-container");
         const fallbackAvatar = 'https://www.tiktok.com/favicon.ico';
+
+        const colors = [
+            'rgba(147, 197, 253, 0.32)',
+            'rgba(196, 181, 253, 0.32)',
+            'rgba(249, 168, 212, 0.32)',
+            'rgba( 94, 234, 212, 0.32)',
+            'rgba(253, 224, 132, 0.32)',
+            'rgba(134, 239, 172, 0.32)',
+            'rgba(252, 165, 165, 0.32)',
+            'rgba(165, 180, 252, 0.32)',
+        ];
+
         const MAX = 3;
 
         function formatCount(n) {
-            if (!n && n !== 0) return "—";
+            if (!n || n === 0) return "—";
             if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
-            if (n >= 1000) return (n / 1000).toFixed(1) + "K";
-            return String(n);
+            if (n >= 1000)    return (n / 1000).toFixed(1)    + "K";
+            return n.toString();
         }
 
-        function buildBadges(badges) {
-            if (!badges || badges.length === 0) return "";
-            return badges.map(b => {
-                if (b.url) return `<div class="badge-item"><img src="${b.url}" onerror="this.style.display='none'"> ${b.name || ""}</div>`;
-                if (b.name) return `<div class="badge-item">🎖️ ${b.name}</div>`;
-                return "";
-            }).join("");
-        }
+        function addJoin(name, avatar, followerCount, level) {
+            const color = colors[Math.floor(Math.random() * colors.length)];
 
-        function addJoin(data) {
+            const followersHtml = `
+                <div class="followers-box">
+                    <div class="followers-icon">👥</div>
+                    <div class="followers-count">${formatCount(followerCount)}</div>
+                    <div class="followers-label">متابع</div>
+                </div>`;
+
+            const levelHtml = level ? `
+                <div class="level-box">
+                    <span class="level-text">⭐ Lv.${level}</span>
+                </div>` : "";
+
             const div = document.createElement("div");
             div.className = "join-notification";
-
-            const badgesHTML = buildBadges(data.badges);
-
+            div.style.background = color;
             div.innerHTML = `
-    <img class="avatar" src="${data.avatar}" onerror="this.src='${fallbackAvatar}'">
-    <div class="info">
-        <div class="name">${data.name}</div>
-        ${badgesHTML ? `<div class="badges-row">${badgesHTML}</div>` : ""}
-    </div>
-    <div class="divider"></div>
-    <div class="left-stats">
-        <div class="stat-item">
-            ${data.followers != null ? `<span class="stat-value">${formatCount(data.followers)}</span><span class="stat-label">متابع</span>` : ""}
-        </div>
-        <div class="stat-item">
-            ${data.likes != null ? `<span class="stat-value">${formatCount(data.likes)}</span><span class="stat-label">إعجاب</span>` : ""}
-        </div>
-    </div>`;
+                <div class="join-right">
+                    <img class="avatar" src="${avatar}" onerror="this.src='${fallbackAvatar}'">
+                    <div class="join-info">
+                        <div class="join-app-label">🔴 TikTok Live</div>
+                        <div class="join-name">${name}</div>
+                        <div class="join-action">انضم إلى البث ✨</div>
+                    </div>
+                </div>
+                <div class="join-left">
+                    ${followersHtml}
+                    ${levelHtml}
+                </div>`;
 
             joinContainer.prepend(div);
 
@@ -213,13 +237,12 @@
             try {
                 const msg = JSON.parse(event.data);
                 if (msg.type === "join") {
-                    addJoin({
-                        name: msg.data.name || "متابع جديد",
-                        avatar: msg.data.avatar || fallbackAvatar,
-                        followers: msg.data.followers,
-                        likes: msg.data.likes,
-                        badges: msg.data.badges
-                    });
+                    addJoin(
+                        msg.data.name         || "متابع جديد",
+                        msg.data.avatar       || fallbackAvatar,
+                        msg.data.followerCount || 0,
+                        msg.data.level        || null
+                    );
                 }
             } catch (e) {
                 console.error("خطأ:", e);
