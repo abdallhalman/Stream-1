@@ -41,7 +41,7 @@ jobs:
           curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio4.mp3" -o downloads/audio4.mp3
           curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio5.mp3" -o downloads/audio5.mp3          
       - name: Download Video
-        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
+        run: wget -O video.mp4 "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/video.mp4"
  
       - name: Create playlist and merge
         run: |
