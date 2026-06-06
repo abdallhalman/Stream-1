@@ -35,8 +35,7 @@ if (fs.existsSync(tmpFramePath))  fs.unlinkSync(tmpFramePath);
 if (fs.existsSync(mainFramePath)) fs.unlinkSync(mainFramePath);
 
 const { execSync } = require("child_process");
-execSync(`ffmpeg -f lavfi -i color=c=black@0:size=${WIDTH}x${HEIGHT}:rate=1 -vframes 1 ${mainFramePath} -
-
+execSync(`ffmpeg -f lavfi -i color=c=black@0:size=${WIDTH}x${HEIGHT}:rate=1 -vframes 1 ${mainFramePath} -y 2>/dev/null`);
 // ── Puppeteer + FFmpeg ──
 async function startStream() {
     const browser = await puppeteer.launch({
