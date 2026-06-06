@@ -1,3 +1,4 @@
+هذا التعديل على الـ HTML:
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -43,6 +44,7 @@
             flex-shrink: 0;
         }
 
+        /* الصورة */
         .join-notification .avatar {
             width: 90px;
             height: 90px;
@@ -51,21 +53,93 @@
             flex-shrink: 0;
         }
 
-        .join-notification .info { flex: 1; min-width: 0; }
-        .join-notification .name {
-            font-size: 38px;
-            font-weight: 700;
-            color: #222;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        /* المنطقة الوسطى — الاسم + الإشارات */
+        .join-notification .info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+}
+
+.join-notification .name {
+    font-size: 38px;
+    font-weight: 700;
+    color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.left-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    min-width: 110px;
+}
+
+        /* الإشارات — تظهر فقط إذا وجدت */
+        .badges-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 0; /* لا تأخذ مكان إذا فاضية */
         }
 
-        /* حاوية البيانات الديناميكية */
-        .data-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
-        .data-item { 
-            font-size: 16px; color: #444; background: rgba(0,0,0,0.05);
-            padding: 6px 15px; border-radius: 15px; display: flex; align-items: center; gap: 6px;
+        .badge-item {
+            background: rgba(0,0,0,0.07);
+            border-radius: 12px;
+            padding: 4px 12px;
+            font-size: 14px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge-item img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
+
+        /* المنطقة اليسار — المضمونة دايماً */
+        .left-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            min-width: 110px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #222;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .divider {
+            width: 1px;
+            height: 120px;
+            background: rgba(0,0,0,0.1);
+            flex-shrink: 0;
         }
 
         @keyframes slideInCard {
@@ -85,25 +159,45 @@
     <script>
         const joinContainer = document.getElementById("join-container");
         const fallbackAvatar = 'https://www.tiktok.com/favicon.ico';
-        const MAX = 3; // 3 بنرات فقط لتغطية الشاشة
+        const MAX = 3;
+
+        function formatCount(n) {
+            if (!n && n !== 0) return "—";
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+            if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+            return String(n);
+        }
+
+        function buildBadges(badges) {
+            if (!badges || badges.length === 0) return "";
+            return badges.map(b => {
+                if (b.url) return `<div class="badge-item"><img src="${b.url}" onerror="this.style.display='none'"> ${b.name || ""}</div>`;
+                if (b.name) return `<div class="badge-item">🎖️ ${b.name}</div>`;
+                return "";
+            }).join("");
+        }
 
         function addJoin(data) {
             const div = document.createElement("div");
             div.className = "join-notification";
-            
-            // بناء الأيقونات ديناميكياً
-            let grid = `<div class="data-grid">`;
-            if (data.followers) grid += `<div class="data-item">👤 ${data.followers}</div>`;
-            if (data.likes) grid += `<div class="data-item">❤️ ${data.likes}</div>`;
-            if (data.badges) grid += `<div class="data-item">🎖️ ${data.badges}</div>`;
-            grid += `</div>`;
+
+            const badgesHTML = buildBadges(data.badges);
 
             div.innerHTML = `
-                <img class="avatar" src="${data.avatar}" onerror="this.src='${fallbackAvatar}'">
-                <div class="info">
-                    <div class="name">${data.name}</div>
-                    ${grid}
-                </div>`;
+    <img class="avatar" src="${data.avatar}" onerror="this.src='${fallbackAvatar}'">
+    <div class="info">
+        <div class="name">${data.name}</div>
+        ${badgesHTML ? `<div class="badges-row">${badgesHTML}</div>` : ""}
+    </div>
+    <div class="divider"></div>
+    <div class="left-stats">
+        <div class="stat-item">
+            ${data.followers != null ? `<span class="stat-value">${formatCount(data.followers)}</span><span class="stat-label">متابع</span>` : ""}
+        </div>
+        <div class="stat-item">
+            ${data.likes != null ? `<span class="stat-value">${formatCount(data.likes)}</span><span class="stat-label">إعجاب</span>` : ""}
+        </div>
+    </div>`;
 
             joinContainer.prepend(div);
 
@@ -135,3 +229,19 @@
     </script>
 </body>
 </html>
+وفي server.js عدّل الـ member event تبعث البيانات الكاملة:
+tiktok.on("member", data => {
+    const now = Date.now();
+    if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
+        if (data?.nickname || data?.uniqueId) {
+            sendToOverlay("join", {
+                name: data.nickname || data.uniqueId,
+                avatar: data.profilePictureUrl,
+                followers: data.userDetails?.followInfo?.followerCount,
+                likes: data.userDetails?.followInfo?.likeCount,
+                badges: data.userBadges || []
+            });
+            lastJoinTime = now;
+        }
+    }
+});
