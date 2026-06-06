@@ -32,6 +32,9 @@ jobs:
       - name: Install Node tools
         run: npm install tiktok-live-connector puppeteer ws
 
+              # ── تحميل الفيديو الرئيسي خارج الكاش ──
+      - name: Download Video
+        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
       
       - name: Download audio files
         run: |
@@ -43,10 +46,6 @@ jobs:
          curl -L "https://drive.google.com/uc?export=download&id=1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef" -o downloads/t5.tmp && ffmpeg -i downloads/t5.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio5.mp3 -y
          rm -f downloads/*.tmp
           
-          # ── تحميل الفيديو الرئيسي خارج الكاش ──
-    
-      - name: Download Video
-        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
           
       - name: Create playlist and merge
         run: |
