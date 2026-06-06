@@ -33,22 +33,15 @@ jobs:
         run: npm install tiktok-live-connector puppeteer ws
 
       
-      - name: Check existing files
-        run: ls -lh downloads/ 2>/dev/null || echo "downloads folder empty or missing"
-      # ── تحميل وتحويل الأصوات إلى MP3 حقيقي (في أول رن فقط) ──
       - name: Download audio files
         run: |
          mkdir -p downloads
-         if [ ! -f downloads/audio1.mp3 ]; then
-         gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
-         gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
-         gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O downloads/t3.tmp && ffmpeg -i downloads/t3.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio3.mp3 -y
-         gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O downloads/t4.tmp && ffmpeg -i downloads/t4.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio4.mp3 -y
-         gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O downloads/t5.tmp && ffmpeg -i downloads/t5.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio5.mp3 -y
+         curl -L "https://drive.google.com/uc?export=download&id=1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM" -o downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
+         curl -L "https://drive.google.com/uc?export=download&id=1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL" -o downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
+         curl -L "https://drive.google.com/uc?export=download&id=1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq" -o downloads/t3.tmp && ffmpeg -i downloads/t3.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio3.mp3 -y
+         curl -L "https://drive.google.com/uc?export=download&id=1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S" -o downloads/t4.tmp && ffmpeg -i downloads/t4.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio4.mp3 -y
+         curl -L "https://drive.google.com/uc?export=download&id=1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef" -o downloads/t5.tmp && ffmpeg -i downloads/t5.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio5.mp3 -y
          rm -f downloads/*.tmp
-         else
-         echo "Audio files already exist, skipping download."
-         fi
           
           # ── تحميل الفيديو الرئيسي خارج الكاش ──
     
