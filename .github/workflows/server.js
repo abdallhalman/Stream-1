@@ -34,11 +34,8 @@ function sendToOverlay(type, data) {
 if (fs.existsSync(tmpFramePath))  fs.unlinkSync(tmpFramePath);
 if (fs.existsSync(mainFramePath)) fs.unlinkSync(mainFramePath);
 
-const transparentBuffer = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAAD9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==",
-    "base64"
-);
-fs.writeFileSync(mainFramePath, transparentBuffer);
+const { execSync } = require("child_process");
+execSync(`ffmpeg -f lavfi -i color=c=black@0:size=${WIDTH}x${HEIGHT}:rate=1 -vframes 1 ${mainFramePath} -
 
 // ── Puppeteer + FFmpeg ──
 async function startStream() {
