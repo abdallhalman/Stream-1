@@ -25,9 +25,9 @@ jobs:
             libgtk-3-0 \
             libatk-bridge2.0-0 \
             libgdk-pixbuf2.0-0
-
+            
       - name: Install Python tools
-        run: pip install gdown==4.4.0
+        run: pip install gdown
         
       - name: Install Node tools
         run: npm install tiktok-live-connector puppeteer ws
