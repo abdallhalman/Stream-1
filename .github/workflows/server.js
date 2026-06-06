@@ -99,7 +99,7 @@ async function startStream() {
 
     const ffmpeg = spawn("ffmpeg", ffmpegArgs);
 
-    ffmpegProcess.stderr.on("data", (data) => {
+    ffmpeg.stderr.on("data", (data) => {
     console.log(`ffmpeg: ${data.toString().trim()}`);
 });
 
