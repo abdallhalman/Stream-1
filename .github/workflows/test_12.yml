@@ -28,17 +28,21 @@ jobs:
       - name: Install Node tools
         run: npm install tiktok-live-connector canvas node-fetch@2
 
-      - name: Download Video
-        run: gdown 1QOqjoUgahZPkQn_neQSEdiT9RfTRSrlk -O video.mp4
+      - name: Install Node tools
+        run: npm install tiktok-live-connector puppeteer ws
 
-      - name: Download single audio file
+      - name: Download audio files
         run: |
-          gdown 1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM -O a1.tmp && ffmpeg -i a1.tmp audio1.mp3 -y
-          gdown 1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL -O a2.tmp && ffmpeg -i a2.tmp audio2.mp3 -y
-          gdown 1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq -O a3.tmp && ffmpeg -i a3.tmp audio3.mp3 -y
-          gdown 1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S -O a4.tmp && ffmpeg -i a4.tmp audio4.mp3 -y
-          gdown 1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef -O a5.tmp && ffmpeg -i a5.tmp audio5.mp3 -y
-
+          mkdir -p downloads
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio10.mp3" -o downloads/audio1.mp3
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio11.mp3" -o downloads/audio2.mp3
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio12.mp3" -o downloads/audio3.mp3
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio13.mp3" -o downloads/audio4.mp3
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio14.mp3" -o downloads/audio5.mp3          
+     
+      - name: Download Video
+        run: curl -L -o video.mp4 "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/video.mp4"
+    
       - name: Create playlist and merge
         run: |
           ls audio*.mp3 | shuf > playlist.txt
