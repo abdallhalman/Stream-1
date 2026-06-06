@@ -38,7 +38,6 @@
             align-items: center;
             gap: 30px;
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             animation: slideInCard 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
             flex-shrink: 0;
@@ -229,19 +228,3 @@
     </script>
 </body>
 </html>
-وفي server.js عدّل الـ member event تبعث البيانات الكاملة:
-tiktok.on("member", data => {
-    const now = Date.now();
-    if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
-        if (data?.nickname || data?.uniqueId) {
-            sendToOverlay("join", {
-                name: data.nickname || data.uniqueId,
-                avatar: data.profilePictureUrl,
-                followers: data.userDetails?.followInfo?.followerCount,
-                likes: data.userDetails?.followInfo?.likeCount,
-                badges: data.userBadges || []
-            });
-            lastJoinTime = now;
-        }
-    }
-});
