@@ -99,9 +99,9 @@ async function startStream() {
 
     const ffmpeg = spawn("ffmpeg", ffmpegArgs);
 
-    ffmpeg.stderr.on("data", (d) => {
-        if (d.toString().includes("frame=")) console.log(d.toString().trim());
-    });
+    ffmpegProcess.stderr.on("data", (data) => {
+    console.log(`ffmpeg: ${data.toString().trim()}`);
+});
 
     ffmpeg.on("close", (code) => {
         console.log(`FFmpeg exited: ${code}`);
