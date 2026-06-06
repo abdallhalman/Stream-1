@@ -102,9 +102,8 @@ async function startOverlayStream() {
     "-f", "image2",
     "-i", mainFramePath,
     
-    "-stream_loop", "-1",
-    "-i", videoPath,
-    "-i", audioPath,
+    "-stream_loop", "-1","-i", videoPath,
+    "-stream_loop", "-1","-i", audioPath,
     
     "-filter_complex",
     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
