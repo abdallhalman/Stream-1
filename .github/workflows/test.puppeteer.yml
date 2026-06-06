@@ -42,10 +42,8 @@ jobs:
           gdown 16TSjh8OKG3IbKkf9EYONSEkCzyPbCR70 -O downloads/audio5.mp3
           
       - name: Download Video
-        run: |
-          pip install yt-dlp -q
-          yt-dlp "https://drive.google.com/file/d/1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0/view" -o video.mp4
-
+        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
+ 
       - name: Create playlist and merge
         run: |
           ls downloads/audio*.mp3 | shuf > all_shuffled.txt
