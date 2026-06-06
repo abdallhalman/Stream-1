@@ -34,7 +34,7 @@ jobs:
 
               # ── تحميل الفيديو الرئيسي خارج الكاش ──
       - name: Download Video
-        run: gdown 1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0 -O video.mp4
+        run: curl -L "https://drive.google.com/uc?export=download&id=1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0" -o video.mp4
       
       - name: Download audio files
         run: |
