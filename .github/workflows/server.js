@@ -77,7 +77,7 @@ async function startStream() {
         "-loop", "1", "-f", "image2", "-r", "10", "-i", mainFramePath,
 
         "-stream_loop", "-1", "-i", videoPath,
-        "-i", audioPath,
+        "-stream_loop", "-1", "-i", audioPath,
 
         "-filter_complex",
         `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},noise=alls=${randNoise}:allf=t[bg_v];` +
