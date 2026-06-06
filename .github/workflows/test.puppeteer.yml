@@ -32,49 +32,27 @@ jobs:
       - name: Install Node tools
         run: npm install tiktok-live-connector puppeteer ws
 
-              # ── تحميل الفيديو الرئيسي خارج الكاش ──
-      - name: Download Video
-        run: curl -L "https://drive.google.com/uc?export=download&id=1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0" -o video.mp4
-      
       - name: Download audio files
         run: |
-         mkdir -p downloads
-         curl -L "https://drive.google.com/uc?export=download&id=1IbkCM0FYurEzKBBWB-GYyMVA-Js2zbQM" -o downloads/t1.tmp && ffmpeg -i downloads/t1.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio1.mp3 -y
-         curl -L "https://drive.google.com/uc?export=download&id=1XkDh8_5rNV8CZtgMdR-82lcWAVPbxwcL" -o downloads/t2.tmp && ffmpeg -i downloads/t2.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio2.mp3 -y
-         curl -L "https://drive.google.com/uc?export=download&id=1BVe4zBJBYdkSgCpyWG7Xi4iMbbyVX5Eq" -o downloads/t3.tmp && ffmpeg -i downloads/t3.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio3.mp3 -y
-         curl -L "https://drive.google.com/uc?export=download&id=1F2LQM5tQjJkyA2u_kTzKf3uTm7gS8F_S" -o downloads/t4.tmp && ffmpeg -i downloads/t4.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio4.mp3 -y
-         curl -L "https://drive.google.com/uc?export=download&id=1qkBtQe6NHlKoThu4W1jIT4Nc7HoEzOef" -o downloads/t5.tmp && ffmpeg -i downloads/t5.tmp -vn -ar 44100 -ac 2 -b:a 192k downloads/audio5.mp3 -y
-         rm -f downloads/*.tmp
-          
-          
+          mkdir -p downloads
+          gdown --fuzzy "https://drive.google.com/file/d/1X4Wua4i4xluAv4PiW_0WZCPwOYEPKMSX/view" -O downloads/audio1.mp3
+          gdown --fuzzy "https://drive.google.com/file/d/1h1nwxVWf9r4g0eHCNaXsHO8lEmRYFSH2/view" -O downloads/audio2.mp3
+          gdown --fuzzy "https://drive.google.com/file/d/1SL39WxTPwMV2OK5BeM-D1qUPKGuT55av/view" -O downloads/audio3.mp3
+          gdown --fuzzy "https://drive.google.com/file/d/1JOHJobbIyHr05XuCBUVjAkI67I_aoSb6/view" -O downloads/audio4.mp3
+          gdown --fuzzy "https://drive.google.com/file/d/16TSjh8OKG3IbKkf9EYONSEkCzyPbCR70/view" -O downloads/audio5.mp3
+
+      - name: Download Video
+        run: |
+          pip install yt-dlp -q
+          yt-dlp "https://drive.google.com/file/d/1NXc6Qzw00ShvoQlZRvSQ-9_xqdyUw2j0/view" -o video.mp4
+
       - name: Create playlist and merge
         run: |
-         ls downloads/audio*.mp3 | shuf > all_shuffled.txt
+          ls downloads/audio*.mp3 | shuf > all_shuffled.txt
+          awk '{print "file \047" $0 "\047"}' all_shuffled.txt > selected_list.txt
+          ffmpeg -f concat -safe 0 -i selected_list.txt -c copy merged_audio.mp3 -y
+          rm -f all_shuffled.txt selected_list.txt
 
-         TOTAL_DURATION=0
-         MAX_DURATION=21600
-         rm -f selected_list.txt
-         touch selected_list.txt
-
-         while IFS= read -r file; do
-         DURATION=$(ffprobe -v error -show_entries format=duration \
-         -of default=noprint_wrappers=1:noclipping=1 "$file" | awk '{print int($1)}')
-         TOTAL_DURATION=$((TOTAL_DURATION + DURATION))
-         echo "file '$file'" >> selected_list.txt
-         if [ $TOTAL_DURATION -ge $MAX_DURATION ]; then
-         echo "Reached 6 hours ($TOTAL_DURATION seconds)."
-         break
-         fi
-         done < all_shuffled.txt
-
-         ffmpeg -f concat -safe 0 -i selected_list.txt -c copy temp_raw.mp3 -y
-
-         TEMPO=$(awk "BEGIN {srand(); print 0.985 + (rand() * 0.03)}")
-         PITCH=$(awk "BEGIN {srand(); print 0.99 + (rand() * 0.02)}")
-
-         ffmpeg -i temp_raw.mp3 -af "asetrate=44100*$PITCH,atempo=$TEMPO,aresample=44100,dynaudnorm" -b:a 192k merged_audio.mp3 -y
-         rm -f temp_raw.mp3 all_shuffled.txt selected_list.txt
-      # ── تشغيل السيرفر والبث ──
       - name: Run Puppeteer Stream Server
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
