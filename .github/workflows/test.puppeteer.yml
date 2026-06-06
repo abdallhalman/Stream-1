@@ -79,7 +79,7 @@ jobs:
          TEMPO=$(awk "BEGIN {srand(); print 0.985 + (rand() * 0.03)}")
          PITCH=$(awk "BEGIN {srand(); print 0.99 + (rand() * 0.02)}")
 
-         ffmpeg -i temp_raw.mp3 -t 21600 \
+         ffmpeg -i temp_raw.mp3 
          -af "asetrate=44100*$PITCH,atempo=$TEMPO,aresample=44100,dynaudnorm" \
          -b:a 192k merged_audio.mp3 -y
 
