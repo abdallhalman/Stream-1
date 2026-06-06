@@ -32,9 +32,8 @@ jobs:
       - name: Install Node tools
         run: npm install tiktok-live-connector puppeteer ws
 
-      - name: Download audio files
-        run: |
-          mkdir -p downloads
+      - name: Install Python tools
+        run: pip install gdown --upgrade
           gdown 1X4Wua4i4xluAv4PiW_0WZCPwOYEPKMSX -O downloads/audio1.mp3
           gdown 1h1nwxVWf9r4g0eHCNaXsHO8lEmRYFSH2 -O downloads/audio2.mp3
           gdown 1SL39WxTPwMV2OK5BeM-D1qUPKGuT55av -O downloads/audio3.mp3
