@@ -33,7 +33,8 @@ jobs:
         run: npm install tiktok-live-connector puppeteer ws
 
       
-
+      - name: Check existing files
+        run: ls -lh downloads/ 2>/dev/null || echo "downloads folder empty or missing"
       # ── تحميل وتحويل الأصوات إلى MP3 حقيقي (في أول رن فقط) ──
       - name: Download audio files
         run: |
