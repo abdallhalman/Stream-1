@@ -449,32 +449,7 @@
             border-radius: 10px;
         }
 
-        /* ─── 2. فقاعات التسبيح المتطايرة ─── */
-        .subhan-bubble {
-            position: absolute;
-            top: 75px;
-            left: 50%;
-            transform: translateX(-50%);
-            pointer-events: none;
-            z-index: 90;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-family: 'IBM Plex Sans Arabic', sans-serif;
-            font-size: 18px;
-            font-weight: 600;
-            color: #fff;
-            white-space: nowrap;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            will-change: transform, opacity;
-            animation: bubbleFloatUp var(--duration) ease-out forwards;
-        
-            }
-
-        @keyframes bubbleFloatUp {
-            0% { transform: translate(var(--start-x), 0) scale(0.6); opacity: 0; }
-            15% { opacity: 0.95; }
-            100% { transform: translate(var(--target-x), var(--target-y)) scale(1.05); opacity: 0; }
-        }
+        /* فقاعات التسبيح محذوفة */
 
         /* ─── 3. القلوب النيونية المتطايرة من الزاوية ─── */
         .heart-glow {
@@ -638,35 +613,6 @@
                 if (subtxt) {
                     subtxt.innerText = currentItem.sub;
                 }
-
-                // 3. إطلاق فقاعة التسبيح اللطيفة تحمل (الذكر الأساسي) وهي تتساقط للأسفل
-                const bubbleColors = [
-                    'rgba(255, 105, 180, 0.85)', /* وردي */
-                    'rgba(0, 206, 209, 0.85)',   /* فيروزي */
-                    'rgba(148, 0, 211, 0.85)',   /* بنفسجي */
-                    'rgba(255, 165, 0, 0.85)',   /* برتقالي ناعم */
-                    'rgba(57, 255, 20, 0.9)'     /* أخضر فسفوري */
-                ];
-                const randomColor = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
-                
-                const bubble = document.createElement('div');
-                bubble.className = 'subhan-bubble';
-                bubble.innerText = `${currentItem.main}`; // تأخذ العنوان الأساسي الخفيف للفقاعات
-                bubble.style.background = randomColor;
-                bubble.style.border = `1.5px solid rgba(255,255,255,0.7)`;
-                
-                const bStartX = (Math.random() * 60 - 30) + 'px'; 
-                const bTargetX = (Math.random() * 180 - 90) + 'px'; 
-                const bTargetY = (Math.random() * 200 + 120) + 'px'; // سقوط ناعم لأسفل العداد
-                const bDuration = (Math.random() * 1.2 + 1.5) + 's';
-
-                bubble.style.setProperty('--start-x', bStartX);
-                bubble.style.setProperty('--target-x', bTargetX);
-                bubble.style.setProperty('--target-y', bTargetY);
-                bubble.style.setProperty('--duration', bDuration);
-
-                document.body.appendChild(bubble);
-                setTimeout(() => bubble.remove(), 2500);
 
                 // 4. تفعيل البنر الانفجاري عند اكتمال الـ 1000 والإعلان عن الانتقال للذكر الجديد
                 if (currentLikes === STEP_TARGET) {

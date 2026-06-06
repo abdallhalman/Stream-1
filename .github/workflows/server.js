@@ -5,7 +5,7 @@ const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
 
-const TIKTOK_USER = "alarabiya";
+const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -81,7 +81,7 @@ async function startOverlayStream() {
             console.error("Error in capture loop:", err.message);
         }
         // الاستمرار في التقاط الفريم التالي بناءً على السرعة المتاحة للمتصفح
-        setTimeout(captureLoop, 1000 / FPS);
+        setTimeout(captureLoop, 1000 / 3); // 3fps كافي للـ overlay ويخفف الضغط
     }
 
     // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
@@ -118,8 +118,11 @@ async function startOverlayStream() {
     "-map", "2:a",
     "-c:v", "libx264",
     "-r", "30",                 // <--- لضبط سرعة البث النهائي
-    "-preset", "veryfast",
+    "-preset", "ultrafast",     // أخف بكثير من veryfast على الـ CPU
     "-tune", "zerolatency",
+    "-b:v", "2500k",            // بتريت ثابت بدل الـ CRF لضمان الاستقرار
+    "-maxrate", "2500k",
+    "-bufsize", "5000k",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
     "-b:a", "128k",
