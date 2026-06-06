@@ -40,9 +40,10 @@ jobs:
           curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio3.mp3" -o downloads/audio3.mp3
           curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio4.mp3" -o downloads/audio4.mp3
           curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio5.mp3" -o downloads/audio5.mp3          
+     
       - name: Download Video
-        run: wget -O video.mp4 "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/video.mp4"
- 
+        run: curl -L -o video.mp4 "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/video.mp4"
+    
       - name: Create playlist and merge
         run: |
           ls downloads/audio*.mp3 | shuf > all_shuffled.txt
