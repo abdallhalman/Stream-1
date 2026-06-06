@@ -35,12 +35,12 @@ jobs:
       - name: Download audio files
         run: |
           mkdir -p downloads
-          gdown --fuzzy "https://drive.google.com/file/d/1X4Wua4i4xluAv4PiW_0WZCPwOYEPKMSX/view" -O downloads/audio1.mp3
-          gdown --fuzzy "https://drive.google.com/file/d/1h1nwxVWf9r4g0eHCNaXsHO8lEmRYFSH2/view" -O downloads/audio2.mp3
-          gdown --fuzzy "https://drive.google.com/file/d/1SL39WxTPwMV2OK5BeM-D1qUPKGuT55av/view" -O downloads/audio3.mp3
-          gdown --fuzzy "https://drive.google.com/file/d/1JOHJobbIyHr05XuCBUVjAkI67I_aoSb6/view" -O downloads/audio4.mp3
-          gdown --fuzzy "https://drive.google.com/file/d/16TSjh8OKG3IbKkf9EYONSEkCzyPbCR70/view" -O downloads/audio5.mp3
-
+          gdown 1X4Wua4i4xluAv4PiW_0WZCPwOYEPKMSX -O downloads/audio1.mp3
+          gdown 1h1nwxVWf9r4g0eHCNaXsHO8lEmRYFSH2 -O downloads/audio2.mp3
+          gdown 1SL39WxTPwMV2OK5BeM-D1qUPKGuT55av -O downloads/audio3.mp3
+          gdown 1JOHJobbIyHr05XuCBUVjAkI67I_aoSb6 -O downloads/audio4.mp3
+          gdown 16TSjh8OKG3IbKkf9EYONSEkCzyPbCR70 -O downloads/audio5.mp3
+          
       - name: Download Video
         run: |
           pip install yt-dlp -q
