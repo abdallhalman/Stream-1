@@ -98,9 +98,6 @@ async function startOverlayStream() {
     
     const ffmpegArgs = [
     "-re",
-    "-reconnect", "1",           // ← أضف هنا
-    "-reconnect_streamed", "1",  // ← أضف هنا
-    "-reconnect_delay_max", "5", // ← أضف هنا
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
@@ -146,7 +143,8 @@ async function startOverlayStream() {
 
     ffmpegProcess.on("close", (code) => {
     console.log(`FFmpeg process exited with code ${code}`);
-    // لا نوقف السيرفر — نتجاهل الخطأ
+    browser.close();
+    process.exit(code);
 });
     
 }
