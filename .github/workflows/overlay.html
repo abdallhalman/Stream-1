@@ -326,13 +326,13 @@
     .chat-msg .username { 
     color: #ffbc00; 
     font-weight: 700; 
-    font-size: 16px; 
+    font-size: 18px; 
     display: inline; 
     font-family: 'IBM Plex Sans Arabic', sans-serif; /* 🍏 خط أبل المتناسق */
 } 
     .chat-msg .text { 
     color: rgba(255, 255, 255, 0.95); 
-    font-size: 16px; 
+    font-size: 18px; 
     word-break: break-word; 
     font-weight: 600; 
     display: inline; 
@@ -342,13 +342,14 @@
 
 
 
-        /* ── صندوق الانضمامات المستقر ── */
+        
+       /* ── صندوق الانضمامات المستقر ── */
         #join-container {
             position: absolute;
             bottom: 40px;
             left: 30px;
-            width: 360px;
-            height: 350px;
+            width: 500px;
+            height: 480px;
             display: flex;
             flex-direction: column-reverse;
             overflow: hidden;
@@ -360,19 +361,19 @@
             backdrop-filter: blur(18px);
             -webkit-backdrop-filter: blur(18px);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 13px 16px;
-            border-radius: 18px;
+            padding: 18px 22px;
+            border-radius: 22px;
             margin-top: 10px;
             display: flex;
             align-items: center;
-            gap: 13px;
+            gap: 18px;
             box-shadow: 0 6px 24px rgba(0,0,0,0.3);
-            animation: slideInLeft 0.05s linear forwards, fadeOut 0.05s linear 5.5s forwards;
+            animation: slideInLeft 0.20s linear forwards, fadeOut 0.20s linear 8s forwards;
 
         }
-        .join-notification .avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
-        .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 16px; }
-        .join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 13px; margin-top: 2px; font-weight: 600; }
+        .join-notification .avatar { width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
+        .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 22px; }
+        .join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 16px; margin-top: 2px; font-weight: 600; }
 
     
         @keyframes slideInLeft  { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -509,7 +510,7 @@
 
 <div id="milestone-banner" class="milestone-banner">
     <div class="milestone-content">
-        <h1 id="milestone-title">كفووو! وصلنا إلى 1,000 تسبيحة! 🎉</h1>
+        <h1 id="milestone-title">تم تحقيق الهدف! 🎉</h1>
     </div>
 </div>
 
@@ -619,7 +620,7 @@
                     const banner = document.getElementById("milestone-banner");
                     const bTitle = document.getElementById("milestone-title");
                     if (banner && bTitle) {
-                        bTitle.innerHTML = `كفووو! تم اكتمال عداد <span style="color:#39FF14;">(${currentItem.main})</span> 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${nextItem.main} 🌿</span>`;
+                        bTitle.innerHTML = `شكراً لكم <span style="color:#39FF14;">(${currentItem.main})</span> 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${nextItem.main} 🌿</span>`;
                         banner.classList.add("show");
                         
                         setTimeout(() => {
