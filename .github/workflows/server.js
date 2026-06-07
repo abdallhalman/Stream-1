@@ -97,7 +97,10 @@ async function startOverlayStream() {
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
     const ffmpegArgs = [
-    "-re",                      // <--- لضبط سرعة القراءة
+    "-re",
+    "-reconnect", "1",           // ← أضف هنا
+    "-reconnect_streamed", "1",  // ← أضف هنا
+    "-reconnect_delay_max", "5", // ← أضف هنا
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
@@ -142,10 +145,10 @@ async function startOverlayStream() {
     });
 
     ffmpegProcess.on("close", (code) => {
-        console.log(`FFmpeg process exited with code ${code}`);
-        browser.close();
-        process.exit(code);
-    });
+    console.log(`FFmpeg process exited with code ${code}`);
+    // لا نوقف السيرفر — نتجاهل الخطأ
+});
+    
 }
 
 // تشغيل النظام الموحد الجديد تلقائياً وبأمان
