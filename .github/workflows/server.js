@@ -116,7 +116,9 @@ async function startOverlayStream() {
     "-map", "[out_v]",
     "-map", "2:a",
     "-c:v", "libx264",
-    "-r", "30",                 // <--- لضبط سرعة البث النهائي
+    "-r", "30", // <--- لضبط سرعة البث النهائي
+    "-g", "60",
+    "-keyint_min", "60",
     "-preset", "ultrafast",     // أخف بكثير من veryfast على الـ CPU
     "-tune", "zerolatency",
     "-b:v", "2500k",            // بتريت ثابت بدل الـ CRF لضمان الاستقرار
