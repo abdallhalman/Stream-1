@@ -356,23 +356,24 @@
             pointer-events: none;
             z-index: 50;
         }
-          .join-notification {
-        background: radial-gradient(ellipse at center, rgba(0, 80, 200, 0.05) 0%, rgba(0, 80, 200, 0.75) 100%);
-        border: 1px solid rgba(60, 150, 255, 0.80);
-        box-shadow: 0 6px 24px rgba(0, 60, 180, 0.60);
-        backdrop-filter: blur(18px);
-       -webkit-backdrop-filter: blur(18px);
-        padding: 18px 22px;
-        border-radius: 22px;
-        margin-top: 10px;
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        animation: slideInLeft 0.10s linear forwards, fadeOut 0.10s linear 10s forwards;
-      }
+        .join-notification {
+            background: rgba(20, 20, 30, 0.60);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(60, 150, 255, 0.80);
+            padding: 13px 16px;
+            border-radius: 18px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            box-shadow: 0 6px 24px rgba(0, 60, 180, 0.60);
+            animation: slideInLeft 0.10s linear forwards, fadeOut 0.10s linear 10s forwards;
+
+        }
         .join-notification .avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
         .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 16px; }
-        .join-notification .action { color: rgba(150, 200, 255, 0.85); font-size: 13px; margin-top: 2px; font-weight: 600; }
+        .join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 13px; margin-top: 2px; font-weight: 600; }
 
     
         @keyframes slideInLeft  { 0% { opacity: 0; } 100% { opacity: 1; } }
