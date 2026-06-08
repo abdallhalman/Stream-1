@@ -108,8 +108,7 @@ async function startOverlayStream() {
     "-filter_complex",
     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
     `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
-    `hue=h=${randHue},` +
-    `noise=alls=${randNoise}:allf=t[bg_v];` +
+    `hue=h=${randHue}[bg_v];` +
     `[0:v]fps=30[overlay_v];` +
     `[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
     
@@ -122,8 +121,8 @@ async function startOverlayStream() {
     "-preset", "ultrafast",     // أخف بكثير من veryfast على الـ CPU
     "-tune", "zerolatency",
     "-b:v", "2500k",            // بتريت ثابت بدل الـ CRF لضمان الاستقرار
-    "-maxrate", "2500k",
-    "-bufsize", "5000k",
+    "-maxrate", "3000k",
+    "-bufsize", "8000k",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
     "-b:a", "128k",
