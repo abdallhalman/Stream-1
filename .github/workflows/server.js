@@ -114,6 +114,7 @@ async function startOverlayStream() {
     
     "-map", "[out_v]",
     "-map", "2:a",
+    "-af", `asetrate=44100*${(0.95 + Math.random() * 0.10).toFixed(4)},atempo=${(0.95 + Math.random() * 0.10).toFixed(4)},dynaudnorm=p=0.95:s=5`,
     "-c:v", "libx264",
     "-r", "30", // <--- لضبط سرعة البث النهائي
     "-g", "60",
