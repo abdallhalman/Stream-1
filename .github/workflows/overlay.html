@@ -720,6 +720,7 @@
                         </div>`;
 
                     chatContainer.prepend(msgDiv);
+                    setTimeout(() => { if (msgDiv.parentNode) chatContainer.removeChild(msgDiv);}, 15000); // 15 ثانية
                     if (chatContainer.children.length > 15) chatContainer.removeChild(chatContainer.lastChild);
                 }
 
