@@ -496,7 +496,53 @@
         }
         .milestone-banner.show .milestone-content { transform: scale(1); }
         .milestone-content h1 { color: #fff; font-size: 36px; font-weight: 700; font-family: 'IBM Plex Sans Arabic', sans-serif; }
-            
+
+        /* ── صندوق الحديث الشريف ── */
+#hadith-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 620px;
+    background: rgba(10, 15, 30, 0.82);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 188, 0, 0.35);
+    border-radius: 22px;
+    padding: 22px 28px;
+    z-index: 60;
+    transition: opacity 0.8s ease;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+}
+#hadith-container.hidden { opacity: 0; }
+.hadith-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffbc00;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+.hadith-text {
+    font-size: 19px;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.8;
+    text-align: right;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.hadith-source {
+    margin-top: 10px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+    text-align: left;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+}  
     </style>
 </head>
 <body>
@@ -528,6 +574,12 @@
     <div id="follow-banner-container"></div>
     <div id="chat-container"></div>
     <div id="join-container"></div>
+
+    <div id="hadith-container">
+    <div class="hadith-label">📖 حديث شريف</div>
+    <div class="hadith-text" id="hadith-text">...</div>
+    <div class="hadith-source" id="hadith-source"></div>
+</div>
 
     <script>
         // تحديث الساعة بدون ثواني
@@ -565,7 +617,21 @@
                     document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
                 }
 
-        
+        if (msg.type === "hadith") {
+    const container = document.getElementById("hadith-container");
+    const textEl    = document.getElementById("hadith-text");
+    const sourceEl  = document.getElementById("hadith-source");
+    
+    // تلاشي للخارج
+    container.classList.add("hidden");
+    
+    setTimeout(() => {
+        textEl.innerText   = msg.data.text;
+        sourceEl.innerText = msg.data.narrator ? `— ${msg.data.narrator}` : "";
+        // تلاشي للداخل
+        container.classList.remove("hidden");
+    }, 800);
+}
             // ─── متغيرات نظام تعاقب الأذكار الذكي المطور ───
             const STEP_TARGET = 1000; // الهدف المتكرر
             
