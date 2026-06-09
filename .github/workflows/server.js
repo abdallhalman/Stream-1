@@ -5,7 +5,7 @@ const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
 
-const TIKTOK_USER = "alarabiya";
+const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -244,53 +244,3 @@ tiktok.on("gift", (data) => {
 
 // تشغيل ربط التيك توك الأصلي بعد دقيقتين كما كان في نظامك المستقر تماماً
 setTimeout(connectTikTok, 120000);
-// ── نظام الأحاديث التلقائي ──
-const https = require("https");
-
-const hadithKeywords = [
-  'الصلاة','الصبر','الذكر','التوبة','الرحمة',
-  'الإخلاص','الدعاء','الشكر','الجنة','الأخلاق',
-  'الصدق','الأمانة','البر','الرفق','التوكل',
-  'العلم','التقوى','الزكاة','الصيام','الإيمان'
-];
-
-function fetchAndSendHadith() {
-  const keyword = hadithKeywords[Math.floor(Math.random() * hadithKeywords.length)];
-  const url = `https://dorar.net/dorar_api.json?skey=${encodeURIComponent(keyword)}`;
-  
-  const options = {
-  hostname: 'dorar.net',
-  path: `/dorar_api.json?skey=${encodeURIComponent(keyword)}`,
-  method: 'GET',
-  headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    'Accept': 'application/json, text/javascript, */*'
-  }
-};
-
-https.get(options, (res) => {
-    let raw = "";
-    res.on("data", chunk => raw += chunk);
-    res.on("end", () => {
-      try {
-        const data = JSON.parse(raw);
-        if (data.ahadith && data.ahadith.length > 0) {
-          const pick = data.ahadith[Math.floor(Math.random() * Math.min(data.ahadith.length, 5))];
-          sendToOverlay("hadith", {
-            text: pick.hadith || pick.th || "",
-            narrator: pick.rawi || "",
-            source: pick.takhrij || ""
-          });
-          console.log(`Hadith sent: [${keyword}]`);
-        }
-      } catch(e) {
-        console.error("Hadith parse error:", e.message);
-      }
-    });
-  }).on("error", e => console.error("Hadith fetch error:", e.message));
-}
-
-setTimeout(() => {
-  fetchAndSendHadith();
-  setInterval(fetchAndSendHadith, 3 * 60 * 1000);
-}, 30000);
