@@ -258,7 +258,17 @@ function fetchAndSendHadith() {
   const keyword = hadithKeywords[Math.floor(Math.random() * hadithKeywords.length)];
   const url = `https://dorar.net/dorar_api.json?skey=${encodeURIComponent(keyword)}`;
   
-  https.get(url, (res) => {
+  const options = {
+  hostname: 'dorar.net',
+  path: `/dorar_api.json?skey=${encodeURIComponent(keyword)}`,
+  method: 'GET',
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'application/json, text/javascript, */*'
+  }
+};
+
+https.get(options, (res) => {
     let raw = "";
     res.on("data", chunk => raw += chunk);
     res.on("end", () => {
