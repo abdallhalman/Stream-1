@@ -674,9 +674,9 @@
                             <div class="action">انضم إلى البث الآن ✨</div>
                         </div>`;
                     joinContainer.prepend(joinDiv);
-                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 10000);
-                }
-
+                    while (joinContainer.children.length > 3) {
+                    joinContainer.removeChild(joinContainer.lastChild);
+                 }
                 // ── منطق المتابعة الذكي المتتالي ──
                 if (msg.type === "follow") {
                     const name   = msg.data.name || "متابع جديد";
