@@ -7,9 +7,9 @@ const fs = require("fs");
 
 const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
-const WIDTH  = 1920;
-const HEIGHT = 1080;
-const FPS    = 60;
+const WIDTH  = 1280;
+const HEIGHT = 720;
+const FPS    = 30;
 
 let totalLikes = 0;
 let lastJoinTime = 0;
@@ -116,9 +116,10 @@ async function startOverlayStream() {
      "-r", "30",
      "-preset", "ultrafast",
      "-tune", "zerolatency",
-     "-b:v", "6000k",
-     "-maxrate", "6000k",
-     "-bufsize", "12000k",
+     "-b:v", "2500k",
+     "-maxrate", "2500k",
+     "-bufsize", "5000k",
+     "-b:a", "128k",
      "-pix_fmt", "yuv420p",
      "-c:a", "aac",
      "-b:a", "192k",
