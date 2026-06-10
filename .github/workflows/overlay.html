@@ -326,13 +326,13 @@
     .chat-msg .username { 
     color: #ffbc00; 
     font-weight: 700; 
-    font-size: 18px; 
+    font-size: 16px; 
     display: inline; 
     font-family: 'IBM Plex Sans Arabic', sans-serif; /* 🍏 خط أبل المتناسق */
 } 
     .chat-msg .text { 
     color: rgba(255, 255, 255, 0.95); 
-    font-size: 18px; 
+    font-size: 16px; 
     word-break: break-word; 
     font-weight: 600; 
     display: inline; 
@@ -342,44 +342,38 @@
 
 
 
-        
-       /* ── صندوق الانضمامات المستقر ── */
-    #join-container {
-    position: absolute;
-    bottom: 30px;
-    left: 30px;
-    width: 800px;
-    height: 600px;
-    display: flex;
-    flex-direction: column-reverse;
-    overflow: hidden;
-    pointer-events: none;
-    z-index: 50;
-}
+        /* ── صندوق الانضمامات المستقر ── */
+        #join-container {
+            position: absolute;
+            bottom: 40px;
+            left: 30px;
+            width: 360px;
+            height: 350px;
+            display: flex;
+            flex-direction: column-reverse;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 50;
+        }
+        .join-notification {
+            background: rgba(20, 20, 30, 0.60);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 13px 16px;
+            border-radius: 18px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+            animation: slideInLeft 0.05s linear forwards, fadeOut 0.05s linear 5.5s forwards;
 
-.join-notification {
-    background: rgba(20, 20, 30, 0.60);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 22px 26px;
-    border-radius: 22px;
-    margin-top: 14px;
-    display: flex;
-    align-items: center;
-    gap: 22px;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.3);
-    animation: slideInLeft 0.05s linear forwards }
+        }
+        .join-notification .avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
+        .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 16px; }
+        .join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 13px; margin-top: 2px; font-weight: 600; }
 
-.join-notification .avatar { 
-    width: 135px; 
-    height: 135px; 
-    border-radius: 50%; 
-    border: 2px solid rgba(255, 255, 255, 0.4); 
-}
-
-.join-notification .name   { color: #ffffff; font-weight: 700; font-size: 56px; }
-.join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 22px; margin-top: 3px; font-weight: 600; }
     
         @keyframes slideInLeft  { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes slideInRight { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -455,7 +449,32 @@
             border-radius: 10px;
         }
 
-        /* فقاعات التسبيح محذوفة */
+        /* ─── 2. فقاعات التسبيح المتطايرة ─── */
+        .subhan-bubble {
+            position: absolute;
+            top: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 90;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            will-change: transform, opacity;
+            animation: bubbleFloatUp var(--duration) ease-out forwards;
+        
+            }
+
+        @keyframes bubbleFloatUp {
+            0% { transform: translate(var(--start-x), 0) scale(0.6); opacity: 0; }
+            15% { opacity: 0.95; }
+            100% { transform: translate(var(--target-x), var(--target-y)) scale(1.05); opacity: 0; }
+        }
 
         /* ─── 3. القلوب النيونية المتطايرة من الزاوية ─── */
         .heart-glow {
@@ -515,7 +534,7 @@
 
 <div id="milestone-banner" class="milestone-banner">
     <div class="milestone-content">
-        <h1 id="milestone-title">تم تحقيق الهدف! 🎉</h1>
+        <h1 id="milestone-title">كفووو! وصلنا إلى 1,000 تسبيحة! 🎉</h1>
     </div>
 </div>
 
@@ -620,12 +639,41 @@
                     subtxt.innerText = currentItem.sub;
                 }
 
+                // 3. إطلاق فقاعة التسبيح اللطيفة تحمل (الذكر الأساسي) وهي تتساقط للأسفل
+                const bubbleColors = [
+                    'rgba(255, 105, 180, 0.85)', /* وردي */
+                    'rgba(0, 206, 209, 0.85)',   /* فيروزي */
+                    'rgba(148, 0, 211, 0.85)',   /* بنفسجي */
+                    'rgba(255, 165, 0, 0.85)',   /* برتقالي ناعم */
+                    'rgba(57, 255, 20, 0.9)'     /* أخضر فسفوري */
+                ];
+                const randomColor = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'subhan-bubble';
+                bubble.innerText = `${currentItem.main}`; // تأخذ العنوان الأساسي الخفيف للفقاعات
+                bubble.style.background = randomColor;
+                bubble.style.border = `1.5px solid rgba(255,255,255,0.7)`;
+                
+                const bStartX = (Math.random() * 60 - 30) + 'px'; 
+                const bTargetX = (Math.random() * 180 - 90) + 'px'; 
+                const bTargetY = (Math.random() * 200 + 120) + 'px'; // سقوط ناعم لأسفل العداد
+                const bDuration = (Math.random() * 1.2 + 1.5) + 's';
+
+                bubble.style.setProperty('--start-x', bStartX);
+                bubble.style.setProperty('--target-x', bTargetX);
+                bubble.style.setProperty('--target-y', bTargetY);
+                bubble.style.setProperty('--duration', bDuration);
+
+                document.body.appendChild(bubble);
+                setTimeout(() => bubble.remove(), 2500);
+
                 // 4. تفعيل البنر الانفجاري عند اكتمال الـ 1000 والإعلان عن الانتقال للذكر الجديد
                 if (currentLikes === STEP_TARGET) {
                     const banner = document.getElementById("milestone-banner");
                     const bTitle = document.getElementById("milestone-title");
                     if (banner && bTitle) {
-                        bTitle.innerHTML = `شكراً لكم <span style="color:#39FF14;">(${currentItem.main})</span> 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${nextItem.main} 🌿</span>`;
+                        bTitle.innerHTML = `كفووو! تم اكتمال عداد <span style="color:#39FF14;">(${currentItem.main})</span> 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${nextItem.main} 🌿</span>`;
                         banner.classList.add("show");
                         
                         setTimeout(() => {
@@ -673,10 +721,9 @@
                             <div class="action">انضم إلى البث الآن ✨</div>
                         </div>`;
                     joinContainer.prepend(joinDiv);
-                    while (joinContainer.children.length > 3) {
-                    joinContainer.removeChild(joinContainer.lastChild);
-                 }
-                 }
+                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 7000);
+                }
+
                 // ── منطق المتابعة الذكي المتتالي ──
                 if (msg.type === "follow") {
                     const name   = msg.data.name || "متابع جديد";
