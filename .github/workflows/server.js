@@ -82,7 +82,7 @@ async function fetchBackground() {
 
 // جلب أول صورة فوراً ثم كل 45 ثانية
 fetchBackground();
-setInterval(fetchBackground, 45000);
+setInterval(fetchBackground, 90000);
 
 // تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
