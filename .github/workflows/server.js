@@ -104,6 +104,7 @@ async function startOverlayStream() {
     
     "-stream_loop", "-1",
     "-i", videoPath,
+    "-stream_loop", "-1",
     "-i", audioPath,
     
     "-filter_complex",
