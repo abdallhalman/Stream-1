@@ -39,7 +39,7 @@ const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png');
 const mainFramePath = path.join(__dirname, '../../overlay.png');
 const bgDir       = path.join(__dirname, '../../bg_library');  // مجلد مكتبة الصور
 const bgImagePath  = path.join(__dirname, '../../background.jpg'); // الصورة الحالية للـ FFmpeg
-const BG_MAX       = 100; // الحد الأقصى للمكتبة
+const BG_MAX       = 20; // الحد الأقصى للمكتبة
 
 // إنشاء مجلد المكتبة لو ما موجود
 if (!fs.existsSync(bgDir)) fs.mkdirSync(bgDir, { recursive: true });
