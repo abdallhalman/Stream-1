@@ -86,6 +86,8 @@ async function fetchBackground() {
 }
 
 // جلب أول صورة فوراً ثم كل 90 ثانية
+fetchBackground();
+setInterval(fetchBackground, 90000);
 
 // تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
@@ -161,7 +163,7 @@ async function startOverlayStream() {
     "-stream_loop", "-1","-i", audioPath,
     
     "-filter_complex",
-    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=disable,setsar=1,tpad=stop_mode=clone:stop_duration=2,` +
+    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
     `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
     `hue=h=${randHue}[bg_v];` +
     `[0:v]fps=30[overlay_v];` +
@@ -205,10 +207,7 @@ async function startOverlayStream() {
 }
 
 // تشغيل النظام الموحد الجديد تلقائياً وبأمان
-fetchBackground().then(() => {
-    setInterval(fetchBackground, 90000);
-    startOverlayStream();
-});
+startOverlayStream();
 // ==================== [نهاية نظام التشغيل الجديد المطور] ====================
 
 // ==================== [اتصال تيك توك والأحداث الأصلية كاملة ومطابقة 100%] ====================
