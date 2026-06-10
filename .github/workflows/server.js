@@ -87,7 +87,6 @@ async function fetchBackground() {
 
 // جلب أول صورة فوراً ثم كل 90 ثانية
 
-
 // تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
 if (fs.existsSync(mainFramePath)) fs.unlinkSync(mainFramePath);
@@ -178,8 +177,8 @@ async function startOverlayStream() {
     "-preset", "ultrafast",     // أخف بكثير من veryfast على الـ CPU
     "-tune", "zerolatency",
     "-b:v", "2500k",
-    "-maxrate", "2500k",
-    "-bufsize", "10000k",
+    "-maxrate", "3000k",
+    "-bufsize", "8000k",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
     "-b:a", "128k",
