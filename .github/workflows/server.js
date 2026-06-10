@@ -108,12 +108,12 @@ async function startOverlayStream() {
     "-i", audioPath,
     
     "-filter_complex",
-    `[1:v]fps=60,scale=${WIDTH}:${HEIGHT}[bg_v];` +
+    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
     `[bg_v][0:v]overlay=0:0:shortest=1[out_v]`,
      "-map", "[out_v]",
      "-map", "2:a",
      "-c:v", "libx264",
-     "-r", "60",
+     "-r", "30",
      "-preset", "ultrafast",
      "-tune", "zerolatency",
      "-b:v", "6000k",
