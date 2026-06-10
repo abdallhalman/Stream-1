@@ -368,7 +368,6 @@
     align-items: center;
     gap: 42px;
     box-shadow: 0 6px 24px rgba(0,0,0,0.3);
-    animation: slideInLeft 0.15s linear forwards, fadeOut 0.15s linear 180s forwards;
 }
 
 .join-notification .avatar { 
@@ -673,9 +672,11 @@
                             <div class="action">انضم إلى البث الآن ✨</div>
                         </div>`;
                     joinContainer.prepend(joinDiv);
-                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 7000);
+                    if (joinContainer.children.length > MAX) {
+                    const first = joinContainer.firstChild; 
+                    first.style.animation = "pushOut 0.35s ease forwards"; 
+                    setTimeout(() => { if (first.parentNode) first.remove(); }, 350);
                 }
-
                 // ── منطق المتابعة الذكي المتتالي ──
                 if (msg.type === "follow") {
                     const name   = msg.data.name || "متابع جديد";
