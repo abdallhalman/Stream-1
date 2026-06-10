@@ -176,9 +176,9 @@ async function startOverlayStream() {
     "-keyint_min", "60",
     "-preset", "ultrafast",     // أخف بكثير من veryfast على الـ CPU
     "-tune", "zerolatency",
-    "-b:v", "2500k",
-    "-maxrate", "3000k",
-    "-bufsize", "8000k",
+    "-b:v", "1500k",
+    "-maxrate", "1500k",
+    "-bufsize", "3000k",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
     "-b:a", "128k",
