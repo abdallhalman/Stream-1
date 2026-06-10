@@ -97,29 +97,32 @@ async function startOverlayStream() {
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
     const ffmpegArgs = [
-    "-re",                      // <--- لضبط سرعة القراءة
+    "-re",
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
     
-    "-stream_loop", "-1",
-    "-i", videoPath,
-    "-i", audioPath,
+    "-stream_loop", "-1","-i", videoPath,
+    "-stream_loop", "-1","-i", audioPath,
     
     "-filter_complex",
     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
     `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
-    `hue=h=${randHue},` +
-    `noise=alls=${randNoise}:allf=t[bg_v];` +
+    `hue=h=${randHue}[bg_v];` +
     `[0:v]fps=30[overlay_v];` +
     `[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
     
     "-map", "[out_v]",
     "-map", "2:a",
     "-c:v", "libx264",
-    "-r", "30",                 // <--- لضبط سرعة البث النهائي
-    "-preset", "veryfast",
+    "-r", "30", // <--- لضبط سرعة البث النهائي
+    "-g", "60",
+    "-keyint_min", "60",
+    "-preset", "ultrafast",     // أخف بكثير من veryfast على الـ CPU
     "-tune", "zerolatency",
+    "-b:v", "2500k",            // بتريت ثابت بدل الـ CRF لضمان الاستقرار
+    "-maxrate", "3000k",
+    "-bufsize", "8000k",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
     "-b:a", "128k",
