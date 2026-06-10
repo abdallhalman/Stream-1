@@ -345,42 +345,36 @@
         
        /* ── صندوق الانضمامات المستقر ── */
         #join-container {
-    position: absolute;
-    bottom: 40px;
-    left: 30px;
-    width: 800px;
-    height: 630px;
-    display: flex;
-    flex-direction: column-reverse;
-    overflow: hidden;
-    pointer-events: none;
-    z-index: 50;
-}
+            position: absolute;
+            bottom: 40px;
+            left: 30px;
+            width: 360px;
+            height: 350px;
+            display: flex;
+            flex-direction: column-reverse;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 50;
+        }
+        .join-notification {
+            background: rgba(20, 20, 30, 0.60);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(60, 150, 255, 0.80);
+            padding: 13px 16px;
+            border-radius: 18px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 6px 24px rgba(0, 60, 180, 0.60);
+            animation: slideInLeft 0.10s linear forwards, fadeOut 0.10s linear 10s forwards;
 
-.join-notification {
-    background: rgba(20, 20, 30, 0.60);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 28px 32px;
-    border-radius: 24px;
-    margin-top: 14px;
-    display: flex;
-    align-items: center;
-    gap: 35px;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.3);
-    animation: slideInLeft 0.05s linear forwards, fadeOut 0.05s linear 5.5s forwards;
-}
+        }
+        .join-notification .avatar { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(60, 150, 255, 0.80); }
+        .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 18px; }
+        .join-notification .action { color: rgba(60, 150, 255, 0.80); font-size: 13px; margin-top: 2px; font-weight: 600; }
 
-.join-notification .avatar { 
-    width: 135px; 
-    height: 135px; 
-    border-radius: 50%; 
-    border: 2px solid rgba(255, 255, 255, 0.4); 
-}
-
-.join-notification .name   { color: #ffffff; font-weight: 700; font-size: 56px; }
-.join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 22px; margin-top: 6px; font-weight: 600; }
     
         @keyframes slideInLeft  { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes slideInRight { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -674,7 +668,7 @@
                             <div class="action">انضم إلى البث الآن ✨</div>
                         </div>`;
                     joinContainer.prepend(joinDiv);
-                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 70000);
+                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 7000);
                 }
 
                 // ── منطق المتابعة الذكي المتتالي ──

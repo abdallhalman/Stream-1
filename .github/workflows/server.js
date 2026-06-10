@@ -108,13 +108,13 @@ async function startOverlayStream() {
     "-filter_complex",
     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
     `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
-    `hue=h=${randHue}[bg_v];` +
+    `hue=h=${randHue},` +
+    `noise=alls=${randNoise}:allf=t[bg_v];` +
     `[0:v]fps=30[overlay_v];` +
     `[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
     
     "-map", "[out_v]",
     "-map", "2:a",
-    "-af", `asetrate=44100*${(0.95 + Math.random() * 0.10).toFixed(4)},atempo=${(0.95 + Math.random() * 0.10).toFixed(4)},dynaudnorm=p=0.95:s=5`,
     "-c:v", "libx264",
     "-r", "30", // <--- لضبط سرعة البث النهائي
     "-g", "60",
@@ -122,8 +122,8 @@ async function startOverlayStream() {
     "-preset", "ultrafast",     // أخف بكثير من veryfast على الـ CPU
     "-tune", "zerolatency",
     "-b:v", "2500k",            // بتريت ثابت بدل الـ CRF لضمان الاستقرار
-    "-maxrate", "3000k",
-    "-bufsize", "8000k",
+    "-maxrate", "2500k",
+    "-bufsize", "5000k",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
     "-b:a", "128k",
