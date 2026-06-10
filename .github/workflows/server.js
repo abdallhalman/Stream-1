@@ -37,9 +37,14 @@ const https       = require('https');
 const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
 const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png');
 const mainFramePath = path.join(__dirname, '../../overlay.png');
-const bgImagePath  = path.join(__dirname, '../../background.jpg'); // خلفية Unsplash
+const bgDir       = path.join(__dirname, '../../bg_library');  // مجلد مكتبة الصور
+const bgImagePath  = path.join(__dirname, '../../background.jpg'); // الصورة الحالية للـ FFmpeg
+const BG_MAX       = 100; // الحد الأقصى للمكتبة
 
-// ── نظام تحديث الخلفية من Unsplash ──
+// إنشاء مجلد المكتبة لو ما موجود
+if (!fs.existsSync(bgDir)) fs.mkdirSync(bgDir, { recursive: true });
+
+// ── نظام تحديث الخلفية من Unsplash مع مكتبة FIFO ──
 const UNSPLASH_QUERIES = [
     'nature,forest,mountains',
     'mosque,islamic,architecture',
@@ -50,37 +55,81 @@ const UNSPLASH_QUERIES = [
 ];
 let currentQueryIndex = 0;
 
+// اختيار صورة عشوائية من المكتبة المحلية
+function pickRandomFromLibrary() {
+    const files = fs.readdirSync(bgDir).filter(f => f.endsWith('.jpg'));
+    if (files.length === 0) return null;
+    const chosen = files[Math.floor(Math.random() * files.length)];
+    return path.join(bgDir, chosen);
+}
+
+// حذف الصور القديمة لو تجاوزت الحد
+function enforceLibraryLimit() {
+    const files = fs.readdirSync(bgDir)
+        .filter(f => f.endsWith('.jpg'))
+        .map(f => ({ name: f, time: fs.statSync(path.join(bgDir, f)).mtimeMs }))
+        .sort((a, b) => a.time - b.time); // الأقدم أولاً
+
+    while (files.length > BG_MAX) {
+        const oldest = files.shift();
+        fs.unlinkSync(path.join(bgDir, oldest.name));
+        console.log(`[BG] Deleted old image: ${oldest.name}`);
+    }
+}
+
 async function fetchBackground() {
     try {
         const query = UNSPLASH_QUERIES[currentQueryIndex % UNSPLASH_QUERIES.length];
         currentQueryIndex++;
         const apiUrl = `https://api.unsplash.com/photos/random?query=${query}&orientation=landscape&content_filter=high&client_id=${UNSPLASH_KEY}`;
-        
+
         const res = await fetch(apiUrl);
-        if (!res.ok) { console.error('Unsplash API error:', res.status); return; }
-        
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+
         const data = await res.json();
         const imageUrl = data?.urls?.regular;
-        if (!imageUrl) { console.error('No image URL from Unsplash'); return; }
+        if (!imageUrl) throw new Error('No image URL');
 
-        // تحميل الصورة وحفظها
-        const tmpBg = bgImagePath + '.tmp';
+        // اسم فريد للصورة
+        const fileName = `bg_${Date.now()}.jpg`;
+        const savePath = path.join(bgDir, fileName);
+        const tmpPath  = savePath + '.tmp';
+
         await new Promise((resolve, reject) => {
-            const file = fs.createWriteStream(tmpBg);
+            const file = fs.createWriteStream(tmpPath);
             https.get(imageUrl, response => {
                 response.pipe(file);
                 file.on('finish', () => { file.close(); resolve(); });
             }).on('error', reject);
         });
 
-        fs.renameSync(tmpBg, bgImagePath);
-        console.log(`[BG] Updated background: ${query} | ${data.links?.html || ''}`);
+        // حفظ في المكتبة
+        fs.renameSync(tmpPath, savePath);
+
+        // تحديث الصورة الحالية للـ FFmpeg
+        fs.copyFileSync(savePath, bgImagePath);
+
+        // تطبيق حد المكتبة
+        enforceLibraryLimit();
+
+        console.log(`[BG] New image saved: ${fileName} | query: ${query} | library: ${fs.readdirSync(bgDir).length} imgs`);
+
     } catch (err) {
-        console.error('[BG] Failed to fetch background:', err.message);
+        console.error('[BG] Failed to fetch:', err.message);
+
+        // استخدام صورة عشوائية من المكتبة المحلية
+        const fallback = pickRandomFromLibrary();
+        if (fallback) {
+            fs.copyFileSync(fallback, bgImagePath);
+            console.log(`[BG] Using fallback from library: ${path.basename(fallback)}`);
+        } else {
+            console.log('[BG] No fallback available, retrying in 15s...');
+            setTimeout(fetchBackground, 15000);
+        }
     }
 }
 
-// جلب أول صورة فوراً ثم كل 45 ثانية
+// جلب أول صورة فوراً ثم كل 90 ثانية
 fetchBackground();
 setInterval(fetchBackground, 90000);
 
