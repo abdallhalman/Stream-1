@@ -199,6 +199,7 @@ async function startOverlayStream() {
     "-i", mainFramePath,
 
     // الخلفية: صورة Unsplash تتجدد كل 45 ثانية
+    "-framerate", "30",
     "-loop", "1",
     "-f", "image2",
     "-i", bgImagePath,
