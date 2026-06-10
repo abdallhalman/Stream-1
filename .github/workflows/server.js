@@ -7,6 +7,7 @@ const fs = require("fs");
 
 const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
+const UNSPLASH_KEY = process.env.UNSPLASH_KEY; // vAKKD8IvwwDtCQh_DR7CTaf1IZpjDaj...
 const WIDTH  = 1280;
 const HEIGHT = 720;
 const FPS    = 30;
@@ -32,10 +33,56 @@ function sendToOverlay(type, data) {
 }
 
 // ==================== [بداية نظام التشغيل الموحد والمطور لكسر البصمة] ====================
-const videoPath   = path.join(__dirname, '../../video.mp4');
+const https       = require('https');
 const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
-const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png'); // الملف المؤقت المعزول للـ Puppeteer
-const mainFramePath = path.join(__dirname, '../../overlay.png');     // الملف المستقر الذي يقرأه FFmpeg
+const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png');
+const mainFramePath = path.join(__dirname, '../../overlay.png');
+const bgImagePath  = path.join(__dirname, '../../background.jpg'); // خلفية Unsplash
+
+// ── نظام تحديث الخلفية من Unsplash ──
+const UNSPLASH_QUERIES = [
+    'nature,forest,mountains',
+    'mosque,islamic,architecture',
+    'sky,clouds,sunset',
+    'river,waterfall,lake',
+    'desert,sand,dunes',
+    'night,stars,moon'
+];
+let currentQueryIndex = 0;
+
+async function fetchBackground() {
+    try {
+        const query = UNSPLASH_QUERIES[currentQueryIndex % UNSPLASH_QUERIES.length];
+        currentQueryIndex++;
+        const apiUrl = `https://api.unsplash.com/photos/random?query=${query}&orientation=landscape&content_filter=high&client_id=${UNSPLASH_KEY}`;
+        
+        const res = await fetch(apiUrl);
+        if (!res.ok) { console.error('Unsplash API error:', res.status); return; }
+        
+        const data = await res.json();
+        const imageUrl = data?.urls?.regular;
+        if (!imageUrl) { console.error('No image URL from Unsplash'); return; }
+
+        // تحميل الصورة وحفظها
+        const tmpBg = bgImagePath + '.tmp';
+        await new Promise((resolve, reject) => {
+            const file = fs.createWriteStream(tmpBg);
+            https.get(imageUrl, response => {
+                response.pipe(file);
+                file.on('finish', () => { file.close(); resolve(); });
+            }).on('error', reject);
+        });
+
+        fs.renameSync(tmpBg, bgImagePath);
+        console.log(`[BG] Updated background: ${query} | ${data.links?.html || ''}`);
+    } catch (err) {
+        console.error('[BG] Failed to fetch background:', err.message);
+    }
+}
+
+// جلب أول صورة فوراً ثم كل 45 ثانية
+fetchBackground();
+setInterval(fetchBackground, 45000);
 
 // تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
@@ -101,8 +148,12 @@ async function startOverlayStream() {
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
-    
-    "-stream_loop", "-1","-i", videoPath,
+
+    // الخلفية: صورة Unsplash تتجدد كل 45 ثانية
+    "-loop", "1",
+    "-f", "image2",
+    "-i", bgImagePath,
+
     "-stream_loop", "-1","-i", audioPath,
     
     "-filter_complex",
