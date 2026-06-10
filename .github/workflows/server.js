@@ -37,45 +37,19 @@ const https       = require('https');
 const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
 const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png');
 const mainFramePath = path.join(__dirname, '../../overlay.png');
-const bgDir       = path.join(__dirname, '../../bg_library');  // مجلد مكتبة الصور
 const bgImagePath  = path.join(__dirname, '../../background.jpg'); // الصورة الحالية للـ FFmpeg
-const BG_MAX       = 20; // الحد الأقصى للمكتبة
+const bgTmpPath    = path.join(__dirname, '../../background.tmp'); // الملف المؤقت للـ Atomic Rename
 
-// إنشاء مجلد المكتبة لو ما موجود
-if (!fs.existsSync(bgDir)) fs.mkdirSync(bgDir, { recursive: true });
-
-// ── نظام تحديث الخلفية من Unsplash مع مكتبة FIFO ──
+// ── نظام تحديث الخلفية من Unsplash بـ Atomic Rename ──
 const UNSPLASH_QUERIES = [
-    'nature,forest,mountains',
-    'mosque,islamic,architecture',
-    'sky,clouds,sunset',
-    'river,waterfall,lake',
-    'desert,sand,dunes',
-    'night,stars,moon'
+    'forest,trees,green',
+    'mountains,landscape,sky',
+    'ocean,waves,beach',
+    'river,waterfall,nature',
+    'desert,sand,sunset',
+    'clouds,sky,sunrise'
 ];
 let currentQueryIndex = 0;
-
-// اختيار صورة عشوائية من المكتبة المحلية
-function pickRandomFromLibrary() {
-    const files = fs.readdirSync(bgDir).filter(f => f.endsWith('.jpg'));
-    if (files.length === 0) return null;
-    const chosen = files[Math.floor(Math.random() * files.length)];
-    return path.join(bgDir, chosen);
-}
-
-// حذف الصور القديمة لو تجاوزت الحد
-function enforceLibraryLimit() {
-    const files = fs.readdirSync(bgDir)
-        .filter(f => f.endsWith('.jpg'))
-        .map(f => ({ name: f, time: fs.statSync(path.join(bgDir, f)).mtimeMs }))
-        .sort((a, b) => a.time - b.time); // الأقدم أولاً
-
-    while (files.length > BG_MAX) {
-        const oldest = files.shift();
-        fs.unlinkSync(path.join(bgDir, oldest.name));
-        console.log(`[BG] Deleted old image: ${oldest.name}`);
-    }
-}
 
 async function fetchBackground() {
     try {
@@ -90,42 +64,24 @@ async function fetchBackground() {
         const imageUrl = data?.urls?.regular;
         if (!imageUrl) throw new Error('No image URL');
 
-        // اسم فريد للصورة
-        const fileName = `bg_${Date.now()}.jpg`;
-        const savePath = path.join(bgDir, fileName);
-        const tmpPath  = savePath + '.tmp';
-
+        // 1. تحميل الصورة في ملف مؤقت معزول عن FFmpeg
         await new Promise((resolve, reject) => {
-            const file = fs.createWriteStream(tmpPath);
+            const file = fs.createWriteStream(bgTmpPath);
             https.get(imageUrl, response => {
                 response.pipe(file);
                 file.on('finish', () => { file.close(); resolve(); });
             }).on('error', reject);
         });
 
-        // حفظ في المكتبة
-        fs.renameSync(tmpPath, savePath);
-
-        // تحديث الصورة الحالية للـ FFmpeg
-        fs.copyFileSync(savePath, bgImagePath);
-
-        // تطبيق حد المكتبة
-        enforceLibraryLimit();
-
-        console.log(`[BG] New image saved: ${fileName} | query: ${query} | library: ${fs.readdirSync(bgDir).length} imgs`);
+        // 2. Atomic Rename — فوري، FFmpeg لا يرى لحظة فراغ
+        fs.renameSync(bgTmpPath, bgImagePath);
+        console.log(`[BG] Updated: ${query}`);
 
     } catch (err) {
-        console.error('[BG] Failed to fetch:', err.message);
-
-        // استخدام صورة عشوائية من المكتبة المحلية
-        const fallback = pickRandomFromLibrary();
-        if (fallback) {
-            fs.copyFileSync(fallback, bgImagePath);
-            console.log(`[BG] Using fallback from library: ${path.basename(fallback)}`);
-        } else {
-            console.log('[BG] No fallback available, retrying in 15s...');
-            setTimeout(fetchBackground, 15000);
-        }
+        // لو فشل: background.jpg يبقى كما هو — البث مستمر
+        console.error('[BG] Failed, keeping current image:', err.message);
+        // تنظيف الملف المؤقت لو موجود
+        if (fs.existsSync(bgTmpPath)) fs.unlinkSync(bgTmpPath);
     }
 }
 
