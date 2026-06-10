@@ -81,7 +81,7 @@ async function startOverlayStream() {
             console.error("Error in capture loop:", err.message);
         }
         // الاستمرار في التقاط الفريم التالي بناءً على السرعة المتاحة للمتصفح
-        setTimeout(captureLoop, 1000 / 3); // 3fps كافي للـ overlay ويخفف الضغط
+        setTimeout(captureLoop, 1000 / FPS);
     }
 
     // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
@@ -97,13 +97,14 @@ async function startOverlayStream() {
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
     const ffmpegArgs = [
-    "-re",
+    "-re",                      // <--- لضبط سرعة القراءة
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
     
-    "-stream_loop", "-1","-i", videoPath,
-    "-stream_loop", "-1","-i", audioPath,
+    "-stream_loop", "-1",
+    "-i", videoPath,
+    "-i", audioPath,
     
     "-filter_complex",
     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT},` +
@@ -116,14 +117,9 @@ async function startOverlayStream() {
     "-map", "[out_v]",
     "-map", "2:a",
     "-c:v", "libx264",
-    "-r", "30", // <--- لضبط سرعة البث النهائي
-    "-g", "60",
-    "-keyint_min", "60",
-    "-preset", "ultrafast",     // أخف بكثير من veryfast على الـ CPU
+    "-r", "30",                 // <--- لضبط سرعة البث النهائي
+    "-preset", "veryfast",
     "-tune", "zerolatency",
-    "-b:v", "2500k",            // بتريت ثابت بدل الـ CRF لضمان الاستقرار
-    "-maxrate", "2500k",
-    "-bufsize", "5000k",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
     "-b:a", "128k",
@@ -142,11 +138,10 @@ async function startOverlayStream() {
     });
 
     ffmpegProcess.on("close", (code) => {
-    console.log(`FFmpeg process exited with code ${code}`);
-    browser.close();
-    process.exit(code);
-});
-    
+        console.log(`FFmpeg process exited with code ${code}`);
+        browser.close();
+        process.exit(code);
+    });
 }
 
 // تشغيل النظام الموحد الجديد تلقائياً وبأمان
