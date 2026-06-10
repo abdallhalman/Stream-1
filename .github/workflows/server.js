@@ -108,13 +108,8 @@ async function startOverlayStream() {
     "-i", audioPath,
     
     "-filter_complex",
-    `[1:v]fps=60,scale=${WIDTH}:${HEIGHT},` +
-    `eq=brightness=${randBrightness}:contrast=${randContrast}:saturation=${randSaturation},` +
-    `hue=h=${randHue},` +
-    `noise=alls=${randNoise}:allf=t[bg_v];` +
-    `[0:v]fps=60[overlay_v];` +
-    `[bg_v][overlay_v]overlay=0:0:shortest=1[out_v]`,
-    
+    `[1:v]fps=60,scale=${WIDTH}:${HEIGHT}[bg_v];` +
+    `[bg_v][0:v]overlay=0:0:shortest=1[out_v]`,
      "-map", "[out_v]",
      "-map", "2:a",
      "-c:v", "libx264",
