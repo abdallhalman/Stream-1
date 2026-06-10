@@ -7,7 +7,6 @@ const fs = require("fs");
 
 const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
-const UNSPLASH_KEY = process.env.UNSPLASH_KEY; // vAKKD8IvwwDtCQh_DR7CTaf1IZpjDaj...
 const WIDTH  = 1280;
 const HEIGHT = 720;
 const FPS    = 30;
@@ -33,61 +32,10 @@ function sendToOverlay(type, data) {
 }
 
 // ==================== [بداية نظام التشغيل الموحد والمطور لكسر البصمة] ====================
-const https       = require('https');
+const videoPath   = path.join(__dirname, '../../video.mp4');
 const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
-const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png');
-const mainFramePath = path.join(__dirname, '../../overlay.png');
-const bgImagePath  = path.join(__dirname, '../../background.jpg'); // الصورة الحالية للـ FFmpeg
-const bgTmpPath    = path.join(__dirname, '../../background.tmp'); // الملف المؤقت للـ Atomic Rename
-
-// ── نظام تحديث الخلفية من Unsplash بـ Atomic Rename ──
-const UNSPLASH_QUERIES = [
-    'forest,trees,green',
-    'mountains,landscape,sky',
-    'ocean,waves,beach',
-    'river,waterfall,nature',
-    'desert,sand,sunset',
-    'clouds,sky,sunrise'
-];
-let currentQueryIndex = 0;
-
-async function fetchBackground() {
-    try {
-        const query = UNSPLASH_QUERIES[currentQueryIndex % UNSPLASH_QUERIES.length];
-        currentQueryIndex++;
-        const apiUrl = `https://api.unsplash.com/photos/random?query=${query}&orientation=landscape&content_filter=high&client_id=${UNSPLASH_KEY}`;
-
-        const res = await fetch(apiUrl);
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-
-        const data = await res.json();
-        const imageUrl = data?.urls?.regular;
-        if (!imageUrl) throw new Error('No image URL');
-
-        // 1. تحميل الصورة في ملف مؤقت معزول عن FFmpeg
-        await new Promise((resolve, reject) => {
-            const file = fs.createWriteStream(bgTmpPath);
-            https.get(imageUrl, response => {
-                response.pipe(file);
-                file.on('finish', () => { file.close(); resolve(); });
-            }).on('error', reject);
-        });
-
-        // 2. Atomic Rename — فوري، FFmpeg لا يرى لحظة فراغ
-        fs.renameSync(bgTmpPath, bgImagePath);
-        console.log(`[BG] Updated: ${query}`);
-
-    } catch (err) {
-        // لو فشل: background.jpg يبقى كما هو — البث مستمر
-        console.error('[BG] Failed, keeping current image:', err.message);
-        // تنظيف الملف المؤقت لو موجود
-        if (fs.existsSync(bgTmpPath)) fs.unlinkSync(bgTmpPath);
-    }
-}
-
-// جلب أول صورة فوراً ثم كل 90 ثانية
-fetchBackground();
-setInterval(fetchBackground, 90000);
+const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png'); // الملف المؤقت المعزول للـ Puppeteer
+const mainFramePath = path.join(__dirname, '../../overlay.png');     // الملف المستقر الذي يقرأه FFmpeg
 
 // تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
@@ -153,13 +101,8 @@ async function startOverlayStream() {
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
-
-    // الخلفية: صورة Unsplash تتجدد كل 45 ثانية
-    "-framerate", "30",
-    "-loop", "1",
-    "-f", "image2",
-    "-i", bgImagePath,
-
+    
+    "-stream_loop", "-1","-i", videoPath,
     "-stream_loop", "-1","-i", audioPath,
     
     "-filter_complex",
@@ -178,9 +121,9 @@ async function startOverlayStream() {
     "-keyint_min", "60",
     "-preset", "ultrafast",     // أخف بكثير من veryfast على الـ CPU
     "-tune", "zerolatency",
-    "-b:v", "1500k",
-    "-maxrate", "1500k",
-    "-bufsize", "3000k",
+    "-b:v", "2500k",            // بتريت ثابت بدل الـ CRF لضمان الاستقرار
+    "-maxrate", "3000k",
+    "-bufsize", "8000k",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
     "-b:a", "128k",

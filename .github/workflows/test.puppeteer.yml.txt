@@ -1,0 +1,57 @@
+name: test.puppeteer
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stream:
+    runs-on: self-hosted
+    timeout-minutes: 2880
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg \
+            fonts-noto-color-emoji \
+            curl \
+            libgbm1 \
+            libasound2 \
+            libnss3 \
+            libxss1 \
+            libgtk-3-0 \
+            libatk-bridge2.0-0 \
+            libgdk-pixbuf2.0-0
+
+      - name: Install Python tools
+        run: pip install gdown --upgrade --force-reinstall
+        
+      - name: Install Node tools
+        run: npm install tiktok-live-connector puppeteer ws
+
+      - name: Download audio files
+        run: |
+          mkdir -p downloads
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio10.mp3" -o downloads/audio1.mp3
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio11.mp3" -o downloads/audio2.mp3
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio12.mp3" -o downloads/audio3.mp3
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio13.mp3" -o downloads/audio4.mp3
+          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio14.mp3" -o downloads/audio5.mp3          
+     
+      - name: Download Video
+        run: curl -L -o video.mp4 "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/video.mp4"
+    
+      - name: Create playlist and merge
+        run: |
+          ls downloads/audio*.mp3 | shuf > all_shuffled.txt
+          awk '{print "file \047" $0 "\047"}' all_shuffled.txt > selected_list.txt
+          ffmpeg -f concat -safe 0 -i selected_list.txt -c copy merged_audio.mp3 -y
+          rm -f all_shuffled.txt selected_list.txt
+
+      - name: Run Puppeteer Stream Server
+        env:
+          STREAM_KEY: ${{ secrets.STREAM_KEY }}
+        run: node .github/workflows/server.js
