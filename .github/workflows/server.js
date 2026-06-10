@@ -86,8 +86,7 @@ async function fetchBackground() {
 }
 
 // جلب أول صورة فوراً ثم كل 90 ثانية
-fetchBackground();
-setInterval(fetchBackground, 90000);
+
 
 // تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
@@ -208,7 +207,10 @@ async function startOverlayStream() {
 }
 
 // تشغيل النظام الموحد الجديد تلقائياً وبأمان
-startOverlayStream();
+fetchBackground().then(() => {
+    setInterval(fetchBackground, 90000);
+    startOverlayStream();
+});
 // ==================== [نهاية نظام التشغيل الجديد المطور] ====================
 
 // ==================== [اتصال تيك توك والأحداث الأصلية كاملة ومطابقة 100%] ====================
