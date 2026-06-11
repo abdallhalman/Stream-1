@@ -170,7 +170,22 @@ function connectTikTok() {
     tiktok = new WebcastPushConnection(TIKTOK_USER, {
         enableExtendedGiftInfo: true
     });
-
+function handleComment(data) {
+    const now = Date.now();
+    if (now - lastCommentTime >= EVENT_THROTTLE_MS) {
+        const text = data.comment || data.text || "";
+        if (text) {
+            sendToOverlay("comment", {
+                name: data.nickname || data.uniqueId,
+                text: text.replace(/\[heart\]/g, "❤️"),
+                avatar: data.profilePictureUrl,
+                badges: data.badges || []
+            });
+            lastCommentTime = now;
+        }
+    }
+}
+    
     registerTikTokEvents();
 
     tiktok.connect()
