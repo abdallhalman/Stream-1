@@ -243,4 +243,4 @@ function registerTikTokEvents() {
     });
 }
 
-setTimeout(connectTikTok, 120000);
+setTimeout(connectTikTok, 60000);
