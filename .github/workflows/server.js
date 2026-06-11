@@ -150,6 +150,7 @@ startOverlayStream();
 let tiktok = new WebcastPushConnection(TIKTOK_USER, {
     apiKey: process.env.EULER_API_KEY
 });
+console.log("EULER_API_KEY:", process.env.EULER_API_KEY ? "loaded" : "NOT FOUND");
 let tiktokRetries = 0;
 const MAX_RETRIES = 5;
 
