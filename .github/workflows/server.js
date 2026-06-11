@@ -170,11 +170,6 @@ function handleComment(data) {
 }
 
 function connectTikTok() {
-    if (tiktok) {
-        try { tiktok.disconnect(); } catch (_) {}
-        tiktok = null;
-    }
-
     if (tiktokRetries >= MAX_RETRIES) {
         console.error("TikTok: reached max retries, giving up.");
         return;
@@ -182,9 +177,6 @@ function connectTikTok() {
 
     tiktokRetries++;
     console.log(`TikTok: connecting attempt ${tiktokRetries}...`);
-
-
-    registerTikTokEvents();
 
     tiktok.connect()
         .then(() => {
@@ -197,63 +189,61 @@ function connectTikTok() {
         });
 }
 
-function registerTikTokEvents() {
-    tiktok.on("disconnected", () => {
-        console.log("TikTok disconnected, retrying in 20s...");
-        setTimeout(connectTikTok, 20000);
-    });
+tiktok.on("disconnected", () => {
+    console.log("TikTok disconnected, retrying in 20s...");
+    setTimeout(connectTikTok, 20000);
+});
 
-    tiktok.on("roomUser", data => {
-        if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount);
-    });
+tiktok.on("roomUser", data => {
+    if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount);
+});
 
-    tiktok.on("member", data => {
-        const now = Date.now();
-        if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
-            if (data?.nickname || data?.uniqueId) {
-                sendToOverlay("join", {
-                    name: data.nickname || data.uniqueId,
-                    avatar: data.profilePictureUrl
-                });
-                lastJoinTime = now;
-            }
-        }
-    });
-
-    tiktok.on("like", data => {
-        if (data.likeCount > 0) {
-            totalLikes += Number(data.likeCount);
-            sendToOverlay("like", totalLikes);
-        }
-    });
-
-    tiktok.on("comment", handleComment);
-    tiktok.on("chat", handleComment);
-
-    tiktok.on("follow", data => {
-        sendToOverlay("follow", {
-            name: data.nickname || data.uniqueId,
-            avatar: data.profilePictureUrl,
-            followerCount: data.followCount || 0
-        });
-    });
-
-    tiktok.on("gift", (data) => {
-        if (data.repeatEnd || data.repeatCount === 1) {
-            let officialGiftIcon = data.giftPictureUrl
-                || data.image?.url_list?.[0]
-                || data.extendedGiftInfo?.image?.url_list?.[0]
-                || "";
-
-            sendToOverlay("gift", {
+tiktok.on("member", data => {
+    const now = Date.now();
+    if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
+        if (data?.nickname || data?.uniqueId) {
+            sendToOverlay("join", {
                 name: data.nickname || data.uniqueId,
-                giftName: data.giftName,
-                count: data.repeatCount || 1,
-                avatar: data.profilePictureUrl,
-                giftIcon: officialGiftIcon
+                avatar: data.profilePictureUrl
             });
+            lastJoinTime = now;
         }
+    }
+});
+
+tiktok.on("like", data => {
+    if (data.likeCount > 0) {
+        totalLikes += Number(data.likeCount);
+        sendToOverlay("like", totalLikes);
+    }
+});
+
+tiktok.on("comment", handleComment);
+tiktok.on("chat", handleComment);
+
+tiktok.on("follow", data => {
+    sendToOverlay("follow", {
+        name: data.nickname || data.uniqueId,
+        avatar: data.profilePictureUrl,
+        followerCount: data.followCount || 0
     });
-}
+});
+
+tiktok.on("gift", (data) => {
+    if (data.repeatEnd || data.repeatCount === 1) {
+        let officialGiftIcon = data.giftPictureUrl
+            || data.image?.url_list?.[0]
+            || data.extendedGiftInfo?.image?.url_list?.[0]
+            || "";
+
+        sendToOverlay("gift", {
+            name: data.nickname || data.uniqueId,
+            giftName: data.giftName,
+            count: data.repeatCount || 1,
+            avatar: data.profilePictureUrl,
+            giftIcon: officialGiftIcon
+        });
+    }
+});
 
 setTimeout(connectTikTok, 60000);
