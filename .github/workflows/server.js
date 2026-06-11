@@ -147,7 +147,9 @@ async function startOverlayStream() {
 // تشغيل النظام الموحد الجديد تلقائياً وبأمان
 startOverlayStream();
 // ==================== [نهاية نظام التشغيل الجديد المطور] ====================
-let tiktok = null;
+let tiktok = new WebcastPushConnection(TIKTOK_USER, {
+    apiKey: process.env.EULER_API_KEY
+});
 let tiktokRetries = 0;
 const MAX_RETRIES = 5;
 
@@ -181,9 +183,6 @@ function connectTikTok() {
     tiktokRetries++;
     console.log(`TikTok: connecting attempt ${tiktokRetries}...`);
 
-    tiktok = new WebcastPushConnection(TIKTOK_USER, {
-    apiKey: process.env.EULER_API_KEY
-});
 
     registerTikTokEvents();
 
