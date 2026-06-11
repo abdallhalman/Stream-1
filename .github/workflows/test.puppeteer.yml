@@ -52,6 +52,7 @@ jobs:
           rm -f all_shuffled.txt selected_list.txt
 
       - name: Run Puppeteer Stream Server
-        env:
+        env: 
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
+          EULER_API_KEY: ${{ secrets.EULER_API_KEY }}
         run: node .github/workflows/server.js
