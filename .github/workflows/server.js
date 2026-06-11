@@ -151,25 +151,6 @@ let tiktok = null;
 let tiktokRetries = 0;
 const MAX_RETRIES = 5;
 
-function connectTikTok() {
-    // تنظيف الـ instance القديم قبل أي محاولة جديدة
-    if (tiktok) {
-        try { tiktok.disconnect(); } catch (_) {}
-        tiktok = null;
-    }
-
-    if (tiktokRetries >= MAX_RETRIES) {
-        console.error("TikTok: reached max retries, giving up.");
-        return;
-    }
-
-    tiktokRetries++;
-    console.log(`TikTok: connecting attempt ${tiktokRetries}...`);
-
-    // instance جديد نظيف في كل محاولة
-    tiktok = new WebcastPushConnection(TIKTOK_USER, {
-        enableExtendedGiftInfo: true
-    });
 function handleComment(data) {
     const now = Date.now();
     if (now - lastCommentTime >= EVENT_THROTTLE_MS) {
@@ -185,13 +166,31 @@ function handleComment(data) {
         }
     }
 }
-    
+
+function connectTikTok() {
+    if (tiktok) {
+        try { tiktok.disconnect(); } catch (_) {}
+        tiktok = null;
+    }
+
+    if (tiktokRetries >= MAX_RETRIES) {
+        console.error("TikTok: reached max retries, giving up.");
+        return;
+    }
+
+    tiktokRetries++;
+    console.log(`TikTok: connecting attempt ${tiktokRetries}...`);
+
+    tiktok = new WebcastPushConnection(TIKTOK_USER, {
+        enableExtendedGiftInfo: true
+    });
+
     registerTikTokEvents();
 
     tiktok.connect()
         .then(() => {
             console.log("TikTok connected: " + TIKTOK_USER);
-            tiktokRetries = 0; // reset عند النجاح
+            tiktokRetries = 0;
         })
         .catch(e => {
             console.error(`TikTok failed (${tiktokRetries}/${MAX_RETRIES}):`, e.message);
