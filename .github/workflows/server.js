@@ -181,9 +181,7 @@ function connectTikTok() {
     tiktokRetries++;
     console.log(`TikTok: connecting attempt ${tiktokRetries}...`);
 
-    tiktok = new WebcastPushConnection(TIKTOK_USER, {
-        enableExtendedGiftInfo: true
-    });
+    tiktok = new WebcastPushConnection(TIKTOK_USER);
 
     registerTikTokEvents();
 
