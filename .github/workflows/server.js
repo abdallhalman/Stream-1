@@ -147,95 +147,100 @@ async function startOverlayStream() {
 // تشغيل النظام الموحد الجديد تلقائياً وبأمان
 startOverlayStream();
 // ==================== [نهاية نظام التشغيل الجديد المطور] ====================
-
-// ==================== [اتصال تيك توك والأحداث الأصلية كاملة ومطابقة 100%] ====================
-const tiktok = new WebcastPushConnection(TIKTOK_USER);
+let tiktok = null;
+let tiktokRetries = 0;
+const MAX_RETRIES = 5;
 
 function connectTikTok() {
+    // تنظيف الـ instance القديم قبل أي محاولة جديدة
+    if (tiktok) {
+        try { tiktok.disconnect(); } catch (_) {}
+        tiktok = null;
+    }
+
+    if (tiktokRetries >= MAX_RETRIES) {
+        console.error("TikTok: reached max retries, giving up.");
+        return;
+    }
+
+    tiktokRetries++;
+    console.log(`TikTok: connecting attempt ${tiktokRetries}...`);
+
+    // instance جديد نظيف في كل محاولة
+    tiktok = new WebcastPushConnection(TIKTOK_USER, {
+        enableExtendedGiftInfo: true
+    });
+
+    registerTikTokEvents();
+
     tiktok.connect()
-        .then(() => console.log("TikTok connected: " + TIKTOK_USER))
+        .then(() => {
+            console.log("TikTok connected: " + TIKTOK_USER);
+            tiktokRetries = 0; // reset عند النجاح
+        })
         .catch(e => {
-            console.error("TikTok failed:", e.message, "- retrying in 20s...");
+            console.error(`TikTok failed (${tiktokRetries}/${MAX_RETRIES}):`, e.message);
             setTimeout(connectTikTok, 20000);
         });
 }
 
-tiktok.on("disconnected", () => {
-    console.log("TikTok disconnected, retrying in 20s...");
-    setTimeout(connectTikTok, 20000);
-});
+function registerTikTokEvents() {
+    tiktok.on("disconnected", () => {
+        console.log("TikTok disconnected, retrying in 20s...");
+        setTimeout(connectTikTok, 20000);
+    });
 
-tiktok.on("roomUser", data => {
-    if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount);
-});
+    tiktok.on("roomUser", data => {
+        if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount);
+    });
 
-tiktok.on("member", data => {
-    const now = Date.now();
-    if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
-        if (data?.nickname || data?.uniqueId) {
-            sendToOverlay("join", {
-                name: data.nickname || data.uniqueId,
-                avatar: data.profilePictureUrl
-            });
-            lastJoinTime = now;
+    tiktok.on("member", data => {
+        const now = Date.now();
+        if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
+            if (data?.nickname || data?.uniqueId) {
+                sendToOverlay("join", {
+                    name: data.nickname || data.uniqueId,
+                    avatar: data.profilePictureUrl
+                });
+                lastJoinTime = now;
+            }
         }
-    }
-});
+    });
 
-tiktok.on("like", data => {
-    if (data.likeCount > 0) {
-        totalLikes += Number(data.likeCount);
-        sendToOverlay("like", totalLikes);
-    }
-});
+    tiktok.on("like", data => {
+        if (data.likeCount > 0) {
+            totalLikes += Number(data.likeCount);
+            sendToOverlay("like", totalLikes);
+        }
+    });
 
-function handleComment(data) {
-    const now = Date.now();
-    if (now - lastCommentTime >= EVENT_THROTTLE_MS) {
-        const text = data.comment || data.text || "";
-        if (text) {
-            sendToOverlay("comment", {
+    tiktok.on("comment", handleComment);
+    tiktok.on("chat", handleComment);
+
+    tiktok.on("follow", data => {
+        sendToOverlay("follow", {
+            name: data.nickname || data.uniqueId,
+            avatar: data.profilePictureUrl,
+            followerCount: data.followCount || 0
+        });
+    });
+
+    tiktok.on("gift", (data) => {
+        if (data.repeatEnd || data.repeatCount === 1) {
+            let officialGiftIcon = data.giftPictureUrl
+                || data.image?.url_list?.[0]
+                || data.extendedGiftInfo?.image?.url_list?.[0]
+                || "";
+
+            sendToOverlay("gift", {
                 name: data.nickname || data.uniqueId,
-                text: text.replace(/\[heart\]/g, "❤️"),
+                giftName: data.giftName,
+                count: data.repeatCount || 1,
                 avatar: data.profilePictureUrl,
-                badges: data.badges || []
+                giftIcon: officialGiftIcon
             });
-            lastCommentTime = now;
         }
-    }
+    });
 }
 
-tiktok.on("comment", handleComment);
-tiktok.on("chat",    handleComment);
-
-tiktok.on("follow", data => {
-    sendToOverlay("follow", {
-        name: data.nickname || data.uniqueId,
-        avatar: data.profilePictureUrl,
-        followerCount: data.followCount || 0
-    });
-});
-
-tiktok.on("gift", (data) => {
-    if (data.repeatEnd || data.repeatCount === 1) {
-        let officialGiftIcon = "";
-        if (data.giftPictureUrl) {
-            officialGiftIcon = data.giftPictureUrl;
-        } else if (data.image?.url_list?.[0]) {
-            officialGiftIcon = data.image.url_list[0];
-        } else if (data.extendedGiftInfo?.image?.url_list?.[0]) {
-            officialGiftIcon = data.extendedGiftInfo.image.url_list[0];
-        }
-
-        sendToOverlay("gift", {
-            name: data.nickname || data.uniqueId,
-            giftName: data.giftName,
-            count: data.repeatCount || 1,
-            avatar: data.profilePictureUrl,
-            giftIcon: officialGiftIcon
-        });
-    }
-});
-
-// تشغيل ربط التيك توك الأصلي بعد دقيقتين كما كان في نظامك المستقر تماماً
 setTimeout(connectTikTok, 120000);
