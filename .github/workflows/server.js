@@ -181,7 +181,9 @@ function connectTikTok() {
     tiktokRetries++;
     console.log(`TikTok: connecting attempt ${tiktokRetries}...`);
 
-    tiktok = new WebcastPushConnection(TIKTOK_USER);
+    WebcastPushConnection(TIKTOK_USER, {
+    apiKey: process.env.EULER_API_KEY
+   });
 
     registerTikTokEvents();
 
