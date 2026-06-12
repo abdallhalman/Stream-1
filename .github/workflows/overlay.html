@@ -448,40 +448,37 @@
             border-radius: 10px;
         }
 
-        /* ─── فقاعات التسبيح الثابتة ─── */
+        /* ─── فقاعة التسبيح ─── */
         .tasbih-bubbles {
             position: relative;
             width: 500px;
-            height: 60px;
-            margin-top: 8px;
+            height: 50px;
+            margin-top: 10px;
             pointer-events: none;
-            overflow: visible;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .tasbih-bubble {
             position: absolute;
-            background: rgba(57, 255, 20, 0.15);
+            background: rgba(57, 255, 20, 0.12);
             border: 1px solid rgba(57, 255, 20, 0.5);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
+            border-radius: 30px;
+            padding: 8px 20px;
+            font-size: 16px;
             font-family: 'IBM Plex Sans Arabic', sans-serif;
             font-weight: 700;
-            color: rgba(255, 255, 255, 0.9);
-            text-shadow: 0 0 6px rgba(57, 255, 20, 0.8);
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2), inset 0 0 6px rgba(57, 255, 20, 0.1);
-            animation: bubblePulse var(--dur) ease-in-out infinite;
-            animation-delay: var(--delay);
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.7);
+            box-shadow: 0 0 12px rgba(57, 255, 20, 0.15);
+            white-space: nowrap;
             opacity: 0;
+            transition: opacity 0.4s ease;
         }
 
-        @keyframes bubblePulse {
-            0%   { opacity: 0;    transform: scale(0.85); }
-            20%  { opacity: 1;    transform: scale(1);    }
-            80%  { opacity: 0.85; transform: scale(1);    }
-            100% { opacity: 0;    transform: scale(0.85); }
+        .tasbih-bubble.visible {
+            opacity: 1;
         }
 
         /* ─── 3. القلوب النيونية المتطايرة من الزاوية ─── */
@@ -574,35 +571,21 @@
         updateClock();
         setInterval(updateClock, 10000); // تحديث هادئ كل 10 ثوانٍ لعدم إجهاد الصفحة
 
-        // ─── فقاعات التسبيح الثابتة ───
+        // ─── فقاعة التسبيح ───
         const bubblesContainer = document.getElementById("tasbih-bubbles");
-        const azkarWords = ["سبحان الله", "الحمد لله", "الله أكبر", "لا إله إلا الله", "أستغفر الله", "🌿", "☝️", "🤍"];
-        const bubbleCount = 7;
-        const bubbles = [];
+        const bubble = document.createElement("div");
+        bubble.className = "tasbih-bubble";
+        bubblesContainer.appendChild(bubble);
+        let bubbleTimer = null;
 
-        // إنشاء الفقاعات وتثبيت مواضعها مرة واحدة
-        for (let i = 0; i < bubbleCount; i++) {
-            const b = document.createElement("div");
-            b.className = "tasbih-bubble";
-            const size = 44 + Math.floor(Math.random() * 30); // 44px - 74px
-            const left = Math.floor((i / bubbleCount) * 430) + Math.floor(Math.random() * 30);
-            const top  = Math.floor(Math.random() * 20);
-            const dur  = (3 + Math.random() * 3).toFixed(1) + "s";
-            const delay = (i * 0.6).toFixed(1) + "s";
-            b.style.cssText = `width:${size}px; height:${size}px; left:${left}px; top:${top}px; --dur:${dur}; --delay:${delay};`;
-            b.textContent = azkarWords[i % azkarWords.length];
-            bubblesContainer.appendChild(b);
-            bubbles.push(b);
+        function showBubble(text) {
+            clearTimeout(bubbleTimer);
+            bubble.textContent = text;
+            bubble.classList.add("visible");
+            bubbleTimer = setTimeout(() => {
+                bubble.classList.remove("visible");
+            }, 2000);
         }
-
-        // تغيير النص داخل الفقاعات كل 4 ثوانٍ بشكل دوري
-        let bubbleWordIdx = 0;
-        setInterval(() => {
-            bubbleWordIdx = (bubbleWordIdx + 1) % azkarWords.length;
-            bubbles.forEach((b, i) => {
-                b.textContent = azkarWords[(bubbleWordIdx + i) % azkarWords.length];
-            });
-        }, 4000);
 
         const ws = new WebSocket("ws://localhost:8080");
         const chatContainer   = document.getElementById("chat-container");
@@ -659,6 +642,9 @@
                 // سحب الكائن (Object) الخاص بالذكر الحالي والذكر القادم من القائمة المترابطة
                 const currentItem = azkarList[currentStage % azkarList.length];
                 const nextItem = azkarList[(currentStage + 1) % azkarList.length];
+
+                // فقاعة الذكر الحالي
+                showBubble(currentItem.main);
 
                 // 2. تحديث شريط التقدم الفسفوري والأرقام والنص السفلي المترابط
                 const percentage = (currentLikes / STEP_TARGET) * 100;
