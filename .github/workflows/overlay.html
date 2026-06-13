@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Stream Overlay Premium</title>
-     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@500;600;700&family=Inter:wght@400;600;700;800&family=Noto+Sans:wght@400;600;700&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
@@ -12,7 +12,7 @@
             background: transparent !important;
             overflow: hidden;
             position: relative;
-            font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
+            font-family: 'IBM Plex Sans Arabic', 'Inter', 'Noto Sans', 'Noto Color Emoji', sans-serif;
            -webkit-font-smoothing: antialiased;
         }
 
@@ -353,6 +353,8 @@
             overflow: hidden;
             pointer-events: none;
             z-index: 50;
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 10%, rgba(0,0,0,0.8) 20%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
+             mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 10%, rgba(0,0,0,0.8) 20%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
         }
         .join-notification {
             background: rgba(20, 20, 30, 0.60);
@@ -580,6 +582,22 @@
 
         function showBubble(text) {
             clearTimeout(bubbleTimer);
+
+            const palettes = [
+                { bg: 'rgba(57,255,20,0.15)',   border: 'rgba(57,255,20,0.6)',   glow: 'rgba(57,255,20,0.7)',   box: '0 0 12px rgba(57,255,20,0.25)'   },
+                { bg: 'rgba(0,200,255,0.15)',    border: 'rgba(0,200,255,0.6)',   glow: 'rgba(0,200,255,0.8)',   box: '0 0 12px rgba(0,200,255,0.25)'   },
+                { bg: 'rgba(255,188,0,0.15)',    border: 'rgba(255,188,0,0.6)',   glow: 'rgba(255,188,0,0.8)',   box: '0 0 12px rgba(255,188,0,0.25)'   },
+                { bg: 'rgba(255,60,200,0.15)',   border: 'rgba(255,60,200,0.6)',  glow: 'rgba(255,60,200,0.8)',  box: '0 0 12px rgba(255,60,200,0.25)'  },
+                { bg: 'rgba(157,93,255,0.15)',   border: 'rgba(157,93,255,0.6)',  glow: 'rgba(157,93,255,0.8)',  box: '0 0 12px rgba(157,93,255,0.25)'  },
+                { bg: 'rgba(255,100,50,0.15)',   border: 'rgba(255,100,50,0.6)',  glow: 'rgba(255,100,50,0.8)',  box: '0 0 12px rgba(255,100,50,0.25)'  },
+            ];
+
+            const p = palettes[Math.floor(Math.random() * palettes.length)];
+            bubble.style.background   = p.bg;
+            bubble.style.borderColor  = p.border;
+            bubble.style.textShadow   = `0 0 8px ${p.glow}`;
+            bubble.style.boxShadow    = p.box;
+
             bubble.textContent = text;
             bubble.classList.add("visible");
             bubbleTimer = setTimeout(() => {
@@ -717,7 +735,7 @@
                             <div class="action">انضم إلى البث الآن ✨</div>
                         </div>`;
                     joinContainer.prepend(joinDiv);
-                    setTimeout(() => { if (joinDiv.parentNode) joinContainer.removeChild(joinDiv); }, 15000);
+                    if (joinContainer.children.length > 8) joinContainer.removeChild(joinContainer.lastChild);
                 }
 
                 // ── منطق المتابعة الذكي المتتالي ──
