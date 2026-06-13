@@ -347,7 +347,7 @@
             bottom: 40px;
             left: 30px;
             width: 360px;
-            height: 600px;
+            height: 350px;
             display: flex;
             flex-direction: column-reverse;
             overflow: hidden;
@@ -621,6 +621,18 @@
         let currentFollowUser = null;
         let followTimer       = null;
 
+        // ─── متغيرات نظام تعاقب الأذكار ─── (خارج الـ handler لتجنب إعادة التعريف)
+        const STEP_TARGET = 1000;
+        const azkarList = [
+            { main: "سبحان الله",      sub: "سبحان الله وبحمده، سبحان الله العظيم 🌿" },
+            { main: "الحمد لله",       sub: "الحمد لله حمدا كثيرا طيبا مباركا فيه 🤍" },
+            { main: "لا إله إلا الله", sub: "لا إله إلا الله وحده لا شريك له 🤲"      },
+            { main: "الله أكبر",       sub: "الله أكبر كبيرا، والحمد لله كثيرا ☝️"    },
+            { main: "أستغفر الله",     sub: "أستغفر الله العظيم وأتوب إليه 🕋"         }
+        ];
+        let lastTriggeredStage = -1; // آخر مرحلة اكتملت وتم عرض بنرها
+        let isMilestoneActive  = false; // قفل يمنع أي تحديث أثناء عرض البنر
+
         ws.onmessage = (event) => {
             try {
                 const msg = JSON.parse(event.data);
@@ -629,74 +641,65 @@
                     document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
                 }
 
-        
-            // ─── متغيرات نظام تعاقب الأذكار الذكي المطور ───
-            const STEP_TARGET = 1000; // الهدف المتكرر
-            
-            // قائمة الأذكار المرتبطة (الذكر الأساسي + الجملة الفرعية الشاملة له)
-              const azkarList = [
-                { main: "سبحان الله", sub: "سبحان الله وبحمده، سبحان الله العظيم 🌿" },
-                { main: "الحمد لله", sub: "الحمد لله حمدا كثيرا طيبا مباركا فيه 🤍" },
-                { main: "لا إله إلا الله", sub: "لا إله إلا الله وحده لا شريك له 🤲" },
-                { main: "الله أكبر", sub: "الله أكبر كبيرا، والحمد لله كثيرا ☝️" },
-                { main: "أستغفر الله", sub: "أستغفر الله العظيم وأتوب إليه 🕋" }
-            ];
-
 
             if (msg.type === "like") {
-                // تحديث العداد المستقر العلوي التقليدي إن وجد
+                // تحديث العداد العلوي
                 const topLikes = document.getElementById("likes-count");
                 if (topLikes) topLikes.innerText = `❤️ ${msg.data.toLocaleString()}`;
 
-                // 1. تحديد المرحلة الحالية بناءً على إجمالي اللايكات لتبديل الأذكار
-                let currentStage = Math.floor(msg.data / STEP_TARGET);
-                let currentLikes = msg.data % STEP_TARGET;
-                
-                if (currentLikes === 0 && msg.data > 0) { 
-                    currentLikes = STEP_TARGET; 
-                    currentStage = currentStage - 1; // تثبيت المرحلة الحالية عند لحظة الامتلاء التام
-                }
+                // حساب المرحلة الحالية
+                const currentStage = Math.floor(msg.data / STEP_TARGET);
+                const currentLikes = msg.data % STEP_TARGET;
 
-                // سحب الكائن (Object) الخاص بالذكر الحالي والذكر القادم من القائمة المترابطة
                 const currentItem = azkarList[currentStage % azkarList.length];
-                const nextItem = azkarList[(currentStage + 1) % azkarList.length];
+                const nextItem    = azkarList[(currentStage + 1) % azkarList.length];
 
-                // فقاعة الذكر الحالي
-                showBubble(currentItem.main);
+                // ── اكتمال مرحلة جديدة؟ (يستخدم > بدل === حتى لو قفز العدد فوق 1000) ──
+                if (currentStage > lastTriggeredStage && !isMilestoneActive) {
+                    lastTriggeredStage = currentStage;
+                    isMilestoneActive  = true;
 
-                // 2. تحديث شريط التقدم الفسفوري والأرقام والنص السفلي المترابط
-                const percentage = (currentLikes / STEP_TARGET) * 100;
-                const bar = document.getElementById("tasbih-bar");
-                const txt = document.getElementById("tasbih-text");
-                const subtxt = document.querySelector(".tasbih-subtext");
-                
-                if (bar) bar.style.width = `${percentage}%`;
-                if (txt) {
-                    txt.innerText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
-                    txt.classList.add("bump");
-                    setTimeout(() => txt.classList.remove("bump"), 100);
-                }
-                
-                // [التحديث الذكي لقفل الجملة] يغير النص الفرعي بناءً على الذكر الحالي بدقة وبطول 80%
-                if (subtxt) {
-                    subtxt.innerText = currentItem.sub;
-                }
-
-                // 4. تفعيل البنر الانفجاري عند اكتمال الـ 1000 والإعلان عن الانتقال للذكر الجديد
-                if (currentLikes === STEP_TARGET) {
                     const banner = document.getElementById("milestone-banner");
                     const bTitle = document.getElementById("milestone-title");
+                    const bar    = document.getElementById("tasbih-bar");
+                    const txt    = document.getElementById("tasbih-text");
+                    const subtxt = document.querySelector(".tasbih-subtext");
+
+                    // أكمل الشريط للـ 100% قبل البنر
+                    if (bar) bar.style.width = "100%";
+
                     if (banner && bTitle) {
                         bTitle.innerHTML = `شكراً لكم <span style="color:#39FF14;">(${currentItem.main})</span> 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${nextItem.main} 🌿</span>`;
                         banner.classList.add("show");
-                        
+
+                        // ─ فاصل 10 ثوانٍ ─
                         setTimeout(() => {
                             banner.classList.remove("show");
-                            if (bar) bar.style.width = "0%";
-                            if (txt) txt.innerText = `0 / ${STEP_TARGET.toLocaleString()}`;
-                            if (subtxt) subtxt.innerText = nextItem.sub; // يقلب النص الفرعي فوراً للهدف التالي
-                        }, 4000);
+                            if (bar)    bar.style.width = "0%";
+                            if (txt)    txt.innerText   = `0 / ${STEP_TARGET.toLocaleString()}`;
+                            if (subtxt) subtxt.innerText = nextItem.sub;
+                            isMilestoneActive = false; // رفع القفل بعد انتهاء البنر
+                        }, 10000);
                     }
+                    return; // لا تحدث الشريط أثناء عرض البنر
+                }
+
+                // ── تحديث الشريط والأرقام فقط لو البنر مش شاغل ──
+                if (!isMilestoneActive) {
+                    const bar    = document.getElementById("tasbih-bar");
+                    const txt    = document.getElementById("tasbih-text");
+                    const subtxt = document.querySelector(".tasbih-subtext");
+                    const percentage = (currentLikes / STEP_TARGET) * 100;
+
+                    showBubble(currentItem.main);
+
+                    if (bar) bar.style.width = `${percentage}%`;
+                    if (txt) {
+                        txt.innerText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
+                        txt.classList.add("bump");
+                        setTimeout(() => txt.classList.remove("bump"), 100);
+                    }
+                    if (subtxt) subtxt.innerText = currentItem.sub;
                 }
             }
 
