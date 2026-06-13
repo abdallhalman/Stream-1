@@ -5,7 +5,7 @@ const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
 
-const TIKTOK_USER = "alarabytv";
+const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -106,22 +106,28 @@ async function startOverlayStream() {
     "-i", videoPath,
     "-stream_loop", "-1",
     "-i", audioPath,
-     
+    
     "-filter_complex",
     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
-    `[bg_v][0:v]overlay=0:0:shortest=1[out_v];` +
-    `[1:a][2:a]amix=inputs=2:duration=longest[out_a]`,
-    "-map", "[out_v]",
-    "-map", "[out_a]",
-    "-c:v", "libx264",
-    "-r", "30",
-    "-preset", "veryfast",
-    "-tune", "zerolatency",
-    "-pix_fmt", "yuv420p",
-    "-c:a", "aac",
-    "-b:a", "128k",
-    "-f", "flv",
-    `rtmp://live.restream.io/live/${STREAM_KEY}`
+    `[bg_v][0:v]overlay=0:0:shortest=1[out_v]`,
+     "-map", "[out_v]",
+     "-map", "2:a",
+     "-c:v", "libx264",
+     "-r", "30",
+     "-preset", "ultrafast",
+     "-tune", "zerolatency",
+     "-g", "60",
+     "-keyint_min", "60",
+     "-sc_threshold", "0",
+     "-b:v", "2500k",
+     "-maxrate", "2500k",
+     "-bufsize", "5000k",
+     "-b:a", "128k",
+     "-pix_fmt", "yuv420p",
+     "-c:a", "aac",
+     "-b:a", "192k",
+     "-f", "flv",
+     `rtmp://live.restream.io/live/${STREAM_KEY}`
     ];
 
 
