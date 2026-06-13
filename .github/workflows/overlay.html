@@ -669,7 +669,7 @@
                     if (bar) bar.style.width = "100%";
 
                     if (banner && bTitle) {
-                        bTitle.innerHTML = `شكراً لكم 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${nextItem.main} 🌿</span>`;
+                        bTitle.innerHTML = `شكراً لكم 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${currentItem.main} 🌿</span>`;
                         banner.classList.add("show");
 
                         // ─ فاصل 10 ثوانٍ ─
@@ -677,7 +677,7 @@
                             banner.classList.remove("show");
                             if (bar)    bar.style.width = "0%";
                             if (txt)    txt.innerText   = `0 / ${STEP_TARGET.toLocaleString()}`;
-                            if (subtxt) subtxt.innerText = nextItem.sub;
+                            if (subtxt) subtxt.innerText = currentItem.sub;
                             isMilestoneActive = false; // رفع القفل بعد انتهاء البنر
                         }, 10000);
                     }
