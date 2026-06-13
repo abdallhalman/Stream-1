@@ -35,11 +35,13 @@ jobs:
       - name: Download audio files
         run: |
           mkdir -p downloads
-          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio10.mp3" -o downloads/audio1.mp3
-          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio11.mp3" -o downloads/audio2.mp3
-          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio12.mp3" -o downloads/audio3.mp3
-          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio13.mp3" -o downloads/audio4.mp3
-          curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio14.mp3" -o downloads/audio5.mp3          
+          # اختيار 5 أرقام عشوائية من 1 إلى 18
+          SELECTED=$(shuf -i 1-18 -n 5)
+          i=1
+          for NUM in $SELECTED; do
+            curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio${NUM}.mp3" -o downloads/audio${i}.mp3
+            i=$((i+1))
+          done
      
       - name: Download Video
         run: curl -L -o video.mp4 "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/video.mp4"
