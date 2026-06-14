@@ -107,11 +107,12 @@ async function startOverlayStream() {
     "-stream_loop", "-1",
     "-i", audioPath,
     
-    "-filter_complex",
-    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
-    `[bg_v][0:v]overlay=0:0:shortest=1[out_v]`,
+     "-filter_complex",
+     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
+     `[bg_v][0:v]overlay=0:0:shortest=1[out_v];` +
+     `[1:a][2:a]amix=inputs=2:duration=longest[out_a]`,
      "-map", "[out_v]",
-     "-map", "2:a",
+     "-map", "[out_a]",
      "-c:v", "libx264",
      "-r", "30",
      "-preset", "ultrafast",
