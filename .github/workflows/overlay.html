@@ -100,7 +100,7 @@
     color: white;
     display: flex;
     align-items: center;
-    gap: 24px; 
+    gap: 28px; 
     box-shadow: 0 15px 50px rgba(255, 188, 0, 0.25), 0 0 25px rgba(255, 188, 0, 0.15);
     animation: bounceIn 0.05s linear forwards;
     will-change: transform, opacity;
@@ -108,8 +108,8 @@
 }
 /* 👤 كود صورة الشخص (الداعم) - استهداف مباشر للصورة داخل صندوق النصوص لتظل دائرية ومحمية */
 .gift-banner div img {
-    width: 44px !important;
-    height: 44px !important;
+    width: 56px !important;
+    height: 56px !important;
     border-radius: 50% !important;  /* 🎯 دائرية كاملة وصارمة للشخص فقط */
     object-fit: cover !important;
     border: 2px solid rgba(255, 255, 255, 0.6) !important;
@@ -536,7 +536,7 @@
         <div id="tasbih-bar" class="tasbih-progress-bar" style="width: 0%;"></div>
         <div id="tasbih-text" class="tasbih-numbers">0 / 1000</div>
     </div>
-    <div class="tasbih-subtext">FOR MUSLIMS ONLY🌹</div>
+    <div class="tasbih-subtext">🌹FOR MUSLIMS ONLY</div>
     <div class="tasbih-bubbles" id="tasbih-bubbles"></div>
 </div>
 
@@ -669,7 +669,7 @@
                     if (bar) bar.style.width = "100%";
 
                     if (banner && bTitle) {
-                        bTitle.innerHTML = `شكراً لكم 🎉<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${currentItem.main} 🌿</span>`;
+                        bTitle.innerHTML = `🤍شكراً لكم<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${currentItem.main} 🌿</span>`;
                         banner.classList.add("show");
 
                         // ─ فاصل 10 ثوانٍ ─
@@ -811,7 +811,7 @@
                                 <div style="display: flex; align-items: center; gap: 14px;">
                                     <img src="${avatar}" onerror="this.src='${fallbackAvatar}'" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #ffbc00; flex-shrink: 0;">
                                     <div class="gift-text">
-                                        <h2 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0; font-family: 'Almarai', 'Noto Sans', sans-serif;"> 🤍 شكراً: ${name}</h2>
+                                        <h2 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0; font-family: 'Almarai', 'Noto Sans', sans-serif;"> شكراً 🤍: ${name}</h2>
                                         <p id="gift-counter-hit" class="count-pop" style="margin-top: 4px; font-family: 'Almarai', 'Noto Sans', sans-serif;">${giftName} × ${currentGiftCount}</p>
                                     </div>
                                 </div>
