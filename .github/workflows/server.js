@@ -5,7 +5,7 @@ const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
 
-const TIKTOK_USER = "abd7llah_6";
+const TIKTOK_USER = "chahr_2";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -134,7 +134,6 @@ startOverlayStream();
 let tiktok = new TikTokLiveConnection(TIKTOK_USER, {   // ← تغيّر الاسم
     signApiKey: process.env.EULER_API_KEY
 });
-
 // ── تشخيص ──
 tiktok.fetchIsLive().then(isLive => {
     console.log("Is user live?", isLive);
@@ -143,6 +142,7 @@ tiktok.fetchIsLive().then(isLive => {
 tiktok.fetchRoomId().then(roomId => {
     console.log("Room ID:", roomId);
 }).catch(e => console.error("fetchRoomId error:", e.message));
+
 
 console.log("EULER_API_KEY:", process.env.EULER_API_KEY ? "loaded" : "NOT FOUND");
 let tiktokRetries = 0;
