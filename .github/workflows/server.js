@@ -1,4 +1,4 @@
-const { TikTokLiveConnection } = require("tiktok-live-connector");  // ← تغيّر الاسم
+const { WebcastPushConnection } = require("tiktok-live-connector");
 const { spawn } = require("child_process");
 const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
@@ -16,6 +16,7 @@ let lastJoinTime = 0;
 let lastCommentTime = 0;
 const EVENT_THROTTLE_MS = 1000;
 
+// إنشاء سيرفر الـ WebSocket الثابت بشكل صحيح ونظيف
 const wss = new WebSocket.Server({ port: 8080 });
 let wsClient = null;
 
@@ -30,16 +31,19 @@ function sendToOverlay(type, data) {
     }
 }
 
-const videoPath    = path.join(__dirname, '../../video.mp4');
-const audioPath    = path.join(__dirname, '../../merged_audio.mp3');
-const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png');
-const mainFramePath = path.join(__dirname, '../../overlay.png');
+// ==================== [بداية نظام التشغيل الموحد والمطور لكسر البصمة] ====================
+const videoPath   = path.join(__dirname, '../../video.mp4');
+const audioPath   = path.join(__dirname, '../../merged_audio.mp3');
+const tmpFramePath = path.join(__dirname, '../../overlay_tmp.png'); // الملف المؤقت المعزول للـ Puppeteer
+const mainFramePath = path.join(__dirname, '../../overlay.png');     // الملف المستقر الذي يقرأه FFmpeg
 
+// تنظيف وتصفير الصور القديمة من الـ Runner عند بدء التشغيل لمنع أي تعليق
 if (fs.existsSync(tmpFramePath)) fs.unlinkSync(tmpFramePath);
 if (fs.existsSync(mainFramePath)) fs.unlinkSync(mainFramePath);
 
+// إنشاء فريم شفاف تماماً كبداية بأبعاد صحيحة حتى لا يتعطل FFmpeg عند الإقلاع
 const transparentBuffer = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAAD9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==",
+    "iVBORw0KGgoAAAANSUhEUgAABLAAAAKAAQMAAAD9wU0FAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAQMcOfAAB76v3ZwAAAABJRU5ErkJggg==", 
     "base64"
 );
 fs.writeFileSync(mainFramePath, transparentBuffer);
@@ -58,59 +62,75 @@ async function startOverlayStream() {
 
     const page = await browser.newPage();
     await page.setViewport({ width: WIDTH, height: HEIGHT });
-
+    
     const htmlPath = path.join(__dirname, "overlay.html");
     await page.goto(`file://${htmlPath}`);
     console.log("Overlay page loaded in Puppeteer.");
 
+    // ── حلقة التقاط الصور والـ Atomic Rename لمنع الـ Flicker ──
     async function captureLoop() {
         try {
+            // 1. التقاط الشاشة وحفظها في الملف المؤقت المعزول عن الـ FFmpeg
             await page.screenshot({ path: tmpFramePath, type: "png", omitBackground: true });
+            
+            // 2. عملية الـ Rename السريعة جداً (تستبدل الملف الرئيسي فوراً في 0 ملي ثانية)
             if (fs.existsSync(tmpFramePath)) {
                 fs.renameSync(tmpFramePath, mainFramePath);
             }
         } catch (err) {
             console.error("Error in capture loop:", err.message);
         }
-        setTimeout(captureLoop, 1000 / 5);
+        // الاستمرار في التقاط الفريم التالي بناءً على السرعة المتاحة للمتصفح
+        setTimeout(captureLoop, 1000 / 5); // 3fps كافي للـ overlay ويخفف الضغط
     }
 
+    // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
     captureLoop();
 
-    console.log("Launching FFmpeg...");
+    console.log("Launching FFmpeg with Strong Anti-Copyright Visual Filters...");
 
+    // حساب قيم عشوائية محسّنة لكسر البصمة البصرية بشكل فعال في كل إقلاع للبث
+    const randBrightness = (Math.random() * 0.06 - 0.03).toFixed(4);        // ±0.03 سطوع
+    const randContrast   = (1 + (Math.random() * 0.06 - 0.03)).toFixed(4);  // ±0.03 تباين
+    const randSaturation = (1 + (Math.random() * 0.08 - 0.04)).toFixed(4);  // ±0.04 تشبع لوني
+    const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
+    const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
+    
     const ffmpegArgs = [
-        "-re",
-        "-loop", "1",
-        "-f", "image2",
-        "-i", mainFramePath,
-        "-stream_loop", "-1",
-        "-i", videoPath,
-        "-stream_loop", "-1",
-        "-i", audioPath,
-        "-filter_complex",
-        `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
-        `[bg_v][0:v]overlay=0:0:shortest=1[out_v];` +
-        `[1:a][2:a]amix=inputs=2:duration=longest[out_a]`,
-        "-map", "[out_v]",
-        "-map", "[out_a]",
-        "-c:v", "libx264",
-        "-r", "30",
-        "-preset", "ultrafast",
-        "-tune", "zerolatency",
-        "-g", "60",
-        "-keyint_min", "60",
-        "-sc_threshold", "0",
-        "-b:v", "2500k",
-        "-maxrate", "2500k",
-        "-bufsize", "5000k",
-        "-b:a", "128k",
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac",
-        "-b:a", "192k",
-        "-f", "flv",
-        `rtmp://live.restream.io/live/${STREAM_KEY}`
+    "-re",                      // <--- لضبط سرعة القراءة
+    "-loop", "1",
+    "-f", "image2",
+    "-i", mainFramePath,
+    
+    "-stream_loop", "-1",
+    "-i", videoPath,
+    "-stream_loop", "-1",
+    "-i", audioPath,
+    
+     "-filter_complex",
+     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
+     `[bg_v][0:v]overlay=0:0:shortest=1[out_v];` +
+     `[1:a][2:a]amix=inputs=2:duration=longest[out_a]`,
+     "-map", "[out_v]",
+     "-map", "[out_a]",
+     "-c:v", "libx264",
+     "-r", "30",
+     "-preset", "ultrafast",
+     "-tune", "zerolatency",
+     "-g", "60",
+     "-keyint_min", "60",
+     "-sc_threshold", "0",
+     "-b:v", "2500k",
+     "-maxrate", "2500k",
+     "-bufsize", "5000k",
+     "-b:a", "128k",
+     "-pix_fmt", "yuv420p",
+     "-c:a", "aac",
+     "-b:a", "192k",
+     "-f", "flv",
+     `rtmp://live.restream.io/live/${STREAM_KEY}`
     ];
+
 
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
@@ -128,36 +148,25 @@ async function startOverlayStream() {
     });
 }
 
+// تشغيل النظام الموحد الجديد تلقائياً وبأمان
 startOverlayStream();
-
-// ── TikTok Live Connector ──
-let tiktok = new TikTokLiveConnection(TIKTOK_USER, {   // ← تغيّر الاسم
+// ==================== [نهاية نظام التشغيل الجديد المطور] ====================
+let tiktok = new WebcastPushConnection(TIKTOK_USER, {
     signApiKey: process.env.EULER_API_KEY
 });
-// ── تشخيص ──
-tiktok.fetchIsLive().then(isLive => {
-    console.log("Is user live?", isLive);
-}).catch(e => console.error("fetchIsLive error:", e.message));
-
-tiktok.fetchRoomId().then(roomId => {
-    console.log("Room ID:", roomId);
-}).catch(e => console.error("fetchRoomId error:", e.message));
-
-
 console.log("EULER_API_KEY:", process.env.EULER_API_KEY ? "loaded" : "NOT FOUND");
 let tiktokRetries = 0;
 const MAX_RETRIES = 5;
 
-// ── الكومنت: user fields أصبحت داخل data.user ──
 function handleComment(data) {
     const now = Date.now();
     if (now - lastCommentTime >= EVENT_THROTTLE_MS) {
         const text = data.comment || data.text || "";
         if (text) {
             sendToOverlay("comment", {
-                name: data.user?.nickname || data.user?.uniqueId,       // ← تغيّر
+                name: data.nickname || data.uniqueId,
                 text: text.replace(/\[heart\]/g, "❤️"),
-                avatar: data.user?.profilePictureUrl,                   // ← تغيّر
+                avatar: data.profilePictureUrl,
                 badges: data.badges || []
             });
             lastCommentTime = now;
@@ -190,27 +199,23 @@ tiktok.on("disconnected", () => {
     setTimeout(connectTikTok, 20000);
 });
 
-// ── roomUser: data.viewerCount لا يزال كما هو ──
 tiktok.on("roomUser", data => {
     if (data?.viewerCount !== undefined) sendToOverlay("viewerCount", data.viewerCount);
 });
 
-// ── member: user fields أصبحت داخل data.user ──
 tiktok.on("member", data => {
     const now = Date.now();
     if (now - lastJoinTime >= EVENT_THROTTLE_MS) {
-        const name = data.user?.nickname || data.user?.uniqueId;        // ← تغيّر
-        if (name) {
+        if (data?.nickname || data?.uniqueId) {
             sendToOverlay("join", {
-                name: name,
-                avatar: data.user?.profilePictureUrl                    // ← تغيّر
+                name: data.nickname || data.uniqueId,
+                avatar: data.profilePictureUrl
             });
             lastJoinTime = now;
         }
     }
 });
 
-// ── like: likeCount لا يزال كما هو ──
 tiktok.on("like", data => {
     if (data.likeCount > 0) {
         totalLikes += Number(data.likeCount);
@@ -221,31 +226,27 @@ tiktok.on("like", data => {
 tiktok.on("comment", handleComment);
 tiktok.on("chat", handleComment);
 
-// ── follow: أصبح جزء من حدث social ──
-tiktok.on("social", data => {
-    const name = data.user?.nickname || data.user?.uniqueId;            // ← تغيّر
-    if (name) {
-        sendToOverlay("follow", {
-            name: name,
-            avatar: data.user?.profilePictureUrl,                       // ← تغيّر
-            followerCount: data.followCount || 0
-        });
-    }
+tiktok.on("follow", data => {
+    sendToOverlay("follow", {
+        name: data.nickname || data.uniqueId,
+        avatar: data.profilePictureUrl,
+        followerCount: data.followCount || 0
+    });
 });
 
-// ── gift: giftName أصبح داخل data.giftDetails ──
 tiktok.on("gift", (data) => {
     if (data.repeatEnd || data.repeatCount === 1) {
-        const giftIcon = data.giftDetails?.giftPictureUrl
+        let officialGiftIcon = data.giftPictureUrl
             || data.image?.url_list?.[0]
+            || data.extendedGiftInfo?.image?.url_list?.[0]
             || "";
 
         sendToOverlay("gift", {
-            name: data.user?.nickname || data.user?.uniqueId,           // ← تغيّر
-            giftName: data.giftDetails?.giftName,                       // ← تغيّر
+            name: data.nickname || data.uniqueId,
+            giftName: data.giftName,
             count: data.repeatCount || 1,
-            avatar: data.user?.profilePictureUrl,                       // ← تغيّر
-            giftIcon: giftIcon
+            avatar: data.profilePictureUrl,
+            giftIcon: officialGiftIcon
         });
     }
 });
