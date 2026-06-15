@@ -33,8 +33,7 @@ jobs:
         run: pip install gdown --upgrade --force-reinstall
             
       - name: Install Node tools
-        run: npm install tiktok-live-connector@2.3.0-beta1 puppeteer ws
-
+        run: npm install tiktok-live-connector puppeteer ws
 
       - name: Download audio files
         run: |
