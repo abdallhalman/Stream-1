@@ -5,7 +5,7 @@ const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
 
-const TIKTOK_USER = "designer..fares..4k";
+const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -107,12 +107,11 @@ async function startOverlayStream() {
     "-stream_loop", "-1",
     "-i", audioPath,
     
-     "-filter_complex",
-     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
-     `[bg_v][0:v]overlay=0:0:shortest=1[out_v];` +
-     `[1:a][2:a]amix=inputs=2:duration=longest[out_a]`,
+    "-filter_complex",
+    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
+    `[bg_v][0:v]overlay=0:0:shortest=1[out_v]`,
      "-map", "[out_v]",
-     "-map", "[out_a]",
+     "-map", "2:a",
      "-c:v", "libx264",
      "-r", "30",
      "-preset", "ultrafast",
