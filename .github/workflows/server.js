@@ -1,4 +1,5 @@
-const WebcastPushConnection = tiktokModule.WebcastPushConnection || tiktokModule.default || tiktokModule;
+const tiktokModule = require("tiktok-live-connector");
+const WebcastPushConnection = tiktokModule.WebcastPushConnection || tiktokModule;
 const { spawn } = require("child_process");
 const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
