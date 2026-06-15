@@ -5,7 +5,7 @@ const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
 
-const TIKTOK_USER = "sl42t";
+const TIKTOK_USER = "chahr_2";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -81,7 +81,7 @@ async function startOverlayStream() {
             console.error("Error in capture loop:", err.message);
         }
         // الاستمرار في التقاط الفريم التالي بناءً على السرعة المتاحة للمتصفح
-        setTimeout(captureLoop, 1000 / 3); // 3fps كافي للـ overlay ويخفف الضغط
+        setTimeout(captureLoop, 1000 / 5); // 3fps كافي للـ overlay ويخفف الضغط
     }
 
     // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
@@ -96,8 +96,8 @@ async function startOverlayStream() {
     const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
-    const ffmpegArgs = [    
-    "-re",       // <--- لضبط سرعة القراءة
+    const ffmpegArgs = [
+    "-re",                      // <--- لضبط سرعة القراءة
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
@@ -107,11 +107,12 @@ async function startOverlayStream() {
     "-stream_loop", "-1",
     "-i", audioPath,
     
-    "-filter_complex",
-    `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
-    `[bg_v][0:v]overlay=0:0:shortest=1[out_v]`,
+     "-filter_complex",
+     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
+     `[bg_v][0:v]overlay=0:0:shortest=1[out_v];` +
+     `[1:a][2:a]amix=inputs=2:duration=longest[out_a]`,
      "-map", "[out_v]",
-     "-map", "2:a",
+     "-map", "[out_a]",
      "-c:v", "libx264",
      "-r", "30",
      "-preset", "ultrafast",
