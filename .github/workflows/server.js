@@ -81,7 +81,7 @@ async function startOverlayStream() {
             console.error("Error in capture loop:", err.message);
         }
         // الاستمرار في التقاط الفريم التالي بناءً على السرعة المتاحة للمتصفح
-        setTimeout(captureLoop, 1000 / 5); // 3fps كافي للـ overlay ويخفف الضغط
+        setTimeout(captureLoop, 1000 / 3); // 3fps كافي للـ overlay ويخفف الضغط
     }
 
     // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
