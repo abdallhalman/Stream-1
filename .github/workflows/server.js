@@ -1,11 +1,11 @@
-const WebcastPushConnection = require("tiktok-live-connector");
+const { WebcastPushConnection } = require("tiktok-live-connector");
 const { spawn } = require("child_process");
 const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
 
-const TIKTOK_USER = "sl42t";
+const TIKTOK_USER = "chahr_2";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
