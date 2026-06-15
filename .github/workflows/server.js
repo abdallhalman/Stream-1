@@ -96,7 +96,8 @@ async function startOverlayStream() {
     const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
-    const ffmpegArgs = [                      // <--- لضبط سرعة القراءة
+    const ffmpegArgs = [    
+    "-re",       // <--- لضبط سرعة القراءة
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
