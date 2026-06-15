@@ -59,9 +59,56 @@ async function startOverlayStream() {
     }
     captureLoop();
 
-    const ffmpegArgs = ["-re", "-loop", "1", "-f", "image2", "-i", mainFramePath, "-stream_loop", "-1", "-i", videoPath, "-stream_loop", "-1", "-i", audioPath, "-filter_complex", `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];[bg_v][0:v]overlay=0:0:shortest=1[out_v];[1:a][2:a]amix=inputs=2:duration=longest[out_a]`, "-map", "[out_v]", "-map", "[out_a]", "-c:v", "libx264", "-r", "30", "-preset", "ultrafast", "-tune", "zerolatency", "-g", "60", "-keyint_min", "60", "-sc_threshold", "0", "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k", "-c:a", "aac", "-b:a", "192k", "-f", "flv", `rtmp://live.restream.io/live/${STREAM_KEY}`];
+    const ffmpegArgs = [
+    "-re",                      // <--- لضبط سرعة القراءة
+    "-loop", "1",
+    "-f", "image2",
+    "-i", mainFramePath,
+    
+    "-stream_loop", "-1",
+    "-i", videoPath,
+    "-stream_loop", "-1",
+    "-i", audioPath,
+    
+     "-filter_complex",
+     `[1:v]fps=30,scale=${WIDTH}:${HEIGHT}[bg_v];` +
+     `[bg_v][0:v]overlay=0:0:shortest=1[out_v];` +
+     `[1:a][2:a]amix=inputs=2:duration=longest[out_a]`,
+     "-map", "[out_v]",
+     "-map", "[out_a]",
+     "-c:v", "libx264",
+     "-r", "30",
+     "-preset", "ultrafast",
+     "-tune", "zerolatency",
+     "-g", "60",
+     "-keyint_min", "60",
+     "-sc_threshold", "0",
+     "-b:v", "2500k",
+     "-maxrate", "2500k",
+     "-bufsize", "5000k",
+     "-b:a", "128k",
+     "-pix_fmt", "yuv420p",
+     "-c:a", "aac",
+     "-b:a", "192k",
+     "-f", "flv",
+     `rtmp://live.restream.io/live/${STREAM_KEY}`
+    ];
+
+
     const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
-    ffmpegProcess.on("close", (code) => { browser.close(); process.exit(code); });
+
+    ffmpegProcess.stdout.on("data", (data) => console.log(`ffmpeg: ${data}`));
+    ffmpegProcess.stderr.on("data", (data) => {
+        if (data.toString().includes("frame=")) {
+            console.log(`ffmpeg status: ${data.toString().trim()}`);
+        }
+    });
+
+    ffmpegProcess.on("close", (code) => {
+        console.log(`FFmpeg process exited with code ${code}`);
+        browser.close();
+        process.exit(code);
+    });
 }
 startOverlayStream();
 
