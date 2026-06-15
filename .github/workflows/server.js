@@ -81,7 +81,7 @@ async function startOverlayStream() {
             console.error("Error in capture loop:", err.message);
         }
         // الاستمرار في التقاط الفريم التالي بناءً على السرعة المتاحة للمتصفح
-        setTimeout(captureLoop, 1000 / 5); // 3fps كافي للـ overlay ويخفف الضغط
+        setTimeout(captureLoop, 1000 / 3); // 3fps كافي للـ overlay ويخفف الضغط
     }
 
     // تشغيل حلقة الالتقاط لتجهيز الفريمات فوراً
@@ -96,8 +96,7 @@ async function startOverlayStream() {
     const randNoise      = (2 + Math.floor(Math.random() * 4));              // 2~5 نويز عشوائي
     const randHue        = (Math.random() * 4 - 2).toFixed(2);              // ±2 درجة هيو
     
-    const ffmpegArgs = [
-    "-re",                      // <--- لضبط سرعة القراءة
+    const ffmpegArgs = [                      // <--- لضبط سرعة القراءة
     "-loop", "1",
     "-f", "image2",
     "-i", mainFramePath,
