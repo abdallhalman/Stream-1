@@ -134,6 +134,16 @@ startOverlayStream();
 let tiktok = new TikTokLiveConnection(TIKTOK_USER, {   // ← تغيّر الاسم
     signApiKey: process.env.EULER_API_KEY
 });
+
+// ── تشخيص ──
+tiktok.fetchIsLive().then(isLive => {
+    console.log("Is user live?", isLive);
+}).catch(e => console.error("fetchIsLive error:", e.message));
+
+tiktok.fetchRoomId().then(roomId => {
+    console.log("Room ID:", roomId);
+}).catch(e => console.error("fetchRoomId error:", e.message));
+
 console.log("EULER_API_KEY:", process.env.EULER_API_KEY ? "loaded" : "NOT FOUND");
 let tiktokRetries = 0;
 const MAX_RETRIES = 5;
