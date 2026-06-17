@@ -5,7 +5,7 @@ const WebSocket = require("ws");
 const path = require("path");
 const fs = require("fs");
 
-const TIKTOK_USER = "sal_u2";
+const TIKTOK_USER = "muhammad.aljaafar6";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
