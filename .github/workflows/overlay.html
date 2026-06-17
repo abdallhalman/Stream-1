@@ -281,37 +281,40 @@
         .follow-count { font-size: 16px; color: rgba(255, 255, 255, 0.8); margin-top: 3px; font-weight: 600; }
         .follow-icon { font-size: 34px; flex-shrink: 0; }
 
-        
-            /* الحاوية الموحدة */
-        #unified-feed {
+/* ── صندوق الانضمامات والتعليقات الموحد ── */
+        #join-container {
             position: absolute;
             bottom: 40px;
-            right: 40px;
-            width: 600px;
+            left: 30px;
+            width: 360px;
+            height: 280px;
             display: flex;
-            flex-direction: column-reverse; /* الأحدث دائماً في الأسفل */
+            flex-direction: column-reverse;
             overflow: hidden;
+            pointer-events: none;
             z-index: 50;
-            gap: 15px;
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 15%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
+             mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 15%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
         }
-
-        .feed-item {
-            background: var(--bg-color, rgba(12, 12, 18, 0.85));
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            padding: 16px 24px;
-            border-radius: 24px;
+        .join-notification {
+            background: rgba(20, 20, 30, 0.60);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 13px 16px;
+            border-radius: 18px;
+            margin-top: 10px;
             display: flex;
             align-items: center;
-            gap: 20px;
-            animation: slideInRight 0.3s ease-out forwards;
-        }
+            gap: 14px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+            animation: slideInLeft 0.05s linear forwards
 
-        .feed-item .avatar { width: 75px; height: 75px; border-radius: 50%; border: 3px solid #ffbc00; flex-shrink: 0; object-fit: cover; }
-        .feed-item .username { color: #ffbc00; font-weight: 800; font-size: 26px; }
-        .feed-item .text { color: #ffffff; font-weight: 600; font-size: 24px; word-break: break-word; }
-        
+        }
+        .join-notification .avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
+        .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 16px; }
+        .join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 13px; margin-top: 2px; font-weight: 600; }
+
     
         @keyframes slideInLeft  { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes slideInRight { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -495,35 +498,9 @@
 
     <div id="gift-banner-container"></div>
     <div id="follow-banner-container"></div>
-    <div id="unified-feed" class="unified-feed"></div>
-
+    <div id="join-container"></div>
 
     <script>
-
-function addUnifiedItem(name, text, avatar) {
-    const feedContainer = document.getElementById("unified-feed");
-    if (!feedContainer) return;
-
-    const item = document.createElement("div");
-    item.className = "feed-item";
-
-    const randomColor = `rgba(${Math.floor(Math.random()*50)+20}, ${Math.floor(Math.random()*50)+20}, ${Math.floor(Math.random()*50)+40}, 0.85)`;
-    item.style.setProperty('--bg-color', randomColor);
-
-    item.innerHTML = `
-        <img class="avatar" src="${avatar || 'https://www.tiktok.com/favicon.ico'}" onerror="this.src='https://www.tiktok.com/favicon.ico'">
-        <div class="msg-content">
-            <span class="username">${name || 'Unknown'}: </span>
-            <span class="text">${text || ''}</span>
-        </div>
-    `;
-
-    feedContainer.prepend(item);
-    if (feedContainer.children.length > 3) {
-        feedContainer.removeChild(feedContainer.lastChild);
-    }
-}
-
         // تحديث الساعة بدون ثواني
         function updateClock() {
             const now = new Date();
@@ -568,9 +545,23 @@ function addUnifiedItem(name, text, avatar) {
         }
 
         const ws = new WebSocket("ws://localhost:8080");
+        const joinContainer   = document.getElementById("join-container");
         const giftContainer   = document.getElementById("gift-banner-container");
         const followContainer = document.getElementById("follow-banner-container");
         const fallbackAvatar  = 'https://www.tiktok.com/favicon.ico';
+
+        // ── ألوان عشوائية لكل شريط ──
+        function randomBorderColor() {
+            const palette = [
+                'rgba(57,255,20,0.75)',
+                'rgba(0,200,255,0.75)',
+                'rgba(255,188,0,0.75)',
+                'rgba(255,60,200,0.75)',
+                'rgba(157,93,255,0.75)',
+                'rgba(255,100,50,0.75)',
+            ];
+            return palette[Math.floor(Math.random() * palette.length)];
+        }
 
         // متغيرات ذكية لحفظ الذاكرة اللحظية للبث ومنع التكرار البصري
         let currentGiftUser  = null;
@@ -593,177 +584,210 @@ function addUnifiedItem(name, text, avatar) {
         let lastTriggeredStage = -1; // آخر مرحلة اكتملت وتم عرض بنرها
         let isMilestoneActive  = false; // قفل يمنع أي تحديث أثناء عرض البنر
 
-        
-ws.onmessage = (event) => {
-    try {
-        const msg = JSON.parse(event.data);
-        const type = String(msg.type || '').toLowerCase();
-        const data = msg.data ?? {};
+        ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
 
-        if (type === "viewercount") {
-            const el = document.getElementById("viewers-count");
-            if (el) el.innerText = `👤 ${Number(data.count ?? data ?? 0).toLocaleString()}`;
-            return;
-        }
-
-        if (type === "like" || type === "likes" || type === "likecount") {
-            const likesValue = Number(data.count ?? data.likes ?? data.total ?? data ?? 0) || 0;
-            const topLikes = document.getElementById("likes-count");
-            if (topLikes) topLikes.innerText = `❤️ ${likesValue.toLocaleString()}`;
-
-            const currentStage = Math.floor(likesValue / STEP_TARGET);
-            const currentLikes = likesValue % STEP_TARGET;
-            const currentItem = azkarList[currentStage % azkarList.length];
-
-            if (currentStage > lastTriggeredStage && !isMilestoneActive) {
-                lastTriggeredStage = currentStage;
-                isMilestoneActive = true;
-
-                const banner = document.getElementById("milestone-banner");
-                const bTitle = document.getElementById("milestone-title");
-                const bar = document.getElementById("tasbih-bar");
-                const txt = document.getElementById("tasbih-text");
-                const subtxt = document.querySelector(".tasbih-subtext");
-
-                if (bar) bar.style.width = "100%";
-
-                if (banner && bTitle) {
-                    bTitle.innerHTML = `شكراً لكم<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${currentItem.main} 🌿</span>`;
-                    banner.classList.add("show");
-
-                    setTimeout(() => {
-                        banner.classList.remove("show");
-                        if (bar) bar.style.width = "0%";
-                        if (txt) txt.innerText = `0 / ${STEP_TARGET.toLocaleString()}`;
-                        if (subtxt) subtxt.innerText = currentItem.sub;
-                        isMilestoneActive = false;
-                    }, 10000);
+                if (msg.type === "viewerCount") {
+                    document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
                 }
-                return;
+
+
+            if (msg.type === "like") {
+                // تحديث العداد العلوي
+                const topLikes = document.getElementById("likes-count");
+                if (topLikes) topLikes.innerText = `❤️ ${msg.data.toLocaleString()}`;
+
+                // حساب المرحلة الحالية
+                const currentStage = Math.floor(msg.data / STEP_TARGET);
+                const currentLikes = msg.data % STEP_TARGET;
+
+                const currentItem = azkarList[currentStage % azkarList.length];
+                const nextItem    = azkarList[(currentStage + 1) % azkarList.length];
+
+                // ── اكتمال مرحلة جديدة؟ (يستخدم > بدل === حتى لو قفز العدد فوق 1000) ──
+                if (currentStage > lastTriggeredStage && !isMilestoneActive) {
+                    lastTriggeredStage = currentStage;
+                    isMilestoneActive  = true;
+
+                    const banner = document.getElementById("milestone-banner");
+                    const bTitle = document.getElementById("milestone-title");
+                    const bar    = document.getElementById("tasbih-bar");
+                    const txt    = document.getElementById("tasbih-text");
+                    const subtxt = document.querySelector(".tasbih-subtext");
+
+                    // أكمل الشريط للـ 100% قبل البنر
+                    if (bar) bar.style.width = "100%";
+
+                    if (banner && bTitle) {
+                        bTitle.innerHTML = `شكراً لكم<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${currentItem.main} 🌿</span>`;
+                        banner.classList.add("show");
+
+                        // ─ فاصل 10 ثوانٍ ─
+                        setTimeout(() => {
+                            banner.classList.remove("show");
+                            if (bar)    bar.style.width = "0%";
+                            if (txt)    txt.innerText   = `0 / ${STEP_TARGET.toLocaleString()}`;
+                            if (subtxt) subtxt.innerText = currentItem.sub;
+                            isMilestoneActive = false; // رفع القفل بعد انتهاء البنر
+                        }, 10000);
+                    }
+                    return; // لا تحدث الشريط أثناء عرض البنر
+                }
+
+                // ── تحديث الشريط والأرقام فقط لو البنر مش شاغل ──
+                if (!isMilestoneActive) {
+                    const bar    = document.getElementById("tasbih-bar");
+                    const txt    = document.getElementById("tasbih-text");
+                    const subtxt = document.querySelector(".tasbih-subtext");
+                    const percentage = (currentLikes / STEP_TARGET) * 100;
+
+                    showBubble(currentItem.main);
+
+                    if (bar) bar.style.width = `${percentage}%`;
+                    if (txt) {
+                        txt.innerText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
+                        txt.classList.add("bump");
+                        setTimeout(() => txt.classList.remove("bump"), 100);
+                    }
+                    if (subtxt) subtxt.innerText = currentItem.sub;
+                }
             }
 
-            if (!isMilestoneActive) {
-                const bar = document.getElementById("tasbih-bar");
-                const txt = document.getElementById("tasbih-text");
-                const subtxt = document.querySelector(".tasbih-subtext");
-                const percentage = (currentLikes / STEP_TARGET) * 100;
 
-                showBubble(currentItem.main);
-
-                if (bar) bar.style.width = `${percentage}%`;
-                if (txt) {
-                    txt.innerText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
-                    txt.classList.add("bump");
-                    setTimeout(() => txt.classList.remove("bump"), 100);
+                if (msg.type === "comment") {
+                    const itemDiv = document.createElement("div");
+                    itemDiv.className = "join-notification";
+                    const avatar = msg.data.avatar || fallbackAvatar;
+                    const color = randomBorderColor();
+                    itemDiv.style.borderColor = color;
+                    itemDiv.style.boxShadow = `0 6px 24px rgba(0,0,0,0.3), 0 0 8px ${color}`;
+                    itemDiv.innerHTML = `
+                        <img class="avatar" src="${avatar}" onerror="this.src='${fallbackAvatar}'">
+                        <div class="info">
+                            <div class="name" style="color: #ffbc00;">${msg.data.name || "متابع"}</div>
+                            <div class="action">${msg.data.text || ""}</div>
+                        </div>`;
+                    joinContainer.prepend(itemDiv);
+                    if (joinContainer.children.length > 3) joinContainer.removeChild(joinContainer.lastChild);
                 }
-                if (subtxt) subtxt.innerText = currentItem.sub;
-            }
-            return;
-        }
 
-        if (type === "comment" || type === "comments") {
-            const name = data.name ?? data.username ?? "Unknown";
-            const text = data.text ?? data.comment ?? "";
-            const avatar = data.avatar ?? fallbackAvatar;
-            addUnifiedItem(name, text, avatar);
-            return;
-        }
+                if (msg.type === "join") {
+                    const joinDiv = document.createElement("div");
+                    joinDiv.className = "join-notification";
+                    const joinAvatar = msg.data.avatar || fallbackAvatar;
+                    const color = randomBorderColor();
+                    joinDiv.style.borderColor = color;
+                    joinDiv.style.boxShadow = `0 6px 24px rgba(0,0,0,0.3), 0 0 8px ${color}`;
+                    joinDiv.innerHTML = `
+                        <img class="avatar" src="${joinAvatar}" onerror="this.src='${fallbackAvatar}'">
+                        <div class="info">
+                            <div class="name">${msg.data.name || "متابع جديد"}</div>
+                            <div class="action">انضم إلى البث الآن ✨</div>
+                        </div>`;
+                    joinContainer.prepend(joinDiv);
+                    if (joinContainer.children.length > 3) joinContainer.removeChild(joinContainer.lastChild);
+                }
 
-        if (type === "join") {
-            const name = data.name ?? data.username ?? "Unknown";
-            const avatar = data.avatar ?? fallbackAvatar;
-            addUnifiedItem(name, "انضم", avatar);
-            return;
-        }
+                // ── منطق المتابعة الذكي المتتالي ──
+                if (msg.type === "follow") {
+                    const name   = msg.data.name || "متابع جديد";
+                    const avatar = msg.data.avatar || fallbackAvatar;
+                    const count  = msg.data.followerCount ? Number(msg.data.followerCount).toLocaleString() : "";
 
-        if (type === "follow") {
-            const name = data.name || "متابع جديد";
-            const avatar = data.avatar || fallbackAvatar;
-            const count = data.followerCount ? Number(data.followerCount).toLocaleString() : "";
+                    clearTimeout(followTimer);
+                    currentFollowUser = name;
 
-            clearTimeout(followTimer);
-            currentFollowUser = name;
-
-            followContainer.innerHTML = `
-                <div class="follow-banner">
-                    <div class="follow-left-part">
-                        <div class="follow-avatar-box">
-                            <img id="follow-avatar" src="${avatar}" alt="avatar">
-                        </div>
-                        <div class="follow-text-group">
-                            <span class="follow-label">Follow 👤</span>
-                            <div class="follow-name" id="follow-name">${name}</div>
-                        </div>
+                   followContainer.innerHTML = `
+        <div id="follow-banner-container">
+            <div class="follow-banner">
+                <div class="follow-left-part">
+                    <div class="follow-avatar-box">
+                        <img id="follow-avatar" src="${avatar}" alt="avatar">
                     </div>
-                    <div class="follow-right-part">
-                        <div class="follow-count-box">
-                            <span class="follow-count-icon">👥</span>
-                            <span class="follow-count" id="follow-count">${count || '0'}</span>
-                        </div>
+                    <div class="follow-text-group">
+                        <span class="follow-label">Follow 👤</span>
+                        <div class="follow-name" id="follow-name">${name}</div>
                     </div>
                 </div>
-            `;
-
-            followTimer = setTimeout(() => {
-                followContainer.innerHTML = "";
-                currentFollowUser = null;
-            }, 7000);
-            return;
-        }
-
-        if (type === "gift") {
-            const name = data.name || "داعم كريم";
-            const giftName = data.giftName;
-            const avatar = data.avatar || fallbackAvatar;
-            const newCount = data.count || 1;
-            const giftIcon = data.giftIcon || "";
-
-            if (currentGiftUser === name && currentGiftName === giftName) {
-                currentGiftCount += newCount;
-                clearTimeout(giftTimer);
-                const countEl = document.getElementById("gift-counter-hit");
-                if (countEl) {
-                    countEl.innerText = `${giftName} × ${currentGiftCount}`;
-                    countEl.classList.remove("count-pop");
-                    void countEl.offsetWidth;
-                    countEl.classList.add("count-pop");
-                }
-            } else {
-                currentGiftUser = name;
-                currentGiftName = giftName;
-                currentGiftCount = newCount;
-                clearTimeout(giftTimer);
-
-                const giftImgHtml = giftIcon ? `<img src="${giftIcon}" class="gift-icon-neon" style="width: 45px; height: 45px; object-fit: contain; animation: popScale 0.4s infinite alternate; filter: drop-shadow(0 0 8px rgba(255,188,0,0.5));">` : "";
-
-                giftContainer.innerHTML = `
-                    <div class="gift-banner" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                        <div style="display: flex; align-items: center; gap: 14px;">
-                            <img src="${avatar}" onerror="this.src='${fallbackAvatar}'" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #ffbc00; flex-shrink: 0;">
-                            <div class="gift-text">
-                                <h2 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0; font-family: 'Almarai', 'Noto Sans', sans-serif;">شكراً 🤍: ${name}</h2>
-                                <p id="gift-counter-hit" class="count-pop" style="margin-top: 4px; font-family: 'Almarai', 'Noto Sans', sans-serif;">${giftName} × ${currentGiftCount}</p>
-                            </div>
-                        </div>
-                        <div style="margin-right: auto; padding-right: 5px; display: flex; align-items: center;">
-                            ${giftImgHtml}
-                        </div>
+                
+                <div class="follow-right-part">
+                    <div class="follow-count-box">
+                        <span class="follow-count-icon">👥</span>
+                        <span class="follow-count" id="follow-count">${count || '0'}</span>
                     </div>
-                `;
-            }
+                </div>
+            </div>
+        </div>
+        `;
 
-            giftTimer = setTimeout(() => {
-                giftContainer.innerHTML = "";
-                currentGiftUser = null;
-                currentGiftName = null;
-                currentGiftCount = 0;
-            }, 7000);
-        }
-    } catch (e) {
-        console.error("خطأ في التحليل:", e);
-    }
-};
+                    followTimer = setTimeout(() => {
+                        followContainer.innerHTML = "";
+                        currentFollowUser = null;
+                    }, 7000);
+                }
+                                // ── كود معالجة الهدايا المطور مع جلب وعرض الأيقونة الرسمية فخمة ──
+                if (msg.type === "gift") {
+                    const name     = msg.data.name || "داعم كريم";
+                    const giftName = msg.data.giftName;
+                    const avatar   = msg.data.avatar || fallbackAvatar;
+                    const newCount = msg.data.count || 1;
+                    const giftIcon = msg.data.giftIcon || ""; // الرابط المؤمن القادم من السيرفر
+
+                    if (currentGiftUser === name && currentGiftName === giftName) {
+                        currentGiftCount += newCount;
+                        clearTimeout(giftTimer);
+                        
+                        const countEl = document.getElementById("gift-counter-hit");
+                        if (countEl) {
+                            countEl.innerText = `${giftName} × ${currentGiftCount}`;
+                            countEl.classList.remove("count-pop");
+                            void countEl.offsetWidth; 
+                            countEl.classList.add("count-pop");
+                        }
+                    } else {
+                        currentGiftUser  = name;
+                        currentGiftName  = giftName;
+                        currentGiftCount = newCount;
+                        clearTimeout(giftTimer);
+
+                        // تجهيز أيقونة الهدية بتأثير نبض مبهج ومنفصل في اليسار
+                        const giftImgHtml = giftIcon ? `<img src="${giftIcon}" class="gift-icon-neon" style="width: 45px; height: 45px; object-fit: contain; animation: popScale 0.4s infinite alternate; filter: drop-shadow(0 0 8px rgba(255,188,0,0.5));">` : "";
+
+                        giftContainer.innerHTML = `
+                            <div class="gift-banner" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div style="display: flex; align-items: center; gap: 14px;">
+                                    <img src="${avatar}" onerror="this.src='${fallbackAvatar}'" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #ffbc00; flex-shrink: 0;">
+                                    <div class="gift-text">
+                                        <h2 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0; font-family: 'Almarai', 'Noto Sans', sans-serif;"> شكراً 🤍: ${name}</h2>
+                                        <p id="gift-counter-hit" class="count-pop" style="margin-top: 4px; font-family: 'Almarai', 'Noto Sans', sans-serif;">${giftName} × ${currentGiftCount}</p>
+                                    </div>
+                                </div>
+                                <div style="margin-right: auto; padding-right: 5px; display: flex; align-items: center;">
+                                    ${giftImgHtml} </div>
+                            </div>`;
+                    }
+
+                    giftTimer = setTimeout(() => {
+                        giftContainer.innerHTML = "";
+                        currentGiftUser  = null;
+                        currentGiftName  = null;
+                        currentGiftCount = 0;
+                    }, 7000);
+                }
+            } catch (e) {
+                console.error("خطأ في التحليل:", e);
+            }
+        };
     </script>
+    <img src="logo.png" style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        z-index: 50;
+    ">
 </body>
     </html>
     
