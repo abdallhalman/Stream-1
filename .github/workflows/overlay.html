@@ -639,133 +639,175 @@
                             if (subtxt) subtxt.innerText = currentItem.sub;
                             isMilestoneActive = false; // رفع القفل بعد انتهاء البنر
                         }, 10000);
-                    }
-                    return; // لا تحدث الشريط أثناء عرض البنر
+ws.onmessage = (event) => {
+    try {
+        const msg = JSON.parse(event.data);
+        const type = String(msg.type || '').toLowerCase();
+        const data = msg.data ?? {};
+
+        if (type === "viewercount") {
+            const el = document.getElementById("viewers-count");
+            if (el) el.innerText = `👤 ${Number(data.count ?? data ?? 0).toLocaleString()}`;
+            return;
+        }
+
+        if (type === "like" || type === "likes" || type === "likecount") {
+            const likesValue = Number(data.count ?? data.likes ?? data.total ?? data ?? 0) || 0;
+            const topLikes = document.getElementById("likes-count");
+            if (topLikes) topLikes.innerText = `❤️ ${likesValue.toLocaleString()}`;
+
+            const currentStage = Math.floor(likesValue / STEP_TARGET);
+            const currentLikes = likesValue % STEP_TARGET;
+            const currentItem = azkarList[currentStage % azkarList.length];
+
+            if (currentStage > lastTriggeredStage && !isMilestoneActive) {
+                lastTriggeredStage = currentStage;
+                isMilestoneActive = true;
+
+                const banner = document.getElementById("milestone-banner");
+                const bTitle = document.getElementById("milestone-title");
+                const bar = document.getElementById("tasbih-bar");
+                const txt = document.getElementById("tasbih-text");
+                const subtxt = document.querySelector(".tasbih-subtext");
+
+                if (bar) bar.style.width = "100%";
+
+                if (banner && bTitle) {
+                    bTitle.innerHTML = `شكراً لكم<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${currentItem.main} 🌿</span>`;
+                    banner.classList.add("show");
+
+                    setTimeout(() => {
+                        banner.classList.remove("show");
+                        if (bar) bar.style.width = "0%";
+                        if (txt) txt.innerText = `0 / ${STEP_TARGET.toLocaleString()}`;
+                        if (subtxt) subtxt.innerText = currentItem.sub;
+                        isMilestoneActive = false;
+                    }, 10000);
                 }
-
-                // ── تحديث الشريط والأرقام فقط لو البنر مش شاغل ──
-                if (!isMilestoneActive) {
-                    const bar    = document.getElementById("tasbih-bar");
-                    const txt    = document.getElementById("tasbih-text");
-                    const subtxt = document.querySelector(".tasbih-subtext");
-                    const percentage = (currentLikes / STEP_TARGET) * 100;
-
-                    showBubble(currentItem.main);
-
-                    if (bar) bar.style.width = `${percentage}%`;
-                    if (txt) {
-                        txt.innerText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
-                        txt.classList.add("bump");
-                        setTimeout(() => txt.classList.remove("bump"), 100);
-                    }
-                    if (subtxt) subtxt.innerText = currentItem.sub;
-                }
+                return;
             }
 
+            if (!isMilestoneActive) {
+                const bar = document.getElementById("tasbih-bar");
+                const txt = document.getElementById("tasbih-text");
+                const subtxt = document.querySelector(".tasbih-subtext");
+                const percentage = (currentLikes / STEP_TARGET) * 100;
 
-                                if (msg.type === "like" || msg.type === "likes") {
-  const topLikes = document.getElementById("likes-count");
-  const value = msg.data?.count ?? msg.data?.likes ?? msg.data ?? 0;
-  if (topLikes) topLikes.innerText = Number(value).toLocaleString();
-}
+                showBubble(currentItem.main);
 
-if (msg.type === "comment" || msg.type === "comments") {
-  const name = msg.data?.name ?? msg.data?.username ?? "Unknown";
-  const text = msg.data?.text ?? msg.data?.comment ?? "";
-  const avatar = msg.data?.avatar ?? fallbackAvatar;
-  addUnifiedItem(name, text, avatar);
-}
-
-                // ── منطق المتابعة الذكي المتتالي ──
-                if (msg.type === "follow") {
-                    const name   = msg.data.name || "متابع جديد";
-                    const avatar = msg.data.avatar || fallbackAvatar;
-                    const count  = msg.data.followerCount ? Number(msg.data.followerCount).toLocaleString() : "";
-
-                    clearTimeout(followTimer);
-                    currentFollowUser = name;
-
-                   followContainer.innerHTML = `
-        <div id="follow-banner-container">
-            <div class="follow-banner">
-                <div class="follow-left-part">
-                    <div class="follow-avatar-box">
-                        <img id="follow-avatar" src="${avatar}" alt="avatar">
-                    </div>
-                    <div class="follow-text-group">
-                        <span class="follow-label">Follow 👤</span>
-                        <div class="follow-name" id="follow-name">${name}</div>
-                    </div>
-                </div>
-                
-                <div class="follow-right-part">
-                    <div class="follow-count-box">
-                        <span class="follow-count-icon">👥</span>
-                        <span class="follow-count" id="follow-count">${count || '0'}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
-
-                    followTimer = setTimeout(() => {
-                        followContainer.innerHTML = "";
-                        currentFollowUser = null;
-                    }, 7000);
+                if (bar) bar.style.width = `${percentage}%`;
+                if (txt) {
+                    txt.innerText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
+                    txt.classList.add("bump");
+                    setTimeout(() => txt.classList.remove("bump"), 100);
                 }
-                                // ── كود معالجة الهدايا المطور مع جلب وعرض الأيقونة الرسمية فخمة ──
-                if (msg.type === "gift") {
-                    const name     = msg.data.name || "داعم كريم";
-                    const giftName = msg.data.giftName;
-                    const avatar   = msg.data.avatar || fallbackAvatar;
-                    const newCount = msg.data.count || 1;
-                    const giftIcon = msg.data.giftIcon || ""; // الرابط المؤمن القادم من السيرفر
-
-                    if (currentGiftUser === name && currentGiftName === giftName) {
-                        currentGiftCount += newCount;
-                        clearTimeout(giftTimer);
-                        
-                        const countEl = document.getElementById("gift-counter-hit");
-                        if (countEl) {
-                            countEl.innerText = `${giftName} × ${currentGiftCount}`;
-                            countEl.classList.remove("count-pop");
-                            void countEl.offsetWidth; 
-                            countEl.classList.add("count-pop");
-                        }
-                    } else {
-                        currentGiftUser  = name;
-                        currentGiftName  = giftName;
-                        currentGiftCount = newCount;
-                        clearTimeout(giftTimer);
-
-                        // تجهيز أيقونة الهدية بتأثير نبض مبهج ومنفصل في اليسار
-                        const giftImgHtml = giftIcon ? `<img src="${giftIcon}" class="gift-icon-neon" style="width: 45px; height: 45px; object-fit: contain; animation: popScale 0.4s infinite alternate; filter: drop-shadow(0 0 8px rgba(255,188,0,0.5));">` : "";
-
-                        giftContainer.innerHTML = `
-                            <div class="gift-banner" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                                <div style="display: flex; align-items: center; gap: 14px;">
-                                    <img src="${avatar}" onerror="this.src='${fallbackAvatar}'" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #ffbc00; flex-shrink: 0;">
-                                    <div class="gift-text">
-                                        <h2 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0; font-family: 'Almarai', 'Noto Sans', sans-serif;"> شكراً 🤍: ${name}</h2>
-                                        <p id="gift-counter-hit" class="count-pop" style="margin-top: 4px; font-family: 'Almarai', 'Noto Sans', sans-serif;">${giftName} × ${currentGiftCount}</p>
-                                    </div>
-                                </div>
-                                <div style="margin-right: auto; padding-right: 5px; display: flex; align-items: center;">
-                                    ${giftImgHtml} </div>
-                            </div>`;
-                    }
-
-                    giftTimer = setTimeout(() => {
-                        giftContainer.innerHTML = "";
-                        currentGiftUser  = null;
-                        currentGiftName  = null;
-                        currentGiftCount = 0;
-                    }, 7000);
-                }
-            } catch (e) {
-                console.error("خطأ في التحليل:", e);
+                if (subtxt) subtxt.innerText = currentItem.sub;
             }
-        };
+            return;
+        }
+
+        if (type === "comment" || type === "comments") {
+            const name = data.name ?? data.username ?? "Unknown";
+            const text = data.text ?? data.comment ?? "";
+            const avatar = data.avatar ?? fallbackAvatar;
+            addUnifiedItem(name, text, avatar);
+            return;
+        }
+
+        if (type === "join") {
+            const name = data.name ?? data.username ?? "Unknown";
+            const avatar = data.avatar ?? fallbackAvatar;
+            addUnifiedItem(name, "انضم", avatar);
+            return;
+        }
+
+        if (type === "follow") {
+            const name = data.name || "متابع جديد";
+            const avatar = data.avatar || fallbackAvatar;
+            const count = data.followerCount ? Number(data.followerCount).toLocaleString() : "";
+
+            clearTimeout(followTimer);
+            currentFollowUser = name;
+
+            followContainer.innerHTML = `
+                <div class="follow-banner">
+                    <div class="follow-left-part">
+                        <div class="follow-avatar-box">
+                            <img id="follow-avatar" src="${avatar}" alt="avatar">
+                        </div>
+                        <div class="follow-text-group">
+                            <span class="follow-label">Follow 👤</span>
+                            <div class="follow-name" id="follow-name">${name}</div>
+                        </div>
+                    </div>
+                    <div class="follow-right-part">
+                        <div class="follow-count-box">
+                            <span class="follow-count-icon">👥</span>
+                            <span class="follow-count" id="follow-count">${count || '0'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            followTimer = setTimeout(() => {
+                followContainer.innerHTML = "";
+                currentFollowUser = null;
+            }, 7000);
+            return;
+        }
+
+        if (type === "gift") {
+            const name = data.name || "داعم كريم";
+            const giftName = data.giftName;
+            const avatar = data.avatar || fallbackAvatar;
+            const newCount = data.count || 1;
+            const giftIcon = data.giftIcon || "";
+
+            if (currentGiftUser === name && currentGiftName === giftName) {
+                currentGiftCount += newCount;
+                clearTimeout(giftTimer);
+                const countEl = document.getElementById("gift-counter-hit");
+                if (countEl) {
+                    countEl.innerText = `${giftName} × ${currentGiftCount}`;
+                    countEl.classList.remove("count-pop");
+                    void countEl.offsetWidth;
+                    countEl.classList.add("count-pop");
+                }
+            } else {
+                currentGiftUser = name;
+                currentGiftName = giftName;
+                currentGiftCount = newCount;
+                clearTimeout(giftTimer);
+
+                const giftImgHtml = giftIcon ? `<img src="${giftIcon}" class="gift-icon-neon" style="width: 45px; height: 45px; object-fit: contain; animation: popScale 0.4s infinite alternate; filter: drop-shadow(0 0 8px rgba(255,188,0,0.5));">` : "";
+
+                giftContainer.innerHTML = `
+                    <div class="gift-banner" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <img src="${avatar}" onerror="this.src='${fallbackAvatar}'" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #ffbc00; flex-shrink: 0;">
+                            <div class="gift-text">
+                                <h2 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0; font-family: 'Almarai', 'Noto Sans', sans-serif;">شكراً 🤍: ${name}</h2>
+                                <p id="gift-counter-hit" class="count-pop" style="margin-top: 4px; font-family: 'Almarai', 'Noto Sans', sans-serif;">${giftName} × ${currentGiftCount}</p>
+                            </div>
+                        </div>
+                        <div style="margin-right: auto; padding-right: 5px; display: flex; align-items: center;">
+                            ${giftImgHtml}
+                        </div>
+                    </div>
+                `;
+            }
+
+            giftTimer = setTimeout(() => {
+                giftContainer.innerHTML = "";
+                currentGiftUser = null;
+                currentGiftName = null;
+                currentGiftCount = 0;
+            }, 7000);
+        }
+    } catch (e) {
+        console.error("خطأ في التحليل:", e);
+    }
+};
     </script>
 </body>
     </html>
