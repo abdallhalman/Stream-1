@@ -500,24 +500,25 @@
 
     <script>
 
-        function addUnifiedItem(name, text, avatar) {
+function addUnifiedItem(name, text, avatar) {
     const feedContainer = document.getElementById("unified-feed");
+    if (!feedContainer) return;
+
     const item = document.createElement("div");
     item.className = "feed-item";
 
-    // توليد لون عشوائي
     const randomColor = `rgba(${Math.floor(Math.random()*50)+20}, ${Math.floor(Math.random()*50)+20}, ${Math.floor(Math.random()*50)+40}, 0.85)`;
     item.style.setProperty('--bg-color', randomColor);
 
-    item.innerHTML = `<img class="avatar" src="${avatar || 'https://www.tiktok.com/favicon.ico'}">
-                      <div class="msg-content">
-                          <span class="username">${name}: </span>
-                          <span class="text">${text}</span>
-                      </div>`;
+    item.innerHTML = `
+        <img class="avatar" src="${avatar || 'https://www.tiktok.com/favicon.ico'}" onerror="this.src='https://www.tiktok.com/favicon.ico'">
+        <div class="msg-content">
+            <span class="username">${name || 'Unknown'}: </span>
+            <span class="text">${text || ''}</span>
+        </div>
+    `;
 
     feedContainer.prepend(item);
-
-    // شرط حذف العناصر ليبقى 3 فقط
     if (feedContainer.children.length > 3) {
         feedContainer.removeChild(feedContainer.lastChild);
     }
@@ -592,53 +593,7 @@
         let lastTriggeredStage = -1; // آخر مرحلة اكتملت وتم عرض بنرها
         let isMilestoneActive  = false; // قفل يمنع أي تحديث أثناء عرض البنر
 
-        ws.onmessage = (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-
-                if (msg.type === "viewerCount") {
-                    document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
-                }
-
-
-            if (msg.type === "like") {
-                // تحديث العداد العلوي
-                const topLikes = document.getElementById("likes-count");
-                if (topLikes) topLikes.innerText = `❤️ ${msg.data.toLocaleString()}`;
-
-                // حساب المرحلة الحالية
-                const currentStage = Math.floor(msg.data / STEP_TARGET);
-                const currentLikes = msg.data % STEP_TARGET;
-
-                const currentItem = azkarList[currentStage % azkarList.length];
-                const nextItem    = azkarList[(currentStage + 1) % azkarList.length];
-
-                // ── اكتمال مرحلة جديدة؟ (يستخدم > بدل === حتى لو قفز العدد فوق 1000) ──
-                if (currentStage > lastTriggeredStage && !isMilestoneActive) {
-                    lastTriggeredStage = currentStage;
-                    isMilestoneActive  = true;
-
-                    const banner = document.getElementById("milestone-banner");
-                    const bTitle = document.getElementById("milestone-title");
-                    const bar    = document.getElementById("tasbih-bar");
-                    const txt    = document.getElementById("tasbih-text");
-                    const subtxt = document.querySelector(".tasbih-subtext");
-
-                    // أكمل الشريط للـ 100% قبل البنر
-                    if (bar) bar.style.width = "100%";
-
-                    if (banner && bTitle) {
-                        bTitle.innerHTML = `شكراً لكم<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${currentItem.main} 🌿</span>`;
-                        banner.classList.add("show");
-
-                        // ─ فاصل 10 ثوانٍ ─
-                        setTimeout(() => {
-                            banner.classList.remove("show");
-                            if (bar)    bar.style.width = "0%";
-                            if (txt)    txt.innerText   = `0 / ${STEP_TARGET.toLocaleString()}`;
-                            if (subtxt) subtxt.innerText = currentItem.sub;
-                            isMilestoneActive = false; // رفع القفل بعد انتهاء البنر
-                        }, 10000);
+        
 ws.onmessage = (event) => {
     try {
         const msg = JSON.parse(event.data);
