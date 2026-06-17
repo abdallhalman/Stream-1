@@ -665,37 +665,13 @@
             }
 
 
-                if (msg.type === "comment") {
+                                if (msg.type === "comment") {
                     addUnifiedItem(msg.data.name, msg.data.text, msg.data.avatar);
-
-                    const userAvatar = msg.data.avatar || fallbackAvatar;
-                     msgDiv.innerHTML = `
-                        <img class="avatar" src="${userAvatar}" onerror="this.src='${fallbackAvatar}'" style="margin-top: 2px;">
-                        <div class="msg-content">
-                            ${badgesHtml}
-                            <span class="username">${msg.data.name || "متابع"}: </span>
-                            <span class="text">${msg.data.text || ""}</span>
-                        </div>`;
-
-                    chatContainer.prepend(msgDiv);
-                    if (chatContainer.children.length > 15) chatContainer.removeChild(chatContainer.lastChild);
                 }
 
-if (msg.type === "join") { addUnifiedItem(msg.data.name, "انضم إلى البث الآن ✨", msg.data.avatar); }
-    // 🎨 توليد لون عشوائي زاهي (بشفافية 0.4)
-    const randomColor = `rgba(${Math.floor(Math.random()*150)+50}, ${Math.floor(Math.random()*150)+50}, ${Math.floor(Math.random()*150)+50}, 0.4)`;
-    joinDiv.style.setProperty('--bg-color', randomColor);
-
-    const joinAvatar = msg.data.avatar || fallbackAvatar;
-    joinDiv.innerHTML = `
-        <img class="avatar" src="${joinAvatar}" onerror="this.src='${fallbackAvatar}'">
-        <div class="info">
-            <div class="name">${msg.data.name || "متابع جديد"}</div>
-            <div class="action">انضم إلى البث الآن ✨</div>
-        </div>`;
-    joinContainer.prepend(joinDiv);
-    if (joinContainer.children.length > 8) joinContainer.removeChild(joinContainer.lastChild);
-}
+                if (msg.type === "join") {
+                    addUnifiedItem(msg.data.name, "انضم إلى البث الآن ✨", msg.data.avatar);
+                }
 
 
                 // ── منطق المتابعة الذكي المتتالي ──
