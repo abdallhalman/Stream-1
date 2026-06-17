@@ -357,20 +357,21 @@
              mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 10%, rgba(0,0,0,0.8) 20%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
         }
         .join-notification {
-            background: rgba(20, 20, 30, 0.60);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 13px 16px;
-            border-radius: 18px;
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.3);
-            animation: slideInLeft 0.05s linear forwards
+    /* تغيير هنا: نستخدم متغير للون الخلفية ليكون ديناميكياً */
+    background: var(--bg-color, rgba(20, 20, 30, 0.60));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 13px 16px;
+    border-radius: 18px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+    animation: slideInLeft 0.05s linear forwards;
+}
 
-        }
         .join-notification .avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
         .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 16px; }
         .join-notification .action { color: rgba(255, 255, 255, 0.55); font-size: 13px; margin-top: 2px; font-weight: 600; }
@@ -728,18 +729,24 @@
                 }
 
                 if (msg.type === "join") {
-                    const joinDiv = document.createElement("div");
-                    joinDiv.className = "join-notification";
-                    const joinAvatar = msg.data.avatar || fallbackAvatar;
-                    joinDiv.innerHTML = `
-                        <img class="avatar" src="${joinAvatar}" onerror="this.src='${fallbackAvatar}'">
-                        <div class="info">
-                            <div class="name">${msg.data.name || "متابع جديد"}</div>
-                            <div class="action">انضم إلى البث الآن ✨</div>
-                        </div>`;
-                    joinContainer.prepend(joinDiv);
-                    if (joinContainer.children.length > 8) joinContainer.removeChild(joinContainer.lastChild);
-                }
+    const joinDiv = document.createElement("div");
+    joinDiv.className = "join-notification";
+    
+    // 🎨 توليد لون عشوائي زاهي (بشفافية 0.4)
+    const randomColor = `rgba(${Math.floor(Math.random()*150)+50}, ${Math.floor(Math.random()*150)+50}, ${Math.floor(Math.random()*150)+50}, 0.4)`;
+    joinDiv.style.setProperty('--bg-color', randomColor);
+
+    const joinAvatar = msg.data.avatar || fallbackAvatar;
+    joinDiv.innerHTML = `
+        <img class="avatar" src="${joinAvatar}" onerror="this.src='${fallbackAvatar}'">
+        <div class="info">
+            <div class="name">${msg.data.name || "متابع جديد"}</div>
+            <div class="action">انضم إلى البث الآن ✨</div>
+        </div>`;
+    joinContainer.prepend(joinDiv);
+    if (joinContainer.children.length > 8) joinContainer.removeChild(joinContainer.lastChild);
+}
+
 
                 // ── منطق المتابعة الذكي المتتالي ──
                 if (msg.type === "follow") {
