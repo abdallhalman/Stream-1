@@ -663,14 +663,18 @@
             }
 
 
-                                if (msg.type === "comment") {
-                    addUnifiedItem(msg.data.name, msg.data.text, msg.data.avatar);
-                }
+                                if (msg.type === "like" || msg.type === "likes") {
+  const topLikes = document.getElementById("likes-count");
+  const value = msg.data?.count ?? msg.data?.likes ?? msg.data ?? 0;
+  if (topLikes) topLikes.innerText = Number(value).toLocaleString();
+}
 
-                if (msg.type === "join") {
-                    addUnifiedItem(msg.data.name, "انضم إلى البث الآن ✨", msg.data.avatar);
-                }
-
+if (msg.type === "comment" || msg.type === "comments") {
+  const name = msg.data?.name ?? msg.data?.username ?? "Unknown";
+  const text = msg.data?.text ?? msg.data?.comment ?? "";
+  const avatar = msg.data?.avatar ?? fallbackAvatar;
+  addUnifiedItem(name, text, avatar);
+}
 
                 // ── منطق المتابعة الذكي المتتالي ──
                 if (msg.type === "follow") {
