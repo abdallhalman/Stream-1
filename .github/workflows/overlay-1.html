@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Stream Overlay Premium</title>
+     <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Inter:wght@400;600;700;800&family=Noto+Sans:wght@400;600;700&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 1280px;
+            height: 720px;
+            background: transparent !important;
+            overflow: hidden;
+            position: relative;
+            font-family: 'Almarai', 'Inter', 'Noto Sans', 'Noto Color Emoji', sans-serif;
+           -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 1. الساعة المصغرة بدون ثواني (فوق يسار) ── */
+        .clock-box {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            padding: 8px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            will-change: transform, opacity;
+        }
+        .clock-time {
+            font-size: 21px; /* تصغير الخط */
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 1px;
+            direction: ltr;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important;
+            transform: translate3d(0, 0, 0); 
+            will-change: transform, opacity;
+        }
+        .clock-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 1px;
+        }
+
+        
+        /* ── شريط الإحصائيات (فوق يمين) ── */
+        .stats-bar {
+           position: absolute;
+           top: 25px;
+           right: 25px;
+           display: flex;
+           gap: 20px;
+           font-size: 21px;
+           font-weight: 700;
+           color: #ffffff;
+           letter-spacing: 0.5px;
+           background: rgba(0, 0, 0, 0.55);
+           backdrop-filter: blur(15px);
+           -webkit-backdrop-filter: blur(15px);
+           padding: 10px 25px;
+           border-radius: 16px;
+           border: 1px solid rgba(255, 255, 255, 0.12);
+           z-index: 100;
+           will-change: transform, opacity;
+       }
+
+        /* ── بنر الهدايا الذكي والمطور ── */
+  #gift-banner-container {
+    position: absolute;
+    top: 160px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: max-content; 
+    max-width: 90%; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    z-index: 900;
+}
+
+
+.gift-banner {
+    background: rgba(30, 20, 50, 0.92); 
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 2px solid #ffbc00; 
+    border-radius: 24px; 
+    padding: 18px 32px; 
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 28px; 
+    box-shadow: 0 15px 50px rgba(255, 188, 0, 0.25), 0 0 25px rgba(255, 188, 0, 0.15);
+    will-change: transform, opacity;
+    min-width: 420px; 
+}
+/* 👤 كود صورة الشخص (الداعم) - استهداف مباشر للصورة داخل صندوق النصوص لتظل دائرية ومحمية */
+.gift-banner div img {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;  /* 🎯 دائرية كاملة وصارمة للشخص فقط */
+    object-fit: cover !important;
+    border: 2px solid rgba(255, 255, 255, 0.6) !important;
+    transform: scale(1) !important;
+    margin-left: 0 !important;
+}
+
+/* 👑 كود صورة الهدية - استهداف مباشر وحصري عبر الكلاس النيون اللي وفره الجافا سكريبت */
+.gift-banner .gift-icon-neon {
+    width: 85px !important; 
+    height: 85px !important;
+    object-fit: contain !important; /* 🎯 تظهر كاملة بدون أي تمطيط أو اقتطاع */
+    border-radius: 0% !important;  /* 🚫 إلغاء الدائرة تماماً لتتحرر أطراف الهدية الشفافة */
+    border: none !important;        
+    flex-shrink: 0 !important;
+    filter: drop-shadow(0 0 15px #ffbc00) !important; 
+    transform: scale(1) !important;
+}
+
+.gift-text h2 {
+    font-size: 22px; 
+    font-weight: 800;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    font-family: 'Almarai', 'Noto Sans', sans-serif;
+    margin: 0;
+}
+
+.gift-text p {
+    font-size: 17px; 
+    color: #ffff00; 
+    font-weight: 700;
+    margin-top: 4px;
+    margin-bottom: 0;
+    display: inline-block;
+    font-family: 'Almarai', 'Noto Sans', sans-serif;
+}
+
+/* 🔥 عداد التكرار والـ X - وضوح خارق وحجم ضخم ينبض بحماس */
+.count-pop {
+    animation: popScale 0.15s ease-out;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #ff0055, #ff00aa); 
+    padding: 6px 16px; 
+    border-radius: 14px; 
+    font-size: 28px; 
+    font-weight: 900; 
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.6);
+    display: inline-block;
+    margin-left: 10px;
+    font-family: 'Noto Sans', Arial, sans-serif; 
+}
+
+
+            /* ─── بنر المتابعة الذكي والمطور (نسخة السنتر والأفاتار اليميني) ─── */
+#follow-banner-container {
+    position: absolute;
+    bottom: 90px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 540px;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 200;
+}
+
+.follow-banner {
+    background: rgba(20, 15, 30, 0.75); /* خلفية ملكية زجاجية شفافة */
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50px;
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: row-reverse; /* أجبرنا العناصر على الترتيب من اليمين لليسار بشكل طبيعي */
+    align-items: center;
+    justify-content: center; /* إلغاء space-between وتجميع العناصر بالمنتصف لمنع انحراف اليسار */
+    gap: 20px; /* مسافة ثابتة وموزونة بين الأفاتار والنصوص */
+    width: auto; /* يجعل حجم البنر مرناً وملموماً على حسب محتواه بدلاً من التمدد العشوائي */
+    min-width: 320px;
+    box-sizing: border-box;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    will-change: transform, opacity;
+}
+
+/* القسم الأيمن (صار يميناً الآن): يحتوي على الصورة والاسم بجانبها */
+.follow-left-part {
+    display: flex;
+    flex-direction: row-reverse; /* وضع الصورة يمين الاسم مباشرة */
+    align-items: center;
+    gap: 12px;
+}
+
+/* حاوية النصوص */
+.follow-text-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* محاذاة النصوص لليمين لتناسب اللغة العربية */
+}
+
+.follow-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #ffbc00; /* الذهبي المعتمد */
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-family: 'Almarai', 'Noto Sans', sans-serif;
+}
+
+.follow-name {
+    font-size: 20px;
+    color: #ffffff;
+    font-weight: 700;
+    font-family: 'Almarai', 'Noto Sans', sans-serif;
+}
+
+/* القسم الأيسر (صار يساراً الآن): العداد */
+.follow-right-part {
+    display: flex;
+    align-items: center;
+}
+
+.follow-count-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 6px 14px;
+    border-radius: 20px;
+}
+
+.follow-count-icon {
+    font-size: 16px;
+    color: #00ffff; /* السماوي الرقمي */
+}
+
+.follow-count {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    font-family: 'Almarai', 'Noto Sans', sans-serif;
+}
+
+.follow-avatar-box {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+}
+
+.follow-banner img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #ffbc00; /* إطار ذهبي رفيع */
+    object-fit: cover;
+        }
+    
+
+        .follow-banner img { width: 56px; height: 56px; border-radius: 50%; border: 2px solid rgba(157, 93, 255, 0.7); flex-shrink: 0; }
+        .follow-info { flex: 1; }
+        .follow-label { font-size: 12px; font-weight: 700; color: rgba(180, 130, 255, 0.9); letter-spacing: 1.5px; text-transform: uppercase; }
+        .follow-name { font-size: 24px; color: #ffffff; font-weight: 700; margin-top: 2px; }
+        .follow-count { font-size: 16px; color: rgba(255, 255, 255, 0.8); margin-top: 3px; font-weight: 600; }
+        .follow-icon { font-size: 34px; flex-shrink: 0; }
+
+/* ── صندوق الانضمامات والتعليقات الموحد ── */
+#join-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 1280px;
+    height: 720px;
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    padding: 100px 40px 0 40px;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 50;
+    -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 15%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
+    mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 15%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
+}
+.join-notification {
+    background: rgba(20, 20, 30, 0.60);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 3px solid rgba(255, 255, 255, 0.12);
+    padding: 20px 30px;
+    border-radius: 38px;
+    margin-top: 15px;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+
+        }
+        .join-notification .avatar { width: 136px; height: 136px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.4); }
+        .join-notification .name   { color: #ffffff; font-weight: 700; font-size: 56px; }
+        .join-notification .action { color: rgba(255, 255, 255, 1); font-size: 36px; margin-top: 12px; font-weight: 600; }
+
+    
+        @keyframes slideInLeft  { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes slideInRight { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes slideUp      { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes bounceIn     { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes fadeOut      { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes popScale     { 0% { opacity: 0; } 100% { opacity: 1; } }
+              /* ─── 1. تصميم عداد التسبيح الزجاجي المطور ─── */
+        .tasbih-container {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .tasbih-progress-bg {
+            position: relative;
+            width: 100%;
+            height: 44px;
+            background: rgba(255, 192, 203, 0.25); /* خلفية زهرية زجاجية خفيفة */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 182, 193, 0.4);
+            border-radius: 22px; /* حواف غير حادة */
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(255, 105, 180, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tasbih-progress-bar {
+            position: absolute;
+            top: 00%;
+            right: 0; /* يمتلئ من اليمين لليسار */
+            height: 100%;
+            background: #39FF14; /* أخضر فسفوري مشع */
+            box-shadow: 0 0 12px #39FF14, 0 0 25px #39FF14, inset 0 0 6px #ffffff;
+            transition: width 0.0s cubic-bezier(0.1, 0.8, 0.3, 1);
+            z-index: 1;
+        }
+
+        .tasbih-numbers {
+            position: relative;
+            z-index: 2;
+            font-family: 'Inter', 'Almarai', 'Noto Sans', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.8);
+            
+        }
+
+
+        .tasbih-subtext {
+            width: 80%;
+            text-align: center;
+            margin-top: 6px;
+            font-size: 20px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-family: 'Almarai', 'Noto Sans', sans-serif;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* ─── فقاعة التسبيح ─── */
+        .tasbih-bubbles {
+            position: relative;
+            width: 500px;
+            height: 50px;
+            margin-top: 10px;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .tasbih-bubble {
+            position: absolute;
+            background: rgba(57, 255, 20, 0.12);
+            border: 1px solid rgba(57, 255, 20, 0.5);
+            border-radius: 30px;
+            padding: 12px 30px;
+            font-size: 24px;
+            font-family: 'Almarai', 'Noto Sans', sans-serif;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.7);
+            box-shadow: 0 0 12px rgba(57, 255, 20, 0.15);
+            white-space: nowrap;
+            opacity: 0;
+            
+        }
+
+        .tasbih-bubble.visible {
+            opacity: 1;
+        }
+
+        
+
+        /* ─── 4. بنر الهدف اللحظي المتفجر ─── */
+        .milestone-banner {
+            position: absolute;
+            top: 0; left: 0; width: 1280px; height: 720px;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+        
+        }
+        .milestone-banner.show { opacity: 1; }
+        .milestone-content {
+            background: linear-gradient(135deg, rgba(255, 20, 147, 0.9), rgba(139, 0, 139, 0.9));
+            border: 3px solid #39FF14;
+            box-shadow: 0 0 50px rgba(57, 255, 20, 0.6), 0 0 20px rgba(255, 20, 147, 0.8);
+            padding: 40px 60px;
+            border-radius: 30px;
+            transform: scale(0.5);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+        }
+        .milestone-banner.show .milestone-content { transform: scale(1); }
+        .milestone-content h1 { color: #fff; font-size: 36px; font-weight: 700; font-family: 'Almarai', 'Noto Sans', sans-serif; }
+            
+    </style>
+</head>
+<body>
+    <div class="tasbih-container">
+    <div class="tasbih-progress-bg">
+        <div id="tasbih-bar" class="tasbih-progress-bar" style="width: 0%;"></div>
+        <div id="tasbih-text" class="tasbih-numbers">0 / 1000</div>
+    </div>
+    <div class="tasbih-subtext">🌹FOR MUSLIMS ONLY</div>
+    <div class="tasbih-bubbles" id="tasbih-bubbles"></div>
+</div>
+
+<div id="milestone-banner" class="milestone-banner">
+    <div class="milestone-content">
+        <h1 id="milestone-title">تم تحقيق الهدف! 🎉</h1>
+    </div>
+</div>
+
+    <div class="clock-box">
+        <div class="clock-time" id="clock-time">00:00</div>
+        <div class="clock-label"> مكة المكرمة </div>
+    </div>
+
+    <div class="stats-bar">
+        <div id="viewers-count">👤 0</div>
+        <div id="likes-count">❤️ 0</div>
+    </div>
+
+    <div id="gift-banner-container"></div>
+    <div id="follow-banner-container"></div>
+    <div id="join-container"></div>
+
+    <script>
+        // تحديث الساعة بدون ثواني
+        function updateClock() {
+            const now = new Date();
+            const ksa = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Riyadh" }));
+            const h = String(ksa.getHours()).padStart(2, '0');
+            const m = String(ksa.getMinutes()).padStart(2, '0');
+            document.getElementById("clock-time").textContent = `${h}:${m}`;
+        }
+        updateClock();
+        setInterval(updateClock, 10000); // تحديث هادئ كل 10 ثوانٍ لعدم إجهاد الصفحة
+
+        // ─── فقاعة التسبيح ───
+        const bubblesContainer = document.getElementById("tasbih-bubbles");
+        const bubble = document.createElement("div");
+        bubble.className = "tasbih-bubble";
+        bubblesContainer.appendChild(bubble);
+        let bubbleTimer = null;
+
+        function showBubble(text) {
+            clearTimeout(bubbleTimer);
+
+            const palettes = [
+                { bg: 'rgba(57,255,20,0.15)',   border: 'rgba(57,255,20,0.6)',   glow: 'rgba(57,255,20,0.7)',   box: '0 0 12px rgba(57,255,20,0.25)'   },
+                { bg: 'rgba(0,200,255,0.15)',    border: 'rgba(0,200,255,0.6)',   glow: 'rgba(0,200,255,0.8)',   box: '0 0 12px rgba(0,200,255,0.25)'   },
+                { bg: 'rgba(255,188,0,0.15)',    border: 'rgba(255,188,0,0.6)',   glow: 'rgba(255,188,0,0.8)',   box: '0 0 12px rgba(255,188,0,0.25)'   },
+                { bg: 'rgba(255,60,200,0.15)',   border: 'rgba(255,60,200,0.6)',  glow: 'rgba(255,60,200,0.8)',  box: '0 0 12px rgba(255,60,200,0.25)'  },
+                { bg: 'rgba(157,93,255,0.15)',   border: 'rgba(157,93,255,0.6)',  glow: 'rgba(157,93,255,0.8)',  box: '0 0 12px rgba(157,93,255,0.25)'  },
+                { bg: 'rgba(255,100,50,0.15)',   border: 'rgba(255,100,50,0.6)',  glow: 'rgba(255,100,50,0.8)',  box: '0 0 12px rgba(255,100,50,0.25)'  },
+            ];
+
+            const p = palettes[Math.floor(Math.random() * palettes.length)];
+            bubble.style.background   = p.bg;
+            bubble.style.borderColor  = p.border;
+            bubble.style.textShadow   = `0 0 8px ${p.glow}`;
+            bubble.style.boxShadow    = p.box;
+
+            bubble.textContent = text;
+            bubble.classList.add("visible");
+            bubbleTimer = setTimeout(() => {
+                bubble.classList.remove("visible");
+            }, 2000);
+        }
+
+        const ws = new WebSocket("ws://localhost:8080");
+        const joinContainer   = document.getElementById("join-container");
+        const giftContainer   = document.getElementById("gift-banner-container");
+        const followContainer = document.getElementById("follow-banner-container");
+        const fallbackAvatar  = 'https://www.tiktok.com/favicon.ico';
+
+        // ── ألوان عشوائية لكل شريط ──
+        function randomBorderColor() {
+            const palette = [
+                'rgba(57,255,20,0.75)',
+                'rgba(0,200,255,0.75)',
+                'rgba(255,188,0,0.75)',
+                'rgba(255,60,200,0.75)',
+                'rgba(157,93,255,0.75)',
+                'rgba(255,100,50,0.75)',
+            ];
+            return palette[Math.floor(Math.random() * palette.length)];
+        }
+
+        // متغيرات ذكية لحفظ الذاكرة اللحظية للبث ومنع التكرار البصري
+        let currentGiftUser  = null;
+        let currentGiftName  = null;
+        let currentGiftCount = 0;
+        let giftTimer        = null;
+
+        let currentFollowUser = null;
+        let followTimer       = null;
+
+        // ─── متغيرات نظام تعاقب الأذكار ─── (خارج الـ handler لتجنب إعادة التعريف)
+        const STEP_TARGET = 1000;
+        const azkarList = [
+            { main: "سبحان الله",      sub: "سبحان الله وبحمده، سبحان الله العظيم 🌿" },
+            { main: "الحمد لله",       sub: "الحمد لله حمدا كثيرا طيبا مباركا فيه 🤍" },
+            { main: "لا إله إلا الله", sub: "لا إله إلا الله وحده لا شريك له 🤲"      },
+            { main: "الله أكبر",       sub: "الله أكبر كبيرا، والحمد لله كثيرا ☝️"    },
+            { main: "أستغفر الله",     sub: "أستغفر الله العظيم وأتوب إليه 🕋"         }
+        ];
+        let lastTriggeredStage = -1; // آخر مرحلة اكتملت وتم عرض بنرها
+        let isMilestoneActive  = false; // قفل يمنع أي تحديث أثناء عرض البنر
+
+        ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === "viewerCount") {
+                    document.getElementById("viewers-count").innerText = `👤 ${msg.data.toLocaleString()}`;
+                }
+
+
+            if (msg.type === "like") {
+                // تحديث العداد العلوي
+                const topLikes = document.getElementById("likes-count");
+                if (topLikes) topLikes.innerText = `❤️ ${msg.data.toLocaleString()}`;
+
+                // حساب المرحلة الحالية
+                const currentStage = Math.floor(msg.data / STEP_TARGET);
+                const currentLikes = msg.data % STEP_TARGET;
+
+                const currentItem = azkarList[currentStage % azkarList.length];
+                const nextItem    = azkarList[(currentStage + 1) % azkarList.length];
+
+                // ── اكتمال مرحلة جديدة؟ (يستخدم > بدل === حتى لو قفز العدد فوق 1000) ──
+                if (currentStage > lastTriggeredStage && !isMilestoneActive) {
+                    lastTriggeredStage = currentStage;
+                    isMilestoneActive  = true;
+
+                    const banner = document.getElementById("milestone-banner");
+                    const bTitle = document.getElementById("milestone-title");
+                    const bar    = document.getElementById("tasbih-bar");
+                    const txt    = document.getElementById("tasbih-text");
+                    const subtxt = document.querySelector(".tasbih-subtext");
+
+                    // أكمل الشريط للـ 100% قبل البنر
+                    if (bar) bar.style.width = "100%";
+
+                    if (banner && bTitle) {
+                        bTitle.innerHTML = `شكراً لكم<br><span style="font-size:24px; color:#ffcc00; display:block; margin-top:10px;">الذكر التالي: ${currentItem.main} 🌿</span>`;
+                        banner.classList.add("show");
+
+                        // ─ فاصل 10 ثوانٍ ─
+                        setTimeout(() => {
+                            banner.classList.remove("show");
+                            if (bar)    bar.style.width = "0%";
+                            if (txt)    txt.innerText   = `0 / ${STEP_TARGET.toLocaleString()}`;
+                            if (subtxt) subtxt.innerText = currentItem.sub;
+                            isMilestoneActive = false; // رفع القفل بعد انتهاء البنر
+                        }, 10000);
+                    }
+                    return; // لا تحدث الشريط أثناء عرض البنر
+                }
+
+                // ── تحديث الشريط والأرقام فقط لو البنر مش شاغل ──
+                if (!isMilestoneActive) {
+                    const bar    = document.getElementById("tasbih-bar");
+                    const txt    = document.getElementById("tasbih-text");
+                    const subtxt = document.querySelector(".tasbih-subtext");
+                    const percentage = (currentLikes / STEP_TARGET) * 100;
+
+                    showBubble(currentItem.main);
+
+                    if (bar) bar.style.width = `${percentage}%`;
+                    if (txt) {
+                        txt.innerText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
+                        txt.classList.add("bump");
+                        setTimeout(() => txt.classList.remove("bump"), 100);
+                    }
+                    if (subtxt) subtxt.innerText = currentItem.sub;
+                }
+            }
+
+
+                if (msg.type === "comment") {
+                    const itemDiv = document.createElement("div");
+                    itemDiv.className = "join-notification";
+                    const avatar = msg.data.avatar || fallbackAvatar;
+                    const color = randomBorderColor();
+                    itemDiv.style.borderColor = color;
+                    itemDiv.style.background = color.replace('0.75', '0.15');
+                    itemDiv.style.boxShadow = `0 6px 24px rgba(0,0,0,0.3), 0 0 8px ${color}`;
+                    itemDiv.innerHTML = `
+                        <img class="avatar" src="${avatar}" onerror="this.src='${fallbackAvatar}'">
+                        <div class="info">
+                            <div class="name" style="color: #ffbc00;">${msg.data.name || "متابع"}</div>
+                            <div class="action">${msg.data.text || ""}</div>
+                        </div>`;
+                    joinContainer.prepend(itemDiv);
+                    if (joinContainer.children.length > 3) joinContainer.removeChild(joinContainer.lastChild);
+                }
+
+                if (msg.type === "join") {
+                    const joinDiv = document.createElement("div");
+                    joinDiv.className = "join-notification";
+                    const joinAvatar = msg.data.avatar || fallbackAvatar;
+                    const color = randomBorderColor();
+                    joinDiv.style.borderColor = color;
+                    joinDiv.style.background = color.replace('0.75', '0.15');
+                    joinDiv.style.boxShadow = `0 6px 24px rgba(0,0,0,0.3), 0 0 8px ${color}`;
+                    joinDiv.innerHTML = `
+                        <img class="avatar" src="${joinAvatar}" onerror="this.src='${fallbackAvatar}'">
+                        <div class="info">
+                            <div class="name">${msg.data.name || "متابع جديد"}</div>
+                            <div class="action">انضم إلى البث الآن ✨</div>
+                        </div>`;
+                    joinContainer.prepend(joinDiv);
+                    if (joinContainer.children.length > 3) joinContainer.removeChild(joinContainer.lastChild);
+                }
+
+                // ── منطق المتابعة الذكي المتتالي ──
+                if (msg.type === "follow") {
+                    const name   = msg.data.name || "متابع جديد";
+                    const avatar = msg.data.avatar || fallbackAvatar;
+                    const count  = msg.data.followerCount ? Number(msg.data.followerCount).toLocaleString() : "";
+
+                    clearTimeout(followTimer);
+                    currentFollowUser = name;
+
+                   followContainer.innerHTML = `
+        <div id="follow-banner-container">
+            <div class="follow-banner">
+                <div class="follow-left-part">
+                    <div class="follow-avatar-box">
+                        <img id="follow-avatar" src="${avatar}" alt="avatar">
+                    </div>
+                    <div class="follow-text-group">
+                        <span class="follow-label">Follow 👤</span>
+                        <div class="follow-name" id="follow-name">${name}</div>
+                    </div>
+                </div>
+                
+                <div class="follow-right-part">
+                    <div class="follow-count-box">
+                        <span class="follow-count-icon">👥</span>
+                        <span class="follow-count" id="follow-count">${count || '0'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+
+                    followTimer = setTimeout(() => {
+                        followContainer.innerHTML = "";
+                        currentFollowUser = null;
+                    }, 7000);
+                }
+                                // ── كود معالجة الهدايا المطور مع جلب وعرض الأيقونة الرسمية فخمة ──
+                if (msg.type === "gift") {
+                    const name     = msg.data.name || "داعم كريم";
+                    const giftName = msg.data.giftName;
+                    const avatar   = msg.data.avatar || fallbackAvatar;
+                    const newCount = msg.data.count || 1;
+                    const giftIcon = msg.data.giftIcon || ""; // الرابط المؤمن القادم من السيرفر
+
+                    if (currentGiftUser === name && currentGiftName === giftName) {
+                        currentGiftCount += newCount;
+                        clearTimeout(giftTimer);
+                        
+                        const countEl = document.getElementById("gift-counter-hit");
+                        if (countEl) {
+                            countEl.innerText = `${giftName} × ${currentGiftCount}`;
+                            countEl.classList.remove("count-pop");
+                            void countEl.offsetWidth; 
+                            countEl.classList.add("count-pop");
+                        }
+                    } else {
+                        currentGiftUser  = name;
+                        currentGiftName  = giftName;
+                        currentGiftCount = newCount;
+                        clearTimeout(giftTimer);
+
+                        // تجهيز أيقونة الهدية بتأثير نبض مبهج ومنفصل في اليسار
+                        const giftImgHtml = giftIcon ? `<img src="${giftIcon}" class="gift-icon-neon" style="width: 45px; height: 45px; object-fit: contain; animation: popScale 0.4s infinite alternate; filter: drop-shadow(0 0 8px rgba(255,188,0,0.5));">` : "";
+
+                        giftContainer.innerHTML = `
+                            <div class="gift-banner" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div style="display: flex; align-items: center; gap: 14px;">
+                                    <img src="${avatar}" onerror="this.src='${fallbackAvatar}'" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #ffbc00; flex-shrink: 0;">
+                                    <div class="gift-text">
+                                        <h2 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0; font-family: 'Almarai', 'Noto Sans', sans-serif;"> شكراً 🤍: ${name}</h2>
+                                        <p id="gift-counter-hit" class="count-pop" style="margin-top: 4px; font-family: 'Almarai', 'Noto Sans', sans-serif;">${giftName} × ${currentGiftCount}</p>
+                                    </div>
+                                </div>
+                                <div style="margin-right: auto; padding-right: 5px; display: flex; align-items: center;">
+                                    ${giftImgHtml} </div>
+                            </div>`;
+                    }
+
+                    giftTimer = setTimeout(() => {
+                        giftContainer.innerHTML = "";
+                        currentGiftUser  = null;
+                        currentGiftName  = null;
+                        currentGiftCount = 0;
+                    }, 7000);
+                }
+            } catch (e) {
+                console.error("خطأ في التحليل:", e);
+            }
+        };
+    </script>
+</body>
+    </html>
+    
