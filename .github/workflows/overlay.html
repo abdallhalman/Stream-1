@@ -102,7 +102,6 @@
     align-items: center;
     gap: 28px; 
     box-shadow: 0 15px 50px rgba(255, 188, 0, 0.25), 0 0 25px rgba(255, 188, 0, 0.15);
-    animation: bounceIn 0.05s linear forwards;
     will-change: transform, opacity;
     min-width: 420px; 
 }
@@ -113,7 +112,6 @@
     border-radius: 50% !important;  /* 🎯 دائرية كاملة وصارمة للشخص فقط */
     object-fit: cover !important;
     border: 2px solid rgba(255, 255, 255, 0.6) !important;
-    animation: none !important;
     transform: scale(1) !important;
     margin-left: 0 !important;
 }
@@ -127,7 +125,6 @@
     border: none !important;        
     flex-shrink: 0 !important;
     filter: drop-shadow(0 0 15px #ffbc00) !important; 
-    animation: none !important;
     transform: scale(1) !important;
 }
 
@@ -197,7 +194,6 @@
     min-width: 320px;
     box-sizing: border-box;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    animation: slideUp 0.05s linear forwards !important;
     will-change: transform, opacity;
 }
 
@@ -322,9 +318,8 @@
         @keyframes slideInRight { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes slideUp      { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes bounceIn     { 0% { opacity: 0; } 100% { opacity: 1; } }
-        @keyframes fadeOut      { from { opacity: 1; } to { opacity: 0; } }
-        @keyframes popScale     { 0% { transform: scale(1); } 50% { transform: scale(1.3); color: #fff; } 100% { transform: scale(1); } }
-
+        @keyframes fadeOut      { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes popScale     { 0% { opacity: 0; } 100% { opacity: 1; } }
               /* ─── 1. تصميم عداد التسبيح الزجاجي المطور ─── */
         .tasbih-container {
             position: absolute;
@@ -361,7 +356,7 @@
             height: 100%;
             background: #39FF14; /* أخضر فسفوري مشع */
             box-shadow: 0 0 12px #39FF14, 0 0 25px #39FF14, inset 0 0 6px #ffffff;
-            transition: width 0.25s cubic-bezier(0.1, 0.8, 0.3, 1);
+            transition: width 0.0s cubic-bezier(0.1, 0.8, 0.3, 1);
             z-index: 1;
         }
 
@@ -373,10 +368,9 @@
             font-weight: 800;
             color: #ffffff;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.8);
-            transition: transform 0.1s ease;
+            
         }
 
-        .tasbih-numbers.bump { transform: scale(1.15); }
 
         .tasbih-subtext {
             width: 80%;
@@ -409,8 +403,8 @@
             background: rgba(57, 255, 20, 0.12);
             border: 1px solid rgba(57, 255, 20, 0.5);
             border-radius: 30px;
-            padding: 8px 20px;
-            font-size: 16px;
+            padding: 12px 30px;
+            font-size: 24px;
             font-family: 'Almarai', 'Noto Sans', sans-serif;
             font-weight: 700;
             color: rgba(255, 255, 255, 0.95);
@@ -418,30 +412,14 @@
             box-shadow: 0 0 12px rgba(57, 255, 20, 0.15);
             white-space: nowrap;
             opacity: 0;
-            transition: opacity 0.4s ease;
+            
         }
 
         .tasbih-bubble.visible {
             opacity: 1;
         }
 
-        /* ─── 3. القلوب النيونية المتطايرة من الزاوية ─── */
-        .heart-glow {
-            position: absolute;
-            bottom: 20px;
-            right: 40px;
-            pointer-events: none;
-            z-index: 10;
-            opacity: 0.75;
-            will-change: transform, opacity;
-            animation: flyAndFade var(--duration) cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
-        }
-
-        @keyframes flyAndFade {
-            0% { transform: translate(0, 0) scale(0.3) rotate(0deg); opacity: 0; }
-            15% { opacity: 0.85; }
-            100% { transform: translate(var(--target-x), var(--target-y)) scale(var(--scale)) rotate(var(--rotate)); opacity: 0; }
-        }
+        
 
         /* ─── 4. بنر الهدف اللحظي المتفجر ─── */
         .milestone-banner {
@@ -454,7 +432,7 @@
             justify-content: center;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.4s ease;
+        
         }
         .milestone-banner.show { opacity: 1; }
         .milestone-content {
