@@ -641,7 +641,7 @@
                     const avatar = msg.data.avatar || fallbackAvatar;
                     const color = randomBorderColor();
                     itemDiv.style.borderColor = color;
-                    itemDiv.style.background = color.replace('0.75', '0.15');
+                    itemDiv.style.background = color.replace('0.75', '0.60');
                     itemDiv.style.boxShadow = `0 6px 24px rgba(0,0,0,0.3), 0 0 8px ${color}`;
                     itemDiv.innerHTML = `
                         <img class="avatar" src="${avatar}" onerror="this.src='${fallbackAvatar}'">
