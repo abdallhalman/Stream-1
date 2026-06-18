@@ -658,7 +658,7 @@
                     const joinAvatar = msg.data.avatar || fallbackAvatar;
                     const color = randomBorderColor();
                     joinDiv.style.borderColor = color;
-                    joinDiv.style.background = color.replace('0.75', '0.15');
+                    joinDiv.style.background = color.replace('0.75', '0.60');
                     joinDiv.style.boxShadow = `0 6px 24px rgba(0,0,0,0.3), 0 0 8px ${color}`;
                     joinDiv.innerHTML = `
                         <img class="avatar" src="${joinAvatar}" onerror="this.src='${fallbackAvatar}'">
