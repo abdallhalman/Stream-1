@@ -127,7 +127,7 @@ async function startOverlayStream() {
      "-c:a", "aac",
      "-b:a", "192k",
      "-f", "flv",
-     `rtmp://live.restream.io/live/${STREAM_KEY}`
+     `rtmp://washington.restream.io/live/${STREAM_KEY}`
     ];
 
 
