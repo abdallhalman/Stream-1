@@ -83,19 +83,20 @@ if (fs.existsSync(logoPath)) {
 // ──────────────────────────────────────────────
 const STEP_TARGET = 1000;
 const AZKAR_LIST = [
-    { main: "سبحان الله",      sub: "🌿سبحان الله وبحمده، سبحان الله العظيم" },
-    { main: "الحمد لله",       sub: "🤍الحمد لله حمدا كثيرا طيبا مباركا فيه" },
-    { main: "لا إله إلا الله", sub: "🤲لا إله إلا الله وحده لا شريك له"      },
-    { main: "الله أكبر",       sub: "☝️الله أكبر كبيرا، والحمد لله كثيرا"    },
-    { main: "أستغفر الله",     sub: "🕋أستغفر الله العظيم وأتوب إليه"         },
+    { main: "سبحان الله",      sub: "سبحان الله وبحمده، سبحان الله العظيم 🌿" },
+    { main: "الحمد لله",       sub: "الحمد لله حمدا كثيرا طيبا مباركا فيه 🤍" },
+    { main: "لا إله إلا الله", sub: "لا إله إلا الله وحده لا شريك له 🤲"      },
+    { main: "الله أكبر",       sub: "الله أكبر كبيرا، والحمد لله كثيرا ☝️"    },
+    { main: "أستغفر الله",     sub: "أستغفر الله العظيم وأتوب إليه 🕋"         },
 ];
 
-const NOTIF_MAX        = 9; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
+const NOTIF_MAX        = 10; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
 const GIFT_HIDE_MS     = 7000;
 const FOLLOW_HIDE_MS   = 7000;
 const MILESTONE_MS     = 10000;
-const BUBBLE_HOLD_MS   = 2000;
-const BUBBLE_FADE_MS   = 400;
+const BUBBLE_GRAVITY          = 360;  // تسارع السقوط الحر (px/s²)
+const BUBBLE_SPAWN_Y           = 140;  // نقطة الانطلاق (أسفل شريط التسبيح مباشرة)
+const BUBBLE_SPAWN_THROTTLE_MS = 450;  // أقل فترة بين كل دفعة فقاعات وأخرى (حماية من الفيضان عند كثرة اللايكات)
 
 const state = {
     viewerCount: 0,
@@ -107,9 +108,8 @@ const state = {
     milestoneText: "",
     currentAzkarItem: AZKAR_LIST[0],
 
-    bubbleText: "",
-    bubbleShownAt: 0,
-    bubblePalette: null,
+    tasbihBubbles: [], // فقاعات ساقطة حالياً: [{text,x,y0,spawnAt,palette,driftPhase,driftAmp}]
+    lastBubbleSpawnAt: 0,
 
     tasbihPercentage: 0,
     tasbihNumbersText: `0 / ${STEP_TARGET.toLocaleString()}`,
@@ -153,10 +153,23 @@ function setViewerCount(count) {
     state.viewerCount = count;
 }
 
-function showBubble(text) {
-    state.bubbleText = text;
-    state.bubbleShownAt = Date.now();
-    state.bubblePalette = BUBBLE_PALETTES[Math.floor(Math.random() * BUBBLE_PALETTES.length)];
+function spawnBubbles(text) {
+    const now = Date.now();
+    if (now - state.lastBubbleSpawnAt < BUBBLE_SPAWN_THROTTLE_MS) return; // حماية من الفيضان
+    state.lastBubbleSpawnAt = now;
+
+    const count = 3 + Math.floor(Math.random() * 3); // 3 إلى 5 فقاعات
+    for (let i = 0; i < count; i++) {
+        state.tasbihBubbles.push({
+            text,
+            x: WIDTH / 2 + (Math.random() - 0.5) * 280,
+            y0: BUBBLE_SPAWN_Y + (Math.random() - 0.5) * 20,
+            spawnAt: now + i * 70, // تتابع خفيف بين كل فقاعة والتالية بدل ظهورهم دفعة واحدة
+            palette: BUBBLE_PALETTES[Math.floor(Math.random() * BUBBLE_PALETTES.length)],
+            driftPhase: Math.random() * Math.PI * 2,
+            driftAmp: 10 + Math.random() * 15,
+        });
+    }
 }
 
 function setLikes(total) {
@@ -171,7 +184,7 @@ function setLikes(total) {
         state.lastTriggeredStage = stage;
         state.isMilestoneActive = true;
         state.milestoneShownAt = Date.now();
-        state.milestoneText = `:الذكر التالي ${currentItem.main}`;
+        state.milestoneText = `الذكر التالي: ${currentItem.main} 🌿`;
         state.tasbihPercentage = 100;
 
         setTimeout(() => {
@@ -188,28 +201,50 @@ function setLikes(total) {
         state.tasbihNumbersText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
         state.tasbihBumpAt = Date.now();
         state.currentAzkarItem = currentItem;
-        showBubble(currentItem.main);
+        spawnBubbles(currentItem.main);
     }
 }
 
-function pushNotification(list, kind, name, action, avatar) {
+function pushNotification(list, kind, name, action, avatar, pushAmount) {
+    const now = Date.now();
+
+    // الكروت الموجودة "تُدفع" للأعلى: نضيف مقدار الدفعة لإزاحتها الحالية المتبقية (لا نستبدلها)
+    // فلو توالت إشعارات بسرعة، الحركة تبقى متصلة وسلسة بدون قفزات.
+    list.forEach((item) => {
+        const leftover = currentAnimOffset(item, now);
+        item.animStartOffset = leftover + pushAmount;
+        item.animFrom = now;
+    });
+
     list.unshift({
         kind,
         name: name || (kind === "join" ? "متابع جديد" : "متابع"),
         action: action || "",
         avatar: avatar || FALLBACK_AVATAR,
         color: randomColor(),
-        createdAt: Date.now(),
+        createdAt: now,
+        animFrom: now,
+        animStartOffset: pushAmount, // يدخل من خطوة واحدة تحت موقعه، فيبدو أنه "يزحف" للأعلى مع الباقي
     });
     if (list.length > NOTIF_MAX) list.length = NOTIF_MAX;
 }
 
 function addJoin({ name, avatar }) {
-    pushNotification(state.joinNotifications, "join", name, "✨انضم الآن", avatar);
+    pushNotification(state.joinNotifications, "join", name, "انضم إلى البث الآن ✨", avatar, JOIN_STEP_Y);
 }
 
 function addComment({ name, text, avatar }) {
-    pushNotification(state.commentNotifications, "comment", name, text, avatar);
+    // نحسب ارتفاع الكرت الفعلي (حسب طول النص) قبل الإضافة، لمعرفة مقدار الدفع الصحيح للكروت الأقدم
+    const tokens = [
+        { text: `${name || "متابع"}:`, font: `700 18px ${FONT_BOLD}` },
+        { text: text || "", font: `600 18px ${FONT_TEXT}` },
+    ];
+    const lines = layoutInlineTokens(tokens, COMMENT_MAX_TEXT_W);
+    const contentH = Math.max(COMMENT_AVATAR_D + 2, lines.length * COMMENT_LINE_HEIGHT);
+    const cardH = contentH + COMMENT_PAD_Y * 2;
+    const pushAmount = cardH + COMMENT_MARGIN_TOP;
+
+    pushNotification(state.commentNotifications, "comment", name, text, avatar, pushAmount);
 }
 
 function setFollow({ name, avatar, followerCount }) {
@@ -294,50 +329,63 @@ function truncateText(text, maxWidth) {
 // 7. الرسم — كل عنصر بدالته الخاصة، بترتيب z-index الأصلي (من الخلف للأمام)
 // ──────────────────────────────────────────────
 
-// يحاكي بالضبط linear-gradient(to top, ...) الأصلي في #join-container:
-// 0%→معتم بالكامل، 15%→0.95، 50%→0.7، 80%→0.2، 100%→شفاف تماماً
-// دالة عامة تحاكي linear-gradient(to top, ...) بأي نقاط توقف تُمرَّر لها
-function maskAlpha(distanceFromBottom, containerHeight, stops) {
-    const f = distanceFromBottom / containerHeight; // 0 = عند القاعدة، 1 = عند أعلى الحاوية
-    if (f <= 0) return 1;
-    if (f >= 1) return 0;
-    for (let i = 0; i < stops.length - 1; i++) {
-        const [f0, a0] = stops[i];
-        const [f1, a1] = stops[i + 1];
-        if (f >= f0 && f <= f1) {
-            const t = (f - f0) / (f1 - f0);
-            return a0 + (a1 - a0) * t;
-        }
-    }
-    return 0;
+// نظام تلاشي مبسّط ومباشر: التحكم بعدد الأشرطة لا بالنسبة المئوية للمسافة.
+// alpha = 1 لكل الأشرطة من 0 حتى FADE_START_INDEX، وبعدها تتلاشى خطياً حتى FADE_END_INDEX.
+function fadeAlphaByIndex(idx, fadeStartIndex, fadeEndIndex) {
+    if (idx < fadeStartIndex) return 1;
+    if (idx >= fadeEndIndex) return 0;
+    const t = (idx - fadeStartIndex) / (fadeEndIndex - fadeStartIndex);
+    return 1 - t;
 }
 
-// نفس نقاط mask-image لـ #join-container الأصلي
-const JOIN_MASK_STOPS = [
-    [0, 1], [0.1, 1], [0.2, 1], [0.3, 1], [0.4, 1], [0.5, 1], 
-    [0.6, 1], [0.7, 1], [0.8, 0.6], [0.9, 0.3], [1, 0],
-];
-// نفس نقاط mask-image لـ #chat-container الأصلي (11 نقطة، تدرّج أنعم على ارتفاع أكبر)
-const COMMENT_MASK_STOPS = [
-    [0, 1], [0.1, 1], [0.2, 1], [0.3, 1], [0.4, 1], [0.5, 1], 
-    [0.6, 1], [0.7, 1], [0.8, 0.6], [0.9, 0.3], [1, 0],
-];
+// ── إعدادات قابلة للتعديل المباشر ──
+const JOIN_EDGE_MARGIN     = 30; // المسافة بين كروت الانضمام وحافة الشاشة (يسار)
+const COMMENT_EDGE_MARGIN  = 30; // المسافة بين كروت التعليقات وحافة الشاشة (يمين)
 
+const JOIN_FADE_START_INDEX    = 4; // أول 4 أشرطة (idx 0..3) معتمة بالكامل، الخامس (idx 4) يبدأ التلاشي
+const JOIN_FADE_END_INDEX      = 9; // يختفي تماماً عند الشريط العاشر (idx 9)
+const COMMENT_FADE_START_INDEX = 4;
+const COMMENT_FADE_END_INDEX   = 9;
+
+const JOIN_STEP_Y = 58; // المسافة بين كرت انضمام وكرت — نفس قيمة الدفع المستخدمة بالحركة
+
+// مقاسات كرت التعليق — موحّدة هنا لاستخدامها بحساب الدفع (push) وبالرسم معاً، فلا تتعارض القيم
+const COMMENT_BOX_W           = 380;
+const COMMENT_PAD_X           = 12;
+const COMMENT_PAD_Y           = 6;
+const COMMENT_AVATAR_R        = 17;
+const COMMENT_AVATAR_D        = COMMENT_AVATAR_R * 2;
+const COMMENT_GAP_AVATAR_TEXT = 10;
+const COMMENT_LINE_HEIGHT     = 24;
+const COMMENT_MARGIN_TOP      = 8;
+const COMMENT_MAX_TEXT_W      = COMMENT_BOX_W - COMMENT_PAD_X * 2 - COMMENT_AVATAR_D - COMMENT_GAP_AVATAR_TEXT;
+
+// ── حركة "الزحف والدفع" عند دخول إشعار جديد ──
+const ANIM_DURATION_MS = 300;
+function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+}
+// الإزاحة الحالية المتبقية للكرت (تتلاشى من animStartOffset إلى 0 خلال ANIM_DURATION_MS)
+function currentAnimOffset(item, now) {
+    if (!item.animFrom) return 0;
+    const t = Math.min(1, (now - item.animFrom) / ANIM_DURATION_MS);
+    return item.animStartOffset * (1 - easeOutCubic(t));
+}
 
 function drawNotificationStack(list, x) {
     const boxW = 360;
     const cardH = 54;
-    const stepY = 65; // متقارب أكثر من السابق — يسمح بعدد أكبر من الكروت يملأ المساحة للأعلى
-    const containerHeight = 550; // نفس ارتفاع #join-container الأصلي
+    const stepY = JOIN_STEP_Y; // المسافة بين كرت وكرت — كبّرها لتباعد أكثر
     const bottomY = HEIGHT - 40;
+    const now = Date.now();
 
     // [0] = الأحدث ويظهر بالأسفل (أقرب للحافة)، الأقدم يرتفع للأعلى ويتلاشى تدريجياً
     list.forEach((item, idx) => {
         const cardBottom = bottomY - idx * stepY;
-        const y = cardBottom - cardH;
-        const distanceFromBottom = idx * stepY;
-        const alpha = maskAlpha(distanceFromBottom, containerHeight, JOIN_MASK_STOPS);
-        if (alpha <= 0.05) return; // تلاشى تماماً، لا داعي لرسمه
+        const targetY = cardBottom - cardH;
+        const y = targetY + currentAnimOffset(item, now); // الموضع الفعلي للرسم خلال حركة الزحف
+        const alpha = fadeAlphaByIndex(idx, JOIN_FADE_START_INDEX, JOIN_FADE_END_INDEX);
+        if (alpha <= 0.01) return; // تلاشى تماماً، لا داعي لرسمه
 
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -352,16 +400,16 @@ function drawNotificationStack(list, x) {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        const avatarR = 20;
-        const avatarCx = x + 18 + avatarR;
+        const avatarR = 18;
+        const avatarCx = x + 16 + avatarR;
         const avatarCy = y + cardH / 2;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,255,255,0.4)", 1);
 
-        const textX = avatarCx + avatarR + 16;
+        const textX = avatarCx + avatarR + 14;
         const maxTextW = boxW - (textX - x) - 16;
         ctx.textAlign = "left";
         ctx.fillStyle = item.kind === "comment" ? "#ffbc00" : "#ffffff";
-        ctx.font = `500 18px ${FONT_BOLD}`;
+        ctx.font = `700 16px ${FONT_BOLD}`;
         ctx.fillText(truncateText(item.name, maxTextW), textX, avatarCy - 4);
 
         ctx.fillStyle = "rgba(255,255,255,0.55)";
@@ -373,7 +421,7 @@ function drawNotificationStack(list, x) {
 }
 
 function drawJoinNotifications() {
-    drawNotificationStack(state.joinNotifications, 30); // يسار الشاشة
+    drawNotificationStack(state.joinNotifications, JOIN_EDGE_MARGIN); // يسار الشاشة
 }
 
 // ── نظام التعليقات الأساسي: كروت مرنة تتمدد للأسفل حسب طول النص ──
@@ -431,46 +479,46 @@ function drawInlineLines(lines, x, startY, lineHeight) {
 }
 
 function drawCommentNotifications() {
-    const boxW = 380;            // نفس عرض #chat-container الأصلي
-    const containerHeight = 550; // نفس ارتفاع #chat-container الأصلي
-    const padX = 18, padY = 9;   // نفس padding: 6px 12px الأصلي
-    const avatarR = 17, avatarD = avatarR * 2;
-    const gapAvatarText = 12;
-    const lineHeight = 24;       // يقارب line-height:1.4 على خط 18px
-    const marginTop = 8;         // المسافة بين كرت وكرت (margin-top:8px الأصلي)
+    const boxW = COMMENT_BOX_W;       // نفس عرض #chat-container الأصلي
+    const padX = COMMENT_PAD_X, padY = COMMENT_PAD_Y;
+    const avatarR = COMMENT_AVATAR_R, avatarD = COMMENT_AVATAR_D;
+    const gapAvatarText = COMMENT_GAP_AVATAR_TEXT;
+    const lineHeight = COMMENT_LINE_HEIGHT;
+    const marginTop = COMMENT_MARGIN_TOP;
     const bottomY = HEIGHT - 40;
-    const x = WIDTH - 30 - boxW; // right:30px
+    const x = WIDTH - COMMENT_EDGE_MARGIN - boxW;
+    const now = Date.now();
 
-    const maxTextW = boxW - padX * 2 - avatarD - gapAvatarText;
+    const maxTextW = COMMENT_MAX_TEXT_W;
 
     let cursorBottom = bottomY;
 
     state.commentNotifications.forEach((item, idx) => {
         const tokens = [
-            { text: `${item.name}:`, font: `600 18px ${FONT_BOLD}`, color: "#ffbc00" },
-            { text: item.action || "", font: `500 18px ${FONT_TEXT}`, color: "rgba(255,255,255,0.95)" },
+            { text: `${item.name}:`, font: `700 18px ${FONT_BOLD}`, color: "#ffbc00" },
+            { text: item.action || "", font: `600 18px ${FONT_TEXT}`, color: "rgba(255,255,255,0.95)" },
         ];
         const lines = layoutInlineTokens(tokens, maxTextW);
         const textBlockH = lines.length * lineHeight;
         const contentH = Math.max(avatarD + 2, textBlockH); // +2 يطابق margin-top الأفاتار الأصلي
         const cardH = contentH + padY * 2;
 
+        // الموضع المنطقي (الهدف) — يُستخدم لحساب تراكم الكروت، لا يتأثر بالحركة
         const cardBottom = cursorBottom;
         const cardTop = cardBottom - cardH;
         cursorBottom = cardTop - marginTop; // الكرت التالي (الأقدم) يرتفع فوقه بنفس فجوة margin-top
 
-        // نفس منطق nth-child الأصلي: تدرّج خشن بالرتبة + قناع ناعم على كل الحاوية
-        const tierAlpha = idx === 0 ? 1 : idx === 1 ? 0.75 : idx === 2 ? 0.5 : 0.25;
-        const distanceFromBottom = bottomY - cardTop;
-        const smoothMask = maskAlpha(distanceFromBottom, containerHeight, COMMENT_MASK_STOPS);
-        const alpha = tierAlpha * smoothMask;
+        const alpha = fadeAlphaByIndex(idx, COMMENT_FADE_START_INDEX, COMMENT_FADE_END_INDEX);
         if (alpha <= 0.01 || cardTop > HEIGHT) return;
+
+        // الموضع الفعلي للرسم خلال حركة الزحف (يبدأ أسفل الهدف بمقدار الدفعة ثم يتلاشى الفرق)
+        const renderTop = cardTop + currentAnimOffset(item, now);
 
         ctx.save();
         ctx.globalAlpha = alpha;
 
         ctx.fillStyle = "rgba(12,12,18,0.75)";
-        roundRect(x, cardTop, boxW, cardH, 14);
+        roundRect(x, renderTop, boxW, cardH, 14);
         ctx.fill();
         ctx.strokeStyle = "rgba(255,255,255,0.12)";
         ctx.lineWidth = 1;
@@ -478,11 +526,11 @@ function drawCommentNotifications() {
 
         // الأفاتار يلتصق بأعلى الكرت (align-items: flex-start الأصلي)، لا يتوسّط رأسياً
         const avatarCx = x + padX + avatarR;
-        const avatarCy = cardTop + padY + 2 + avatarR;
+        const avatarCy = renderTop + padY + 2 + avatarR;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,188,0,0.6)", 1);
 
         const textX = x + padX + avatarD + gapAvatarText;
-        const textStartY = cardTop + padY + lineHeight * 0.78; // محاذاة خط الأساس مع أول سطر
+        const textStartY = renderTop + padY + lineHeight * 0.78; // محاذاة خط الأساس مع أول سطر
         drawInlineLines(lines, textX, textStartY, lineHeight);
 
         ctx.restore();
@@ -497,32 +545,48 @@ function drawLogo() {
     ctx.drawImage(logoImg, WIDTH / 2 - w / 2, HEIGHT / 2 - h / 2, w, h);
 }
 
-function drawBubble(cx, y) {
-    if (!state.bubbleText || !state.bubblePalette) return;
-    const elapsed = Date.now() - state.bubbleShownAt;
-    let alpha = 0;
-    if (elapsed < BUBBLE_FADE_MS) alpha = elapsed / BUBBLE_FADE_MS;
-    else if (elapsed < BUBBLE_HOLD_MS) alpha = 1;
-    else if (elapsed < BUBBLE_HOLD_MS + BUBBLE_FADE_MS) alpha = 1 - (elapsed - BUBBLE_HOLD_MS) / BUBBLE_FADE_MS;
-    else return;
+function drawTasbihBubbles() {
+    const now = Date.now();
+    const stillFalling = [];
 
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.font = `700 16px ${FONT_BOLD}`;
-    const textW = ctx.measureText(state.bubbleText).width;
-    const boxW = textW + 40, boxH = 36;
+    state.tasbihBubbles.forEach((b) => {
+        const elapsed = (now - b.spawnAt) / 1000;
+        if (elapsed < 0) {
+            stillFalling.push(b); // لم تولد بعد (تتابع الإطلاق)
+            return;
+        }
 
-    ctx.fillStyle = state.bubblePalette.bg;
-    roundRect(cx - boxW / 2, y - boxH / 2, boxW, boxH, 30);
-    ctx.fill();
-    ctx.strokeStyle = state.bubblePalette.border;
-    ctx.lineWidth = 1;
-    ctx.stroke();
+        const y = b.y0 + 0.5 * BUBBLE_GRAVITY * elapsed * elapsed; // سقوط حر متسارع
+        if (y > HEIGHT + 40) return; // خرجت من أسفل الشاشة فعلياً — تُحذف ولا تُرسم
 
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.textAlign = "center";
-    ctx.fillText(state.bubbleText, cx, y + 5);
-    ctx.restore();
+        stillFalling.push(b);
+
+        const x = b.x + b.driftAmp * Math.sin(b.driftPhase + elapsed * 2.2); // تمايل أفقي خفيف
+        const fadeIn = Math.min(1, elapsed / 0.15); // ظهور سريع وسلس بدل ظهور مفاجئ
+
+        ctx.save();
+        ctx.globalAlpha = fadeIn;
+        ctx.font = `700 16px ${FONT_BOLD}`;
+        const textW = ctx.measureText(b.text).width;
+        const boxW = textW + 40, boxH = 36;
+
+        ctx.fillStyle = b.palette.bg;
+        roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 30);
+        ctx.fill();
+        ctx.strokeStyle = b.palette.border;
+        ctx.lineWidth = 1;
+        ctx.shadowColor = b.palette.border;
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.textAlign = "center";
+        ctx.fillText(b.text, x, y + 5);
+        ctx.restore();
+    });
+
+    state.tasbihBubbles = stillFalling;
 }
 
 function drawTasbih() {
@@ -567,7 +631,7 @@ function drawTasbih() {
     ctx.shadowBlur = 0;
 
     // الساب تكست
-    const subY = barY + barH + 6 + 30;
+    const subY = barY + barH + 6 + 14;
     const subText = (state.currentAzkarItem || AZKAR_LIST[0]).sub;
     ctx.font = `600 20px ${FONT_TEXT}`;
     const subW = Math.min(barW * 0.95, ctx.measureText(subText).width + 16);
@@ -578,7 +642,7 @@ function drawTasbih() {
     ctx.textAlign = "center";
     ctx.fillText(truncateText(subText, subW - 16), cx, subY);
 
-    drawBubble(cx, subY + 46);
+    drawTasbihBubbles();
 }
 
 function drawClock() {
@@ -604,7 +668,7 @@ function drawClock() {
     ctx.fillText(timeText, x + boxW / 2, y + 26);
 
     ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.font = `600 12px ${FONT_TEXT}`;
+    ctx.font = `600 10px ${FONT_TEXT}`;
     ctx.fillText("مكة المكرمة", x + boxW / 2, y + 44);
 }
 
@@ -639,22 +703,22 @@ function drawFollowBanner() {
     if (!state.follow) return;
     const f = state.follow;
 
-    const avatarR = 26, avatarD = avatarR * 2;
-    const padX = 20;
-    const gapTextAvatar = 14;
-    const gapCountText = 20;
-    const boxH = 72;
+    const avatarR = 36, avatarD = avatarR * 2;
+    const padX = 28;
+    const gapTextAvatar = 20;
+    const gapCountText = 28;
+    const boxH = 100;
 
-    ctx.font = `700 20px ${FONT_BOLD}`;
+    ctx.font = `700 28px ${FONT_BOLD}`;
     const nameW = ctx.measureText(f.name).width;
-    ctx.font = `800 11px ${FONT_XBOLD}`;
+    ctx.font = `800 15px ${FONT_XBOLD}`;
     const labelW = ctx.measureText("FOLLOW 👤").width;
     const textBlockW = Math.max(nameW, labelW);
 
     const countText = `👥 ${f.count}`;
-    ctx.font = `600 14px ${FONT_TEXT}`;
+    ctx.font = `600 19px ${FONT_TEXT}`;
     const countTextW = ctx.measureText(countText).width;
-    const cbW = countTextW + 28, cbH = 30;
+    const cbW = countTextW + 36, cbH = 42;
 
     // عرض الصندوق يحتسب كل العناصر (الأفاتار + النص + صندوق العداد) فلا يتجاوز أي عنصر الحدود
     const contentW = padX + cbW + gapCountText + textBlockW + gapTextAvatar + avatarD + padX;
@@ -672,29 +736,29 @@ function drawFollowBanner() {
     // الأفاتار في أقصى اليمين
     const avatarCx = x + boxW - padX - avatarR;
     const avatarCy = y + boxH / 2;
-    drawCircleImage(getImage(f.avatar), avatarCx, avatarCy, avatarR, "#ffbc00", 2);
+    drawCircleImage(getImage(f.avatar), avatarCx, avatarCy, avatarR, "#ffbc00", 3);
 
     // النص (Follow + الاسم) يسار الأفاتار مباشرة
     const textRightEdge = avatarCx - avatarR - gapTextAvatar;
     ctx.textAlign = "right";
     ctx.fillStyle = "#ffbc00";
-    ctx.font = `800 11px ${FONT_XBOLD}`;
-    ctx.fillText("FOLLOW 👤", textRightEdge, avatarCy - 8);
+    ctx.font = `800 15px ${FONT_XBOLD}`;
+    ctx.fillText("FOLLOW 👤", textRightEdge, avatarCy - 12);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = `700 20px ${FONT_BOLD}`;
-    ctx.fillText(f.name, textRightEdge, avatarCy + 14);
+    ctx.font = `700 28px ${FONT_BOLD}`;
+    ctx.fillText(f.name, textRightEdge, avatarCy + 18);
 
     // صندوق العداد في أقصى اليسار — الآن دايماً داخل حدود البنر
     const cbX = x + padX;
     const cbY = y + boxH / 2 - cbH / 2;
     ctx.fillStyle = "rgba(255,255,255,0.08)";
-    roundRect(cbX, cbY, cbW, cbH, 20);
+    roundRect(cbX, cbY, cbW, cbH, 26);
     ctx.fill();
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(255,255,255,0.9)";
-    ctx.font = `600 14px ${FONT_TEXT}`;
-    ctx.fillText(countText, cbX + cbW / 2, cbY + cbH / 2 + 5);
+    ctx.font = `600 19px ${FONT_TEXT}`;
+    ctx.fillText(countText, cbX + cbW / 2, cbY + cbH / 2 + 7);
 }
 
 function drawGiftBanner() {
@@ -722,7 +786,7 @@ function drawGiftBanner() {
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
     ctx.font = `800 16px ${FONT_XBOLD}`;
-    ctx.fillText(` شكراً: ${g.name}`, textX, avatarCy - 8);
+    ctx.fillText(` شكراً 🤍: ${g.name}`, textX, avatarCy - 8);
 
     // عداد التكرار بتأثير pop عند كل تحديث (count-pop الأصلي)
     const bumpElapsed = Date.now() - (g.lastBumpAt || g.shownAt);
@@ -795,7 +859,7 @@ function drawMilestoneBanner() {
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
     ctx.font = `700 36px ${FONT_BOLD}`;
-    ctx.fillText("تم تحقيق الهدف!", 0, -20);
+    ctx.fillText("تم تحقيق الهدف! 🎉", 0, -20);
 
     ctx.fillStyle = "#ffcc00";
     ctx.font = `700 24px ${FONT_BOLD}`;
