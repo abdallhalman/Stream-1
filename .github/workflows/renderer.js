@@ -94,7 +94,7 @@ const NOTIF_MAX        = 9; // عدد الكروت المحفوظة بالذاك
 const GIFT_HIDE_MS     = 7000;
 const FOLLOW_HIDE_MS   = 7000;
 const MILESTONE_MS     = 10000;
-const BUBBLE_GRAVITY          = 360;  // تسارع السقوط الحر (px/s²)
+const BUBBLE_GRAVITY          = 620;  // تسارع السقوط الحر (px/s²)
 const BUBBLE_SPAWN_Y           = 140;  // نقطة الانطلاق (أسفل شريط التسبيح مباشرة)
 const BUBBLE_SPAWN_THROTTLE_MS = 450;  // أقل فترة بين كل دفعة فقاعات وأخرى (حماية من الفيضان عند كثرة اللايكات)
 
@@ -361,7 +361,7 @@ const COMMENT_MARGIN_TOP      = 8;
 const COMMENT_MAX_TEXT_W      = COMMENT_BOX_W - COMMENT_PAD_X * 2 - COMMENT_AVATAR_D - COMMENT_GAP_AVATAR_TEXT;
 
 // ── حركة "الزحف والدفع" عند دخول إشعار جديد ──
-const ANIM_DURATION_MS = 300;
+const ANIM_DURATION_MS = 450;
 function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
 }
@@ -413,7 +413,7 @@ function drawNotificationStack(list, x) {
         ctx.fillText(truncateText(item.name, maxTextW), textX, avatarCy - 4);
 
         ctx.fillStyle = "rgba(255,255,255,0.55)";
-        ctx.font = `500 13px ${FONT_TEXT}`;
+        ctx.font = `600 12px ${FONT_TEXT}`;
         ctx.fillText(truncateText(item.action, maxTextW), textX, avatarCy + 16);
 
         ctx.restore();
