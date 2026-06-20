@@ -90,7 +90,7 @@ const AZKAR_LIST = [
     { main: "أستغفر الله",     sub: "🕋أستغفر الله العظيم وأتوب إليه"         },
 ];
 
-const NOTIF_MAX        = 10; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
+const NOTIF_MAX        = 9; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
 const GIFT_HIDE_MS     = 7000;
 const FOLLOW_HIDE_MS   = 7000;
 const MILESTONE_MS     = 10000;
@@ -325,7 +325,7 @@ const COMMENT_MASK_STOPS = [
 
 function drawNotificationStack(list, x) {
     const boxW = 360;
-    const cardH = 65;
+    const cardH = 54;
     const stepY = 65; // متقارب أكثر من السابق — يسمح بعدد أكبر من الكروت يملأ المساحة للأعلى
     const containerHeight = 550; // نفس ارتفاع #join-container الأصلي
     const bottomY = HEIGHT - 40;
@@ -336,7 +336,7 @@ function drawNotificationStack(list, x) {
         const y = cardBottom - cardH;
         const distanceFromBottom = idx * stepY;
         const alpha = maskAlpha(distanceFromBottom, containerHeight, JOIN_MASK_STOPS);
-        if (alpha <= 0.01) return; // تلاشى تماماً، لا داعي لرسمه
+        if (alpha <= 0.05) return; // تلاشى تماماً، لا داعي لرسمه
 
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -431,7 +431,7 @@ function drawInlineLines(lines, x, startY, lineHeight) {
 
 function drawCommentNotifications() {
     const boxW = 380;            // نفس عرض #chat-container الأصلي
-    const containerHeight = 600; // نفس ارتفاع #chat-container الأصلي
+    const containerHeight = 550; // نفس ارتفاع #chat-container الأصلي
     const padX = 18, padY = 9;   // نفس padding: 6px 12px الأصلي
     const avatarR = 17, avatarD = avatarR * 2;
     const gapAvatarText = 12;
@@ -566,7 +566,7 @@ function drawTasbih() {
     ctx.shadowBlur = 0;
 
     // الساب تكست
-    const subY = barY + barH + 6 + 20;
+    const subY = barY + barH + 6 + 30;
     const subText = (state.currentAzkarItem || AZKAR_LIST[0]).sub;
     ctx.font = `600 20px ${FONT_TEXT}`;
     const subW = Math.min(barW * 0.95, ctx.measureText(subText).width + 16);
