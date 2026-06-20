@@ -5,7 +5,7 @@ on:
 
 jobs:
   stream:
-    runs-on: self-hostedt
+    runs-on: self-hosted
     timeout-minutes: 2880
     steps:
 
