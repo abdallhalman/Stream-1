@@ -9,7 +9,7 @@ const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
 const FPS    = 30;
-const RENDER_FPS = 30; // معدل تحديث الأوفرلاي — مرتفع لأن canvas أخف بكثير من Puppeteer
+const RENDER_FPS = 10; // معدل تحديث الأوفرلاي — مرتفع لأن canvas أخف بكثير من Puppeteer
 
 let totalLikes = 0;
 let lastJoinTime = 0;
