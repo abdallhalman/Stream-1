@@ -93,9 +93,9 @@ const AZKAR_LIST = [
 const NOTIF_MAX        = 9; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
 const GIFT_HIDE_MS     = 7000;
 const FOLLOW_HIDE_MS   = 7000;
-const MILESTONE_MS     = 10000;
-const BUBBLE_HOLD_MS   = 2000;
-const BUBBLE_FADE_MS   = 400;
+const MILESTONE_MS     = 7000;
+const BUBBLE_HOLD_MS   = 3000;
+const BUBBLE_FADE_MS   = 600;
 
 const state = {
     viewerCount: 0,
@@ -217,7 +217,7 @@ function pushNotification(list, kind, name, action, avatar, pushAmount) {
 }
 
 function addJoin({ name, avatar }) {
-    pushNotification(state.joinNotifications, "join", name, "انضم إلى البث الآن ✨", avatar, JOIN_STEP_Y);
+    pushNotification(state.joinNotifications, "join", name, "✨ انضم الآن ", avatar, JOIN_STEP_Y);
 }
 
 function addComment({ name, text, avatar }) {
@@ -361,8 +361,8 @@ function currentAnimOffset(item, now) {
 
 function drawNotificationStack(list, x) {
     const boxW = 360;
-    const cardH = 54;
-    const stepY = JOIN_STEP_Y; // المسافة بين كرت وكرت — كبّرها لتباعد أكثر
+    const cardH = 54 + 10;
+    const stepY = JOIN_STEP_Y + 10; // المسافة بين كرت وكرت — كبّرها لتباعد أكثر
     const bottomY = HEIGHT - 40;
     const now = Date.now();
 
@@ -378,7 +378,7 @@ function drawNotificationStack(list, x) {
         ctx.globalAlpha = alpha;
 
         ctx.fillStyle = "rgba(20,20,30,0.60)";
-        roundRect(x, y, boxW, cardH, 18);
+        roundRect(x, y, boxW, cardH, 20);
         ctx.fill();
         ctx.strokeStyle = item.color;
         ctx.lineWidth = 1.5;
@@ -387,7 +387,7 @@ function drawNotificationStack(list, x) {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        const avatarR = 18;
+        const avatarR = 20;
         const avatarCx = x + 16 + avatarR;
         const avatarCy = y + cardH / 2;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,255,255,0.4)", 1);
@@ -400,7 +400,7 @@ function drawNotificationStack(list, x) {
         ctx.fillText(truncateText(item.name, maxTextW), textX, avatarCy - 4);
 
         ctx.fillStyle = "rgba(255,255,255,0.55)";
-        ctx.font = `600 12px ${FONT_TEXT}`;
+        ctx.font = `600 13px ${FONT_TEXT}`;
         ctx.fillText(truncateText(item.action, maxTextW), textX, avatarCy + 16);
 
         ctx.restore();
