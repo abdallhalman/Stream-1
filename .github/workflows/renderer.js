@@ -316,15 +316,15 @@ function maskAlpha(distanceFromBottom, containerHeight, stops) {
 const JOIN_MASK_STOPS = [[0, 1], [0.15, 0.95], [0.5, 0.7], [0.8, 0.2], [1, 0]];
 // نفس نقاط mask-image لـ #chat-container الأصلي (11 نقطة، تدرّج أنعم على ارتفاع أكبر)
 const COMMENT_MASK_STOPS = [
-    [0, 1], [0.1, 0.9], [0.2, 0.8], [0.3, 0.7], [0.4, 0.6], [0.5, 0.5],
+    [0, 1], [0.1, 1], [0.2, 1], [0.3, 1], [0.4, 1], [0.5, 0.5],
     [0.6, 0.4], [0.7, 0.3], [0.8, 0.2], [0.9, 0.1], [1, 0],
 ];
 
 function drawNotificationStack(list, x) {
     const boxW = 360;
     const cardH = 54;
-    const stepY = 58; // متقارب أكثر من السابق — يسمح بعدد أكبر من الكروت يملأ المساحة للأعلى
-    const containerHeight = 280; // نفس ارتفاع #join-container الأصلي
+    const stepY = 65; // متقارب أكثر من السابق — يسمح بعدد أكبر من الكروت يملأ المساحة للأعلى
+    const containerHeight = 600; // نفس ارتفاع #join-container الأصلي
     const bottomY = HEIGHT - 40;
 
     // [0] = الأحدث ويظهر بالأسفل (أقرب للحافة)، الأقدم يرتفع للأعلى ويتلاشى تدريجياً
@@ -429,7 +429,7 @@ function drawInlineLines(lines, x, startY, lineHeight) {
 function drawCommentNotifications() {
     const boxW = 380;            // نفس عرض #chat-container الأصلي
     const containerHeight = 600; // نفس ارتفاع #chat-container الأصلي
-    const padX = 12, padY = 6;   // نفس padding: 6px 12px الأصلي
+    const padX = 14, padY = 7;   // نفس padding: 6px 12px الأصلي
     const avatarR = 17, avatarD = avatarR * 2;
     const gapAvatarText = 10;
     const lineHeight = 24;       // يقارب line-height:1.4 على خط 18px
@@ -443,8 +443,8 @@ function drawCommentNotifications() {
 
     state.commentNotifications.forEach((item, idx) => {
         const tokens = [
-            { text: `${item.name}:`, font: `700 18px ${FONT_BOLD}`, color: "#ffbc00" },
-            { text: item.action || "", font: `600 18px ${FONT_TEXT}`, color: "rgba(255,255,255,0.95)" },
+            { text: `${item.name}:`, font: `600 18px ${FONT_BOLD}`, color: "#ffbc00" },
+            { text: item.action || "", font: `500 18px ${FONT_TEXT}`, color: "rgba(255,255,255,0.95)" },
         ];
         const lines = layoutInlineTokens(tokens, maxTextW);
         const textBlockH = lines.length * lineHeight;
