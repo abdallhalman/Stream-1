@@ -94,9 +94,8 @@ const NOTIF_MAX        = 9; // عدد الكروت المحفوظة بالذاك
 const GIFT_HIDE_MS     = 7000;
 const FOLLOW_HIDE_MS   = 7000;
 const MILESTONE_MS     = 10000;
-const BUBBLE_GRAVITY          = 180;  // تسارع السقوط الحر (px/s²)
-const BUBBLE_SPAWN_Y           = 140;  // نقطة الانطلاق (أسفل شريط التسبيح مباشرة)
-const BUBBLE_SPAWN_THROTTLE_MS = 360;  // أقل فترة بين كل دفعة فقاعات وأخرى (حماية من الفيضان عند كثرة اللايكات)
+const BUBBLE_HOLD_MS   = 2000;
+const BUBBLE_FADE_MS   = 400;
 
 const state = {
     viewerCount: 0,
@@ -108,8 +107,9 @@ const state = {
     milestoneText: "",
     currentAzkarItem: AZKAR_LIST[0],
 
-    tasbihBubbles: [], // فقاعات ساقطة حالياً: [{text,x,y0,spawnAt,palette,driftPhase,driftAmp}]
-    lastBubbleSpawnAt: 0,
+    bubbleText: "",
+    bubbleShownAt: 0,
+    bubblePalette: null,
 
     tasbihPercentage: 0,
     tasbihNumbersText: `0 / ${STEP_TARGET.toLocaleString()}`,
@@ -153,23 +153,10 @@ function setViewerCount(count) {
     state.viewerCount = count;
 }
 
-function spawnBubbles(text) {
-    const now = Date.now();
-    if (now - state.lastBubbleSpawnAt < BUBBLE_SPAWN_THROTTLE_MS) return; // حماية من الفيضان
-    state.lastBubbleSpawnAt = now;
-
-    const count = 1 + Math.floor(Math.random() * 2); // 3 إلى 5 فقاعات
-    for (let i = 0; i < count; i++) {
-        state.tasbihBubbles.push({
-            text,
-            x: WIDTH / 2 + (Math.random() - 0.5) * 280,
-            y0: BUBBLE_SPAWN_Y + (Math.random() - 0.5) * 20,
-            spawnAt: now + i * 70, // تتابع خفيف بين كل فقاعة والتالية بدل ظهورهم دفعة واحدة
-            palette: BUBBLE_PALETTES[Math.floor(Math.random() * BUBBLE_PALETTES.length)],
-            driftPhase: Math.random() * Math.PI * 2,
-            driftAmp: 10 + Math.random() * 15,
-        });
-    }
+function showBubble(text) {
+    state.bubbleText = text;
+    state.bubbleShownAt = Date.now();
+    state.bubblePalette = BUBBLE_PALETTES[Math.floor(Math.random() * BUBBLE_PALETTES.length)];
 }
 
 function setLikes(total) {
@@ -201,7 +188,7 @@ function setLikes(total) {
         state.tasbihNumbersText = `${currentLikes.toLocaleString()} / ${STEP_TARGET.toLocaleString()}`;
         state.tasbihBumpAt = Date.now();
         state.currentAzkarItem = currentItem;
-        spawnBubbles(currentItem.main);
+        showBubble(currentItem.main);
     }
 }
 
@@ -463,16 +450,17 @@ function layoutInlineTokens(tokens, maxWidth) {
     return lines;
 }
 
-function drawInlineLines(lines, x, startY, lineHeight) {
+function drawInlineLines(lines, rightEdgeX, startY, lineHeight) {
+    // العربي يُقرأ يمين→يسار: أول كلمة بالسطر تُرسم أقصى اليمين، وكل كلمة تالية تتحرك يساراً
     let cy = startY;
     lines.forEach((line) => {
-        let cx = x;
-        ctx.textAlign = "left";
+        let cx = rightEdgeX;
+        ctx.textAlign = "right";
         line.forEach((word) => {
             ctx.font = word.font;
             ctx.fillStyle = word.color;
             ctx.fillText(word.text, cx, cy);
-            cx += measureWith(word.text, word.font) + measureWith(" ", word.font);
+            cx -= measureWith(word.text, word.font) + measureWith(" ", word.font);
         });
         cy += lineHeight;
     });
@@ -531,7 +519,8 @@ function drawCommentNotifications() {
 
         const textX = x + padX + avatarD + gapAvatarText;
         const textStartY = renderTop + padY + lineHeight * 0.78; // محاذاة خط الأساس مع أول سطر
-        drawInlineLines(lines, textX, textStartY, lineHeight);
+        const textRightEdge = x + boxW - padX; // أقصى يمين منطقة النص — نقطة انطلاق الكتابة العربية
+        drawInlineLines(lines, textRightEdge, textStartY, lineHeight);
 
         ctx.restore();
     });
@@ -545,48 +534,32 @@ function drawLogo() {
     ctx.drawImage(logoImg, WIDTH / 2 - w / 2, HEIGHT / 2 - h / 2, w, h);
 }
 
-function drawTasbihBubbles() {
-    const now = Date.now();
-    const stillFalling = [];
+function drawBubble(cx, y) {
+    if (!state.bubbleText || !state.bubblePalette) return;
+    const elapsed = Date.now() - state.bubbleShownAt;
+    let alpha = 0;
+    if (elapsed < BUBBLE_FADE_MS) alpha = elapsed / BUBBLE_FADE_MS;
+    else if (elapsed < BUBBLE_HOLD_MS) alpha = 1;
+    else if (elapsed < BUBBLE_HOLD_MS + BUBBLE_FADE_MS) alpha = 1 - (elapsed - BUBBLE_HOLD_MS) / BUBBLE_FADE_MS;
+    else return;
 
-    state.tasbihBubbles.forEach((b) => {
-        const elapsed = (now - b.spawnAt) / 1000;
-        if (elapsed < 0) {
-            stillFalling.push(b); // لم تولد بعد (تتابع الإطلاق)
-            return;
-        }
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = `700 16px ${FONT_BOLD}`;
+    const textW = ctx.measureText(state.bubbleText).width;
+    const boxW = textW + 40, boxH = 36;
 
-        const y = b.y0 + 0.5 * BUBBLE_GRAVITY * elapsed * elapsed; // سقوط حر متسارع
-        if (y > HEIGHT + 40) return; // خرجت من أسفل الشاشة فعلياً — تُحذف ولا تُرسم
+    ctx.fillStyle = state.bubblePalette.bg;
+    roundRect(cx - boxW / 2, y - boxH / 2, boxW, boxH, 30);
+    ctx.fill();
+    ctx.strokeStyle = state.bubblePalette.border;
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
-        stillFalling.push(b);
-
-        const x = b.x + b.driftAmp * Math.sin(b.driftPhase + elapsed * 2.2); // تمايل أفقي خفيف
-        const fadeIn = Math.min(1, elapsed / 0.15); // ظهور سريع وسلس بدل ظهور مفاجئ
-
-        ctx.save();
-        ctx.globalAlpha = fadeIn;
-        ctx.font = `700 16px ${FONT_BOLD}`;
-        const textW = ctx.measureText(b.text).width;
-        const boxW = textW + 40, boxH = 36;
-
-        ctx.fillStyle = b.palette.bg;
-        roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 30);
-        ctx.fill();
-        ctx.strokeStyle = b.palette.border;
-        ctx.lineWidth = 1;
-        ctx.shadowColor = b.palette.border;
-        ctx.shadowBlur = 10;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        ctx.fillStyle = "rgba(255,255,255,0.95)";
-        ctx.textAlign = "center";
-        ctx.fillText(b.text, x, y + 5);
-        ctx.restore();
-    });
-
-    state.tasbihBubbles = stillFalling;
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.textAlign = "center";
+    ctx.fillText(state.bubbleText, cx, y + 5);
+    ctx.restore();
 }
 
 function drawTasbih() {
@@ -642,7 +615,7 @@ function drawTasbih() {
     ctx.textAlign = "center";
     ctx.fillText(truncateText(subText, subW - 16), cx, subY);
 
-    drawTasbihBubbles();
+    drawBubble(cx, subY + 46);
 }
 
 function drawClock() {
