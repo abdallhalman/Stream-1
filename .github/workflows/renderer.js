@@ -83,11 +83,11 @@ if (fs.existsSync(logoPath)) {
 // ──────────────────────────────────────────────
 const STEP_TARGET = 1000;
 const AZKAR_LIST = [
-    { main: "سبحان الله",      sub: "سبحان الله وبحمده، سبحان الله العظيم 🌿" },
-    { main: "الحمد لله",       sub: "الحمد لله حمدا كثيرا طيبا مباركا فيه 🤍" },
-    { main: "لا إله إلا الله", sub: "لا إله إلا الله وحده لا شريك له 🤲"      },
-    { main: "الله أكبر",       sub: "الله أكبر كبيرا، والحمد لله كثيرا ☝️"    },
-    { main: "أستغفر الله",     sub: "أستغفر الله العظيم وأتوب إليه 🕋"         },
+    { main: "سبحان الله",      sub: "🌿سبحان الله وبحمده، سبحان الله العظيم" },
+    { main: "الحمد لله",       sub: "🤍الحمد لله حمدا كثيرا طيبا مباركا فيه" },
+    { main: "لا إله إلا الله", sub: "🤲لا إله إلا الله وحده لا شريك له"      },
+    { main: "الله أكبر",       sub: "☝️الله أكبر كبيرا، والحمد لله كثيرا"    },
+    { main: "أستغفر الله",     sub: "🕋أستغفر الله العظيم وأتوب إليه"         },
 ];
 
 const NOTIF_MAX        = 10; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
@@ -205,7 +205,7 @@ function pushNotification(list, kind, name, action, avatar) {
 }
 
 function addJoin({ name, avatar }) {
-    pushNotification(state.joinNotifications, "join", name, "انضم إلى البث الآن ✨", avatar);
+    pushNotification(state.joinNotifications, "join", name, "✨انضم الآن", avatar);
 }
 
 function addComment({ name, text, avatar }) {
@@ -313,18 +313,21 @@ function maskAlpha(distanceFromBottom, containerHeight, stops) {
 }
 
 // نفس نقاط mask-image لـ #join-container الأصلي
-const JOIN_MASK_STOPS = [[0, 1], [0.15, 0.95], [0.5, 0.7], [0.8, 0.2], [1, 0]];
+const JOIN_MASK_STOPS = [
+    [0, 1], [0.3, 1], [0.5, 1], [0.7, 1], [0.8, 0.5], [0.9, 0.2], [1, 0]
+];
 // نفس نقاط mask-image لـ #chat-container الأصلي (11 نقطة، تدرّج أنعم على ارتفاع أكبر)
 const COMMENT_MASK_STOPS = [
-    [0, 1], [0.1, 1], [0.2, 1], [0.3, 1], [0.4, 1], [0.5, 0.5],
-    [0.6, 0.4], [0.7, 0.3], [0.8, 0.2], [0.9, 0.1], [1, 0],
+    [0, 1], [0.1, 1], [0.2, 1], [0.3, 1], [0.4, 1], [0.5, 1], 
+    [0.6, 1], [0.7, 1], [0.8, 0.6], [0.9, 0.3], [1, 0],
 ];
+
 
 function drawNotificationStack(list, x) {
     const boxW = 360;
-    const cardH = 54;
+    const cardH = 65;
     const stepY = 65; // متقارب أكثر من السابق — يسمح بعدد أكبر من الكروت يملأ المساحة للأعلى
-    const containerHeight = 600; // نفس ارتفاع #join-container الأصلي
+    const containerHeight = 550; // نفس ارتفاع #join-container الأصلي
     const bottomY = HEIGHT - 40;
 
     // [0] = الأحدث ويظهر بالأسفل (أقرب للحافة)، الأقدم يرتفع للأعلى ويتلاشى تدريجياً
@@ -429,9 +432,9 @@ function drawInlineLines(lines, x, startY, lineHeight) {
 function drawCommentNotifications() {
     const boxW = 380;            // نفس عرض #chat-container الأصلي
     const containerHeight = 600; // نفس ارتفاع #chat-container الأصلي
-    const padX = 14, padY = 7;   // نفس padding: 6px 12px الأصلي
+    const padX = 18, padY = 9;   // نفس padding: 6px 12px الأصلي
     const avatarR = 17, avatarD = avatarR * 2;
-    const gapAvatarText = 10;
+    const gapAvatarText = 12;
     const lineHeight = 24;       // يقارب line-height:1.4 على خط 18px
     const marginTop = 8;         // المسافة بين كرت وكرت (margin-top:8px الأصلي)
     const bottomY = HEIGHT - 40;
@@ -563,7 +566,7 @@ function drawTasbih() {
     ctx.shadowBlur = 0;
 
     // الساب تكست
-    const subY = barY + barH + 6 + 14;
+    const subY = barY + barH + 6 + 20;
     const subText = (state.currentAzkarItem || AZKAR_LIST[0]).sub;
     ctx.font = `600 20px ${FONT_TEXT}`;
     const subW = Math.min(barW * 0.95, ctx.measureText(subText).width + 16);
@@ -600,7 +603,7 @@ function drawClock() {
     ctx.fillText(timeText, x + boxW / 2, y + 26);
 
     ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.font = `600 10px ${FONT_TEXT}`;
+    ctx.font = `600 12px ${FONT_TEXT}`;
     ctx.fillText("مكة المكرمة", x + boxW / 2, y + 44);
 }
 
@@ -718,7 +721,7 @@ function drawGiftBanner() {
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
     ctx.font = `800 16px ${FONT_XBOLD}`;
-    ctx.fillText(` شكراً 🤍: ${g.name}`, textX, avatarCy - 8);
+    ctx.fillText(` شكراً: ${g.name}`, textX, avatarCy - 8);
 
     // عداد التكرار بتأثير pop عند كل تحديث (count-pop الأصلي)
     const bumpElapsed = Date.now() - (g.lastBumpAt || g.shownAt);
@@ -791,7 +794,7 @@ function drawMilestoneBanner() {
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
     ctx.font = `700 36px ${FONT_BOLD}`;
-    ctx.fillText("تم تحقيق الهدف! 🎉", 0, -20);
+    ctx.fillText("تم تحقيق الهدف!", 0, -20);
 
     ctx.fillStyle = "#ffcc00";
     ctx.font = `700 24px ${FONT_BOLD}`;
