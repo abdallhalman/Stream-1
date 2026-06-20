@@ -171,7 +171,7 @@ function setLikes(total) {
         state.lastTriggeredStage = stage;
         state.isMilestoneActive = true;
         state.milestoneShownAt = Date.now();
-        state.milestoneText = `الذكر التالي: ${currentItem.main} 🌿`;
+        state.milestoneText = `:الذكر التالي ${currentItem.main}`;
         state.tasbihPercentage = 100;
 
         setTimeout(() => {
@@ -314,7 +314,8 @@ function maskAlpha(distanceFromBottom, containerHeight, stops) {
 
 // نفس نقاط mask-image لـ #join-container الأصلي
 const JOIN_MASK_STOPS = [
-    [0, 1], [0.3, 1], [0.5, 1], [0.7, 1], [0.8, 0.5], [0.9, 0.2], [1, 0]
+    [0, 1], [0.1, 1], [0.2, 1], [0.3, 1], [0.4, 1], [0.5, 1], 
+    [0.6, 1], [0.7, 1], [0.8, 0.6], [0.9, 0.3], [1, 0],
 ];
 // نفس نقاط mask-image لـ #chat-container الأصلي (11 نقطة، تدرّج أنعم على ارتفاع أكبر)
 const COMMENT_MASK_STOPS = [
@@ -351,16 +352,16 @@ function drawNotificationStack(list, x) {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        const avatarR = 18;
-        const avatarCx = x + 16 + avatarR;
+        const avatarR = 20;
+        const avatarCx = x + 18 + avatarR;
         const avatarCy = y + cardH / 2;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,255,255,0.4)", 1);
 
-        const textX = avatarCx + avatarR + 14;
+        const textX = avatarCx + avatarR + 16;
         const maxTextW = boxW - (textX - x) - 16;
         ctx.textAlign = "left";
         ctx.fillStyle = item.kind === "comment" ? "#ffbc00" : "#ffffff";
-        ctx.font = `700 16px ${FONT_BOLD}`;
+        ctx.font = `600 18px ${FONT_BOLD}`;
         ctx.fillText(truncateText(item.name, maxTextW), textX, avatarCy - 4);
 
         ctx.fillStyle = "rgba(255,255,255,0.55)";
