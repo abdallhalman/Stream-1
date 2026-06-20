@@ -94,9 +94,9 @@ const NOTIF_MAX        = 9; // عدد الكروت المحفوظة بالذاك
 const GIFT_HIDE_MS     = 7000;
 const FOLLOW_HIDE_MS   = 7000;
 const MILESTONE_MS     = 10000;
-const BUBBLE_GRAVITY          = 620;  // تسارع السقوط الحر (px/s²)
+const BUBBLE_GRAVITY          = 180;  // تسارع السقوط الحر (px/s²)
 const BUBBLE_SPAWN_Y           = 140;  // نقطة الانطلاق (أسفل شريط التسبيح مباشرة)
-const BUBBLE_SPAWN_THROTTLE_MS = 450;  // أقل فترة بين كل دفعة فقاعات وأخرى (حماية من الفيضان عند كثرة اللايكات)
+const BUBBLE_SPAWN_THROTTLE_MS = 360;  // أقل فترة بين كل دفعة فقاعات وأخرى (حماية من الفيضان عند كثرة اللايكات)
 
 const state = {
     viewerCount: 0,
@@ -158,7 +158,7 @@ function spawnBubbles(text) {
     if (now - state.lastBubbleSpawnAt < BUBBLE_SPAWN_THROTTLE_MS) return; // حماية من الفيضان
     state.lastBubbleSpawnAt = now;
 
-    const count = 3 + Math.floor(Math.random() * 3); // 3 إلى 5 فقاعات
+    const count = 1 + Math.floor(Math.random() * 2); // 3 إلى 5 فقاعات
     for (let i = 0; i < count; i++) {
         state.tasbihBubbles.push({
             text,
@@ -342,9 +342,9 @@ function fadeAlphaByIndex(idx, fadeStartIndex, fadeEndIndex) {
 const JOIN_EDGE_MARGIN     = 30; // المسافة بين كروت الانضمام وحافة الشاشة (يسار)
 const COMMENT_EDGE_MARGIN  = 30; // المسافة بين كروت التعليقات وحافة الشاشة (يمين)
 
-const JOIN_FADE_START_INDEX    = 2; // أول 4 أشرطة (idx 0..3) معتمة بالكامل، الخامس (idx 4) يبدأ التلاشي
+const JOIN_FADE_START_INDEX    = 1; // أول 4 أشرطة (idx 0..3) معتمة بالكامل، الخامس (idx 4) يبدأ التلاشي
 const JOIN_FADE_END_INDEX      = 9; // يختفي تماماً عند الشريط العاشر (idx 9)
-const COMMENT_FADE_START_INDEX = 2;
+const COMMENT_FADE_START_INDEX = 1;
 const COMMENT_FADE_END_INDEX   = 9;
 
 const JOIN_STEP_Y = 65; // المسافة بين كرت انضمام وكرت — نفس قيمة الدفع المستخدمة بالحركة
@@ -361,7 +361,7 @@ const COMMENT_MARGIN_TOP      = 8;
 const COMMENT_MAX_TEXT_W      = COMMENT_BOX_W - COMMENT_PAD_X * 2 - COMMENT_AVATAR_D - COMMENT_GAP_AVATAR_TEXT;
 
 // ── حركة "الزحف والدفع" عند دخول إشعار جديد ──
-const ANIM_DURATION_MS = 450;
+const ANIM_DURATION_MS = 900;
 function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
 }
