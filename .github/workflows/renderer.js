@@ -83,11 +83,11 @@ if (fs.existsSync(logoPath)) {
 // ──────────────────────────────────────────────
 const STEP_TARGET = 1000;
 const AZKAR_LIST = [
-    { main: "سبحان الله",      sub: "سبحان الله وبحمده، سبحان الله العظيم 🌿" },
-    { main: "الحمد لله",       sub: "الحمد لله حمدا كثيرا طيبا مباركا فيه 🤍" },
-    { main: "لا إله إلا الله", sub: "لا إله إلا الله وحده لا شريك له 🤲"      },
-    { main: "الله أكبر",       sub: "الله أكبر كبيرا، والحمد لله كثيرا ☝️"    },
-    { main: "أستغفر الله",     sub: "أستغفر الله العظيم وأتوب إليه 🕋"         },
+    { main: "سبحان الله",      sub: "🌿 سبحان الله وبحمده، سبحان الله العظيم" },
+    { main: "الحمد لله",       sub: "🤍 الحمد لله حمدا كثيرا طيبا مباركا فيه" },
+    { main: "لا إله إلا الله", sub: "🤲 لا إله إلا الله وحده لا شريك له"      },
+    { main: "الله أكبر",       sub: "☝️ الله أكبر كبيرا، والحمد لله كثيرا "    },
+    { main: "أستغفر الله",     sub: "🕋 أستغفر الله العظيم وأتوب إليه"         },
 ];
 
 const NOTIF_MAX        = 10; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
@@ -184,7 +184,7 @@ function setLikes(total) {
         state.lastTriggeredStage = stage;
         state.isMilestoneActive = true;
         state.milestoneShownAt = Date.now();
-        state.milestoneText = `الذكر التالي: ${currentItem.main} 🌿`;
+        state.milestoneText = `الذكر التالي: ${currentItem.main}`;
         state.tasbihPercentage = 100;
 
         setTimeout(() => {
@@ -342,12 +342,12 @@ function fadeAlphaByIndex(idx, fadeStartIndex, fadeEndIndex) {
 const JOIN_EDGE_MARGIN     = 30; // المسافة بين كروت الانضمام وحافة الشاشة (يسار)
 const COMMENT_EDGE_MARGIN  = 30; // المسافة بين كروت التعليقات وحافة الشاشة (يمين)
 
-const JOIN_FADE_START_INDEX    = 4; // أول 4 أشرطة (idx 0..3) معتمة بالكامل، الخامس (idx 4) يبدأ التلاشي
+const JOIN_FADE_START_INDEX    = 2; // أول 4 أشرطة (idx 0..3) معتمة بالكامل، الخامس (idx 4) يبدأ التلاشي
 const JOIN_FADE_END_INDEX      = 9; // يختفي تماماً عند الشريط العاشر (idx 9)
-const COMMENT_FADE_START_INDEX = 4;
+const COMMENT_FADE_START_INDEX = 2;
 const COMMENT_FADE_END_INDEX   = 9;
 
-const JOIN_STEP_Y = 58; // المسافة بين كرت انضمام وكرت — نفس قيمة الدفع المستخدمة بالحركة
+const JOIN_STEP_Y = 65; // المسافة بين كرت انضمام وكرت — نفس قيمة الدفع المستخدمة بالحركة
 
 // مقاسات كرت التعليق — موحّدة هنا لاستخدامها بحساب الدفع (push) وبالرسم معاً، فلا تتعارض القيم
 const COMMENT_BOX_W           = 380;
@@ -409,11 +409,11 @@ function drawNotificationStack(list, x) {
         const maxTextW = boxW - (textX - x) - 16;
         ctx.textAlign = "left";
         ctx.fillStyle = item.kind === "comment" ? "#ffbc00" : "#ffffff";
-        ctx.font = `700 16px ${FONT_BOLD}`;
+        ctx.font = `600 18px ${FONT_BOLD}`;
         ctx.fillText(truncateText(item.name, maxTextW), textX, avatarCy - 4);
 
         ctx.fillStyle = "rgba(255,255,255,0.55)";
-        ctx.font = `600 13px ${FONT_TEXT}`;
+        ctx.font = `500 13px ${FONT_TEXT}`;
         ctx.fillText(truncateText(item.action, maxTextW), textX, avatarCy + 16);
 
         ctx.restore();
@@ -495,7 +495,7 @@ function drawCommentNotifications() {
 
     state.commentNotifications.forEach((item, idx) => {
         const tokens = [
-            { text: `${item.name}:`, font: `700 18px ${FONT_BOLD}`, color: "#ffbc00" },
+            { text: `${item.name}:`, font: `600 18px ${FONT_BOLD}`, color: "#ffbc00" },
             { text: item.action || "", font: `600 18px ${FONT_TEXT}`, color: "rgba(255,255,255,0.95)" },
         ];
         const lines = layoutInlineTokens(tokens, maxTextW);
@@ -631,7 +631,7 @@ function drawTasbih() {
     ctx.shadowBlur = 0;
 
     // الساب تكست
-    const subY = barY + barH + 6 + 14;
+    const subY = barY + barH + 6 + 28;
     const subText = (state.currentAzkarItem || AZKAR_LIST[0]).sub;
     ctx.font = `600 20px ${FONT_TEXT}`;
     const subW = Math.min(barW * 0.95, ctx.measureText(subText).width + 16);
@@ -786,7 +786,7 @@ function drawGiftBanner() {
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
     ctx.font = `800 16px ${FONT_XBOLD}`;
-    ctx.fillText(` شكراً 🤍: ${g.name}`, textX, avatarCy - 8);
+    ctx.fillText(` شكراً: ${g.name}`, textX, avatarCy - 8);
 
     // عداد التكرار بتأثير pop عند كل تحديث (count-pop الأصلي)
     const bumpElapsed = Date.now() - (g.lastBumpAt || g.shownAt);
@@ -859,7 +859,7 @@ function drawMilestoneBanner() {
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
     ctx.font = `700 36px ${FONT_BOLD}`;
-    ctx.fillText("تم تحقيق الهدف! 🎉", 0, -20);
+    ctx.fillText("تم تحقيق الهدف!", 0, -20);
 
     ctx.fillStyle = "#ffcc00";
     ctx.font = `700 24px ${FONT_BOLD}`;
