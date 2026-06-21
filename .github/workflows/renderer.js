@@ -529,7 +529,7 @@ function drawLogo() {
     if (!logoImg) return;
     const w = 300;
     const h = (logoImg.height / logoImg.width) * w;
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 1;
     ctx.drawImage(logoImg, WIDTH / 2 - w / 2, HEIGHT / 2 - h / 2, w, h);
 }
 
