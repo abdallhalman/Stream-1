@@ -137,12 +137,12 @@ function randomColor() {
 }
 
 const BUBBLE_PALETTES = [
-    { bg: "rgba(57,255,20,0.6)",  border: "rgba(57,255,20,0.9)"  },
-    { bg: "rgba(0,200,255,0.6)",  border: "rgba(0,200,255,0.9)"  },
-    { bg: "rgba(255,188,0,0.6)",  border: "rgba(255,188,0,0.9)"  },
-    { bg: "rgba(255,60,200,0.6)", border: "rgba(255,60,200,0.9)" },
-    { bg: "rgba(157,93,255,0.6)", border: "rgba(157,93,255,0.9)" },
-    { bg: "rgba(255,100,50,0.6)", border: "rgba(255,100,50,0.9)" },
+    { bg: "rgba(57,255,20,0.12)",  border: "rgba(57,255,20,0.6)"  },
+    { bg: "rgba(0,200,255,0.12)",  border: "rgba(0,200,255,0.6)"  },
+    { bg: "rgba(255,188,0,0.12)",  border: "rgba(255,188,0,0.6)"  },
+    { bg: "rgba(255,60,200,0.12)", border: "rgba(255,60,200,0.6)" },
+    { bg: "rgba(157,93,255,0.12)", border: "rgba(157,93,255,0.6)" },
+    { bg: "rgba(255,100,50,0.12)", border: "rgba(255,100,50,0.6)" },
 ];
 
 // ──────────────────────────────────────────────
@@ -497,12 +497,12 @@ function drawBubble(cx, y) {
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = `700 44px ${FONT_BOLD}`;
+    ctx.font = `700 16px ${FONT_BOLD}`;
     const textW = ctx.measureText(state.bubbleText).width;
-    const boxW = Math.max(340, textW + 80), boxH = 340;
+    const boxW = textW + 40, boxH = 36;
 
     ctx.fillStyle = state.bubblePalette.bg;
-    roundRect(cx - boxW / 2, y - boxH / 2, boxW, boxH, Math.min(boxW, boxH) / 2);
+    roundRect(cx - boxW / 2, y - boxH / 2, boxW, boxH, 30);
     ctx.fill();
     ctx.strokeStyle = state.bubblePalette.border;
     ctx.lineWidth = 1;
@@ -510,7 +510,7 @@ function drawBubble(cx, y) {
 
     ctx.fillStyle = "rgba(255,255,255,0.95)";
     ctx.textAlign = "center";
-    ctx.fillText(state.bubbleText, cx, y + 14);
+    ctx.fillText(state.bubbleText, cx, y + 5);
     ctx.restore();
 }
 
@@ -558,16 +558,16 @@ function drawTasbih() {
     // الساب تكست
     const subY = barY + barH + 6 + 28;
     const subText = (state.currentAzkarItem || AZKAR_LIST[0]).sub;
-    ctx.font = `600 28px ${FONT_TEXT}`;
-    const subW = Math.min(WIDTH * 0.92, ctx.measureText(subText).width + 16);
+    ctx.font = `600 20px ${FONT_TEXT}`;
+    const subW = Math.min(barW * 0.95, ctx.measureText(subText).width + 16);
     ctx.fillStyle = "rgba(0,0,0,0.2)";
-    roundRect(cx - subW / 2, subY - 22, subW, 34, 12);
+    roundRect(cx - subW / 2, subY - 18, subW, 26, 10);
     ctx.fill();
     ctx.fillStyle = "rgba(255,255,255,0.9)";
     ctx.textAlign = "center";
     ctx.fillText(truncateText(subText, subW - 16), cx, subY);
 
-    drawBubble(cx, HEIGHT / 2);
+    drawBubble(cx, subY + 46);
 }
 
 function drawClock() {
