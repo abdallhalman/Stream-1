@@ -604,10 +604,10 @@ function drawTasbih() {
     // الساب تكست
     const subY = barY + barH + 6 + 28;
     const subText = (state.currentAzkarItem || AZKAR_LIST[0]).sub;
-    ctx.font = `600 20px ${FONT_TEXT}`;
+    ctx.font = `600 28px ${FONT_TEXT}`;
     const subW = Math.min(barW * 0.95, ctx.measureText(subText).width + 16);
     ctx.fillStyle = "rgba(0,0,0,0.2)";
-    roundRect(cx - subW / 2, subY - 18, subW, 26, 10);
+    roundRect(cx - subW / 2, subY - 22, subW, 34, 12);
     ctx.fill();
     ctx.fillStyle = "rgba(255,255,255,0.9)";
     ctx.textAlign = "center";
