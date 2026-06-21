@@ -138,14 +138,13 @@ function randomColor() {
 }
 
 const BUBBLE_PALETTES = [
-    { bg: "rgba(57,255,20,0.12)",  border: "rgba(57,255,20,0.6)"  },
-    { bg: "rgba(0,200,255,0.12)",  border: "rgba(0,200,255,0.6)"  },
-    { bg: "rgba(255,188,0,0.12)",  border: "rgba(255,188,0,0.6)"  },
-    { bg: "rgba(255,60,200,0.12)", border: "rgba(255,60,200,0.6)" },
-    { bg: "rgba(157,93,255,0.12)", border: "rgba(157,93,255,0.6)" },
-    { bg: "rgba(255,100,50,0.12)", border: "rgba(255,100,50,0.6)" },
+    { bg: "rgba(57,255,20,0.6)",  border: "rgba(57,255,20,0.9)"  },
+    { bg: "rgba(0,200,255,0.6)",  border: "rgba(0,200,255,0.9)"  },
+    { bg: "rgba(255,188,0,0.6)",  border: "rgba(255,188,0,0.9)"  },
+    { bg: "rgba(255,60,200,0.6)", border: "rgba(255,60,200,0.9)" },
+    { bg: "rgba(157,93,255,0.6)", border: "rgba(157,93,255,0.9)" },
+    { bg: "rgba(255,100,50,0.6)", border: "rgba(255,100,50,0.9)" },
 ];
-
 // ──────────────────────────────────────────────
 // 5. دوال تحديث الحالة — تُستدعى مباشرة من server.js بدل WebSocket
 // ──────────────────────────────────────────────
@@ -544,9 +543,9 @@ function drawBubble(cx, y) {
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = `700 16px ${FONT_BOLD}`;
+    ctx.font = `700 44px ${FONT_BOLD}`;
     const textW = ctx.measureText(state.bubbleText).width;
-    const boxW = textW + 40, boxH = 36;
+    const boxW = textW + 80, boxH = 340;
 
     ctx.fillStyle = state.bubblePalette.bg;
     roundRect(cx - boxW / 2, y - boxH / 2, boxW, boxH, 30);
@@ -557,7 +556,7 @@ function drawBubble(cx, y) {
 
     ctx.fillStyle = "rgba(255,255,255,0.95)";
     ctx.textAlign = "center";
-    ctx.fillText(state.bubbleText, cx, y + 5);
+    ctx.fillText(state.bubbleText, cx, y + 14);
     ctx.restore();
 }
 
@@ -614,7 +613,7 @@ function drawTasbih() {
     ctx.textAlign = "center";
     ctx.fillText(truncateText(subText, subW - 16), cx, subY);
 
-    drawBubble(cx, subY + 46);
+    drawBubble(cx, HEIGHT / 2);
 }
 
 function drawClock() {
