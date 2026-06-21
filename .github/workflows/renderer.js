@@ -389,7 +389,7 @@ function drawNotificationStack(list, x) {
 
         const avatarR = 20;
         const avatarCx = x + 16 + avatarR;
-        const avatarCy = y + cardH / 2;
+        const avatarCy = y + cardH / 4;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,255,255,0.4)", 1);
 
         const textX = avatarCx + avatarR + 14;
@@ -528,7 +528,7 @@ function drawCommentNotifications() {
 
 function drawLogo() {
     if (!logoImg) return;
-    const w = 300;
+    const w = 400;
     const h = (logoImg.height / logoImg.width) * w;
     ctx.globalAlpha = 1;
     ctx.drawImage(logoImg, WIDTH / 2 - w / 2, HEIGHT / 2 - h / 2, w, h);
@@ -545,7 +545,7 @@ function drawBubble(cx, y) {
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = `700 16px ${FONT_BOLD}`;
+    ctx.font = `700 20px ${FONT_BOLD}`;
     const textW = ctx.measureText(state.bubbleText).width;
     const boxW = textW + 40, boxH = 36;
 
