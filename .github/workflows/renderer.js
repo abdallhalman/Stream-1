@@ -512,14 +512,13 @@ function drawCommentNotifications() {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // الأفاتار يلتصق بأعلى الكرت (align-items: flex-start الأصلي)، لا يتوسّط رأسياً
-        const avatarCx = x + padX + avatarR;
+        // الأفاتار يلتصق بأعلى الكرت (align-items: flex-start الأصلي)، ونقله لليمين ليطابق اتجاه القراءة العربي
+        const avatarCx = x + boxW - padX - avatarR;
         const avatarCy = renderTop + padY + 2 + avatarR;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,188,0,0.6)", 1);
 
-        const textX = x + padX + avatarD + gapAvatarText;
         const textStartY = renderTop + padY + lineHeight * 0.78; // محاذاة خط الأساس مع أول سطر
-        const textRightEdge = x + boxW - padX; // أقصى يمين منطقة النص — نقطة انطلاق الكتابة العربية
+        const textRightEdge = x + boxW - padX - avatarD - gapAvatarText; // يبدأ يسار الأفاتار مباشرة
         drawInlineLines(lines, textRightEdge, textStartY, lineHeight);
 
         ctx.restore();
