@@ -18,7 +18,7 @@ jobs:
           sudo apt-get install -y ffmpeg curl
 
       - name: Install fonts
-        run: sudo apt-get install -y fonts-noto fonts-noto-cjk fonts-noto-color-emoji
+        run: sudo apt-get install -y fonts-noto fonts-noto-cjk fonts-noto-color-emoji fonts-dejavu-core
 
       - name: Download Almarai font (غير متوفر كخط نظام، يُحمّل ويُسجَّل يدوياً في renderer.js)
         run: |
@@ -26,6 +26,12 @@ jobs:
           curl -L -o .github/workflows/fonts/Almarai-Regular.ttf   "https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-Regular.ttf"
           curl -L -o .github/workflows/fonts/Almarai-Bold.ttf      "https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-Bold.ttf"
           curl -L -o .github/workflows/fonts/Almarai-ExtraBold.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-ExtraBold.ttf"
+
+      - name: Download Noto Symbols/Math fonts (مربعات الرموز الغريبة — غير متوفرة عبر apt إطلاقاً حتى مع fonts-noto، تشمل الخط الزخرفي المستخدم بأسماء تيك توك)
+        run: |
+          curl -fL -o .github/workflows/fonts/NotoSansSymbols-Regular.ttf  "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssymbols/NotoSansSymbols-Regular.ttf"
+          curl -fL -o .github/workflows/fonts/NotoSansSymbols2-Regular.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssymbols2/NotoSansSymbols2-Regular.ttf"
+          curl -fL -o .github/workflows/fonts/NotoSansMath-Regular.ttf     "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansmath/NotoSansMath-Regular.ttf"
 
       - name: Install Python tools
         run: pip install gdown --upgrade --force-reinstall

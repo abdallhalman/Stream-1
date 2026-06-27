@@ -17,13 +17,17 @@ const HEIGHT = 720;
 // يحمّل خطوط النظام المثبتة عبر apt (Noto Sans / Noto Sans Arabic / Noto Color Emoji)
 GlobalFonts.loadSystemFonts();
 
-// Almarai ليس خط نظام (كان يتحمّل من Google Fonts داخل المتصفح فقط).
-// تم تنزيله في خطوة الـ workflow إلى مجلد fonts/ بجانب هذا الملف وتسجيله هنا يدوياً.
+// Almarai + خطوط Noto Symbols/Symbols2/Math ليست خطوط نظام (Math و Symbols أصلاً غير متوفرة
+// عبر apt في دبيان/أوبنتو إطلاقاً، حتى مع تثبيت fonts-noto الكامل — لازم تنزيلها يدوياً من
+// google/fonts بالضبط كما نسوي مع Almarai). تتحمّل بخطوة الـ workflow لمجلد fonts/ وتُسجَّل هنا.
 const FONTS_DIR = path.join(__dirname, "fonts");
 const customFonts = [
     ["Almarai-Regular.ttf", "Almarai"],
     ["Almarai-Bold.ttf", "Almarai Bold"],
     ["Almarai-ExtraBold.ttf", "Almarai ExtraBold"],
+    ["NotoSansSymbols-Regular.ttf", "Noto Sans Symbols"],
+    ["NotoSansSymbols2-Regular.ttf", "Noto Sans Symbols 2"],
+    ["NotoSansMath-Regular.ttf", "Noto Sans Math"], // يغطي تحديداً حروف "الخط الزخرفي" 𝓮𝔁𝓪𝓶𝓹𝓵𝓮 اللي تستخدمها أسماء تيك توك
 ];
 for (const [file, alias] of customFonts) {
     const fp = path.join(FONTS_DIR, file);
@@ -38,9 +42,14 @@ for (const [file, alias] of customFonts) {
     }
 }
 
-const FONT_TEXT  = `"Almarai", "Noto Sans Arabic", "Noto Sans", "Noto Color Emoji", sans-serif`;
-const FONT_BOLD  = `"Almarai Bold", "Almarai", "Noto Sans Arabic", "Noto Sans", "Noto Color Emoji", sans-serif`;
-const FONT_XBOLD = `"Almarai ExtraBold", "Almarai Bold", "Almarai", "Noto Sans Arabic", "Noto Color Emoji", sans-serif`;
+// أضفنا "Noto Sans Symbols/Symbols 2" (لرموز اليونيكود النادرة) و"DejaVu Sans" (تغطية واسعة
+// جداً تشمل أغلب أحرف "الخطوط الزخرفية" اللي تستخدمها أسماء تيك توك) كحل أخير قبل sans-serif.
+// هذا يعتمد على تثبيت الحزم المقابلة في خطوة setup بالـ workflow (راجع شرح الرد).
+const FONT_FALLBACK_TAIL = `"Noto Sans Symbols", "Noto Sans Symbols 2", "Noto Sans Math", "Noto Sans CJK SC", "Noto Sans Thai", "Noto Sans Devanagari", "Noto Sans Hebrew", "Noto Color Emoji", "DejaVu Sans", sans-serif`;
+
+const FONT_TEXT  = `"Almarai", "Noto Sans Arabic", "Noto Sans", ${FONT_FALLBACK_TAIL}`;
+const FONT_BOLD  = `"Almarai Bold", "Almarai", "Noto Sans Arabic", "Noto Sans", ${FONT_FALLBACK_TAIL}`;
+const FONT_XBOLD = `"Almarai ExtraBold", "Almarai Bold", "Almarai", "Noto Sans Arabic", ${FONT_FALLBACK_TAIL}`;
 
 // ──────────────────────────────────────────────
 // 2. الكانفاس الرئيسي (يُعاد استخدامه لكل فريم، بدون إعادة إنشاء)
@@ -312,6 +321,14 @@ function truncateText(text, maxWidth) {
     return t + "…";
 }
 
+// المشكلة الأصلية: drawInlineLines يفرض ترتيب "عربي" (يمين→يسار) على كل التعليقات بدون استثناء،
+// وهذا صحيح للعربي لكنه يقلب ترتيب الكلمات لأي تعليق لاتيني/إنجليزي (يطلع آخر كلمة أول).
+// الحل: نكشف اتجاه التعليق فعلياً (عربي/عبري = RTL، أي شي ثاني = LTR) ونختار دالة الرسم المناسبة.
+const RTL_CHARS_REGEX = /[\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+function isRTLText(str) {
+    return RTL_CHARS_REGEX.test(String(str || ""));
+}
+
 // ──────────────────────────────────────────────
 // 7. الرسم — كل عنصر بدالته الخاصة، بترتيب z-index الأصلي (من الخلف للأمام)
 // ──────────────────────────────────────────────
@@ -466,6 +483,23 @@ function drawInlineLines(lines, rightEdgeX, startY, lineHeight) {
     });
 }
 
+// نسخة مرآة من drawInlineLines لأي اتجاه غير عربي (إنجليزي، روسي، إلخ):
+// أول كلمة بالسطر تُرسم أقصى اليسار، وكل كلمة تالية تتحرك يميناً — نفس منطق المتصفح لنص LTR عادي.
+function drawInlineLinesLTR(lines, leftEdgeX, startY, lineHeight) {
+    let cy = startY;
+    lines.forEach((line) => {
+        let cx = leftEdgeX;
+        ctx.textAlign = "left";
+        line.forEach((word) => {
+            ctx.font = word.font;
+            ctx.fillStyle = word.color;
+            ctx.fillText(word.text, cx, cy);
+            cx += measureWith(word.text, word.font) + measureWith(" ", word.font);
+        });
+        cy += lineHeight;
+    });
+}
+
 function drawCommentNotifications() {
     const boxW = COMMENT_BOX_W;       // نفس عرض #chat-container الأصلي
     const padX = COMMENT_PAD_X, padY = COMMENT_PAD_Y;
@@ -518,8 +552,16 @@ function drawCommentNotifications() {
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,188,0,0.6)", 1);
 
         const textStartY = renderTop + padY + lineHeight * 0.78; // محاذاة خط الأساس مع أول سطر
-        const textRightEdge = x + boxW - padX - avatarD - gapAvatarText; // يبدأ يسار الأفاتار مباشرة
-        drawInlineLines(lines, textRightEdge, textStartY, lineHeight);
+        const textLeftEdge = x + padX; // الحافة اليسرى لمنطقة النص (ثابتة بغض النظر عن الاتجاه)
+        const textRightEdge = x + boxW - padX - avatarD - gapAvatarText; // الحافة اليمنى (يسار الأفاتار)
+
+        // الاتجاه يتحدد حسب محتوى التعليق نفسه (الاسم + النص)، لا بشكل ثابت:
+        // عربي/عبري → نفس منطق RTL الأصلي. أي لغة أخرى (إنجليزي، روسي، إلخ) → LTR بدون قلب ترتيب الكلمات.
+        if (isRTLText(`${item.name} ${item.action}`)) {
+            drawInlineLines(lines, textRightEdge, textStartY, lineHeight);
+        } else {
+            drawInlineLinesLTR(lines, textLeftEdge, textStartY, lineHeight);
+        }
 
         ctx.restore();
     });
