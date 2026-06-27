@@ -248,7 +248,22 @@ function pushNotification(list, kind, name, action, avatar, pushAmount, extra) {
 }
 
 function addJoin({ name, avatar }) {
-    pushNotification(state.joinNotifications, "join", name, "انضم إلى البث الآن ✨", avatar, JOIN_STEP_Y);
+    const safeName = name || "متابع جديد";
+    const action = "انضم إلى البث الآن ✨";
+
+    // نقصّ النص (truncate) مرة واحدة هنا، بدل إعادة قياسه حرف-حرف كل فريم بدالة الرسم —
+    // نفس مبدأ تعليقات الدردشة: قياس النص مع سلسلة خطوط احتياطية طويلة مكلف، وتكراره
+    // ١٠ مرات بالثانية لكل كرت انضمام نشط يزيد الحمل مع كثرة التفاعل بدون أي فايدة
+    // (الاسم والنص الثابت لا يتغيران بعد إنشاء الكرت).
+    ctx.font = `600 18px ${FONT_BOLD}`;
+    const truncatedName = truncateText(safeName, JOIN_CARD_MAX_TEXT_W);
+    ctx.font = `600 12px ${FONT_TEXT}`;
+    const truncatedAction = truncateText(action, JOIN_CARD_MAX_TEXT_W);
+
+    pushNotification(state.joinNotifications, "join", safeName, action, avatar, JOIN_STEP_Y, {
+        truncatedName,
+        truncatedAction,
+    });
 }
 
 function addComment({ name, text, avatar }) {
@@ -384,6 +399,11 @@ const COMMENT_FADE_END_INDEX   = 9;
 
 const JOIN_STEP_Y = 65; // المسافة بين كرت انضمام وكرت — نفس قيمة الدفع المستخدمة بالحركة
 
+// مقاسات كرت الانضمام — موحّدة هنا لاستخدامها بالحساب المسبق (addJoin) وبالرسم معاً
+const JOIN_CARD_BOX_W    = 360;
+const JOIN_CARD_AVATAR_R = 18;
+const JOIN_CARD_MAX_TEXT_W = JOIN_CARD_BOX_W - (16 + JOIN_CARD_AVATAR_R * 2 + 14) - 16;
+
 // مقاسات كرت التعليق — موحّدة هنا لاستخدامها بحساب الدفع (push) وبالرسم معاً، فلا تتعارض القيم
 const COMMENT_BOX_W           = 380;
 const COMMENT_PAD_X           = 12;
@@ -408,7 +428,7 @@ function currentAnimOffset(item, now) {
 }
 
 function drawNotificationStack(list, x) {
-    const boxW = 360;
+    const boxW = JOIN_CARD_BOX_W;
     const cardH = 54;
     const stepY = JOIN_STEP_Y; // المسافة بين كرت وكرت — كبّرها لتباعد أكثر
     const bottomY = HEIGHT - 40;
@@ -435,21 +455,20 @@ function drawNotificationStack(list, x) {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        const avatarR = 18;
+        const avatarR = JOIN_CARD_AVATAR_R;
         const avatarCx = x + 16 + avatarR;
         const avatarCy = y + cardH / 2;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,255,255,0.4)", 1);
 
         const textX = avatarCx + avatarR + 14;
-        const maxTextW = boxW - (textX - x) - 16;
         ctx.textAlign = "left";
         ctx.fillStyle = item.kind === "comment" ? "#ffbc00" : "#ffffff";
         ctx.font = `600 18px ${FONT_BOLD}`;
-        ctx.fillText(truncateText(item.name, maxTextW), textX, avatarCy - 4);
+        ctx.fillText(item.truncatedName, textX, avatarCy - 4);
 
         ctx.fillStyle = "rgba(255,255,255,0.55)";
         ctx.font = `600 12px ${FONT_TEXT}`;
-        ctx.fillText(truncateText(item.action, maxTextW), textX, avatarCy + 16);
+        ctx.fillText(item.truncatedAction, textX, avatarCy + 16);
 
         ctx.restore();
     });
@@ -469,6 +488,11 @@ function measureWith(text, font) {
 
 // يقسّم مجموعة "tokens" (كل واحد بخطه ولونه) إلى كلمات، ويلفّها على عدة أسطر
 // حسب maxWidth، تماماً كما يفعل المتصفح مع username + text inline.
+// كل كلمة تخزّن أيضاً "advance" (عرضها + مسافة بعدها) — هذا يُحسب هنا مرة واحدة
+// فقط (وقت استقبال التعليق)، فدالة الرسم تستخدمه مباشرة بدون أي measureText جديد.
+// قياس النص (measureText) مع سلسلة خطوط احتياطية طويلة (لدعم الرموز الزخرفية بأسماء
+// تيك توك) قياس مكلف؛ تكراره لكل كلمة بكل فريم هو السبب الأساسي لارتفاع وقت الرسم
+// (٧٠-١٢٠ms بالفريم) مع كثرة التعليقات النشطة على شاشة بتفاعل قوي.
 function layoutInlineTokens(tokens, maxWidth) {
     const words = [];
     tokens.forEach((tok) => {
@@ -483,8 +507,10 @@ function layoutInlineTokens(tokens, maxWidth) {
 
     words.forEach((word) => {
         const wWidth = measureWith(word.text, word.font);
-        const spaceWidth = currentLine.length ? measureWith(" ", word.font) : 0;
-        const projected = currentWidth + spaceWidth + wWidth;
+        const spaceWidth = measureWith(" ", word.font);
+        word.advance = wWidth + spaceWidth; // يُستخدم وقت الرسم لاحقاً بدون أي قياس جديد
+        const spaceBefore = currentLine.length ? spaceWidth : 0;
+        const projected = currentWidth + spaceBefore + wWidth;
         if (projected > maxWidth && currentLine.length > 0) {
             lines.push(currentLine);
             currentLine = [word];
@@ -508,7 +534,7 @@ function drawInlineLines(lines, rightEdgeX, startY, lineHeight) {
             ctx.font = word.font;
             ctx.fillStyle = word.color;
             ctx.fillText(word.text, cx, cy);
-            cx -= measureWith(word.text, word.font) + measureWith(" ", word.font);
+            cx -= word.advance; // محسوبة مسبقاً — بدون measureText وقت الرسم
         });
         cy += lineHeight;
     });
@@ -525,7 +551,7 @@ function drawInlineLinesLTR(lines, leftEdgeX, startY, lineHeight) {
             ctx.font = word.font;
             ctx.fillStyle = word.color;
             ctx.fillText(word.text, cx, cy);
-            cx += measureWith(word.text, word.font) + measureWith(" ", word.font);
+            cx += word.advance; // محسوبة مسبقاً — بدون measureText وقت الرسم
         });
         cy += lineHeight;
     });
