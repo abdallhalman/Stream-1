@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const renderer = require("./renderer.js");
 
-const TIKTOK_USER = "chahr_2";
+const TIKTOK_USER = "sl42t";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
