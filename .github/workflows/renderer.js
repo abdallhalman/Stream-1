@@ -45,7 +45,10 @@ for (const [file, alias] of customFonts) {
 // أضفنا "Noto Sans Symbols/Symbols 2" (لرموز اليونيكود النادرة) و"DejaVu Sans" (تغطية واسعة
 // جداً تشمل أغلب أحرف "الخطوط الزخرفية" اللي تستخدمها أسماء تيك توك) كحل أخير قبل sans-serif.
 // هذا يعتمد على تثبيت الحزم المقابلة في خطوة setup بالـ workflow (راجع شرح الرد).
-const FONT_FALLBACK_TAIL = `"Noto Sans Symbols", "Noto Sans Symbols 2", "Noto Sans Math", "Noto Sans CJK SC", "Noto Sans Thai", "Noto Sans Devanagari", "Noto Sans Hebrew", "Noto Color Emoji", "DejaVu Sans", sans-serif`;
+// مهم: "Noto Color Emoji" لازم يجي قبل خطوط Symbols/Math، لأن رموز كثيرة (⭐❤️✅☀️▶️) موجودة
+// بالخطين معاً — الرندرر يختار أول خط بالقائمة يحتوي الرمز، فلو Symbols قبل، تطلع أحادية اللون
+// حتى لو فيها نسخة ملونة بـ Color Emoji. خطوط Symbols/Math تبقى حل أخير فقط لما لا توجد بـ Color Emoji إطلاقاً.
+const FONT_FALLBACK_TAIL = `"Noto Color Emoji", "Noto Sans Symbols", "Noto Sans Symbols 2", "Noto Sans Math", "Noto Sans CJK SC", "Noto Sans Thai", "Noto Sans Devanagari", "Noto Sans Hebrew", "DejaVu Sans", sans-serif`;
 
 const FONT_TEXT  = `"Almarai", "Noto Sans Arabic", "Noto Sans", ${FONT_FALLBACK_TAIL}`;
 const FONT_BOLD  = `"Almarai Bold", "Almarai", "Noto Sans Arabic", "Noto Sans", ${FONT_FALLBACK_TAIL}`;
