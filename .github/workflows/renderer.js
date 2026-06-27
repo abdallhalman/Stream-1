@@ -785,103 +785,54 @@ function drawGiftBanner() {
     if (!state.gift) return;
     const g = state.gift;
 
-    // ===== ١) الجزء العلوي: نفس بنر المتابعة بالضبط (شكل، أبعاد، تمدد حسب طول الاسم) =====
-    // الفرق الوحيد: التسمية "🎁 هدية" بدل "FOLLOW 👤"، وعداد التكرار بتأثير pop بدل عداد ثابت.
-    const avatarR = 36, avatarD = avatarR * 2;
-    const padX = 28;
-    const gapTextAvatar = 20;
-    const gapCountText = 28;
-    const boxH = 100;
-
-    ctx.font = `800 22px ${FONT_XBOLD}`;
-    const giftLabel = "🎁 هدية:";
-    const labelW = ctx.measureText(giftLabel).width;
-    ctx.font = `700 24px ${FONT_BOLD}`;
-    const nameW = ctx.measureText(g.name).width;
-    const textBlockW = labelW + 8 + nameW; // سطر واحد: "🎁 هدية: الاسم" بنفس المحاذاة والمستوى
-
-    const countText = `× ${g.count}`;
-    ctx.font = `600 19px ${FONT_TEXT}`;
-    const countTextW = ctx.measureText(countText).width;
-    const cbW = countTextW + 36, cbH = 42;
-
-    const contentW = padX + cbW + gapCountText + textBlockW + gapTextAvatar + avatarD + padX;
-    const boxW = Math.max(320, contentW);
+    const boxW = 460, boxH = 100;
     const x = WIDTH / 2 - boxW / 2;
-    const y = 160; // نفس موضع بنر الهدية القديم تقريباً، أعلى الشاشة فوق صورة الهدية الكبيرة
+    const y = 160;
 
-    ctx.fillStyle = "rgba(20,15,30,0.75)";
-    roundRect(x, y, boxW, boxH, 50);
+    ctx.fillStyle = "rgba(30,20,50,0.92)";
+    roundRect(x, y, boxW, boxH, 24);
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.15)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#ffbc00";
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    const avatarCx = x + boxW - padX - avatarR;
+    const avatarR = 24;
+    const avatarCx = x + 32 + avatarR;
     const avatarCy = y + boxH / 2;
-    drawCircleImage(getImage(g.avatar), avatarCx, avatarCy, avatarR, "#ffbc00", 3);
+    drawCircleImage(getImage(g.avatar), avatarCx, avatarCy, avatarR, "rgba(255,255,255,0.6)", 2);
 
-    const textRightEdge = avatarCx - avatarR - gapTextAvatar;
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#ffbc00";
-    ctx.font = `800 22px ${FONT_XBOLD}`;
-    ctx.fillText(giftLabel, textRightEdge, avatarCy + 8);
-
+    const textX = avatarCx + avatarR + 16;
+    ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
-    ctx.font = `700 24px ${FONT_BOLD}`;
-    ctx.fillText(g.name, textRightEdge - labelW - 8, avatarCy + 8);
+    ctx.font = `800 16px ${FONT_XBOLD}`;
+    ctx.fillText(` شكراً: ${g.name}`, textX, avatarCy - 8);
 
-    // عداد التكرار (بتأثير pop عند كل تحديث، نفس إحساس count-pop الأصلي)
+    // عداد التكرار بتأثير pop عند كل تحديث (count-pop الأصلي)
     const bumpElapsed = Date.now() - (g.lastBumpAt || g.shownAt);
     const popScale = bumpElapsed < 150 ? 1 + 0.3 * (1 - bumpElapsed / 150) : 1;
-    const cbX = x + padX, cbY = y + boxH / 2 - cbH / 2;
     ctx.save();
-    ctx.translate(cbX + cbW / 2, cbY + cbH / 2);
+    ctx.translate(textX, avatarCy + 14);
     ctx.scale(popScale, popScale);
-    ctx.fillStyle = "rgba(255,255,255,0.08)";
-    roundRectAt(-cbW / 2, -cbH / 2, cbW, cbH, 26);
-    ctx.fill();
-    ctx.textAlign = "center";
+    ctx.textAlign = "left";
     ctx.fillStyle = "#ffff00";
-    ctx.font = `700 19px ${FONT_BOLD}`;
-    ctx.fillText(countText, 0, 7);
+    ctx.font = `700 17px ${FONT_BOLD}`;
+    ctx.fillText(`${g.giftName} × ${g.count}`, 0, 0);
     ctx.restore();
 
-    // ===== ٢) أسفل البنر: صورة الهدية كبيرة وغير مقيدة بإطار، داخل صندوق شفاف بخواف مضيئة =====
+    // أيقونة الهدية بنبض خفيف مستمر (popScale infinite alternate الأصلي)
     const giftImg = getImage(g.giftIcon);
-    if (giftImg && giftImg.width) {
-        // المقاس يتبع نسبة أبعاد الصورة الأصلية، بحد أقصى ~180px على الجهة الأطول
-        // (قريب من ٢٠٠×٢٠٠ المطلوبة لكن مُعدَّل بالشكل المتوفر فوق بنر المتابعة بالأسفل)
-        const MAX_DIM = 180;
-        const ratio = giftImg.width / giftImg.height;
-        let imgW, imgH;
-        if (ratio >= 1) { imgW = MAX_DIM; imgH = MAX_DIM / ratio; }
-        else { imgH = MAX_DIM; imgW = MAX_DIM * ratio; }
-
-        const pad = 22; // مساحة أكبر بين الهالة والصورة عشان التوهج ما يلامس الصورة ويقلل وضوحها
-        const boxImgW = imgW + pad * 2;
-        const boxImgH = imgH + pad * 2;
-        const cx = WIDTH / 2;
-        const cy = y + boxH + 12 + boxImgH / 2; // مباشرة تحت بنر الاسم
-
-        // الخفقة المضيئة حول الصندوق (هالة خفيفة فقط، بدون أي خط إطار ظاهر حول الصورة)
-        const t = (Date.now() % 1400) / 1400;
-        const glowPulse = 10 + 6 * Math.abs(Math.sin(t * Math.PI)); // كانت أقوى (18-32) فخففناها
+    if (giftImg) {
+        const t = (Date.now() % 800) / 800;
+        const pulse = 1 + 0.15 * Math.abs(Math.sin(t * Math.PI));
+        const baseSize = 70;
+        const size = baseSize * pulse;
+        const gx = x + boxW - 32 - baseSize / 2;
+        const gy = y + boxH / 2;
         ctx.save();
-        ctx.shadowColor = "rgba(255,188,0,0.35)"; // كانت 0.85 — خففنا الشفافية عشان ما تطغى على الصورة
-        ctx.shadowBlur = glowPulse;
-        ctx.fillStyle = "rgba(255,255,255,0.04)";
-        roundRectAt(cx - boxImgW / 2, cy - boxImgH / 2, boxImgW, boxImgH, 28);
-        ctx.fill();
+        ctx.shadowColor = "#ffbc00";
+        ctx.shadowBlur = 14;
+        ctx.drawImage(giftImg, gx - size / 2, gy - size / 2, size, size);
         ctx.restore();
-
-        ctx.drawImage(giftImg, cx - imgW / 2, cy - imgH / 2, imgW, imgH);
-
-        // اسم الهدية + جملة شكر أسفل الصورة (سطر واحد للحفاظ على المساحة)
-        ctx.textAlign = "center";
-        ctx.fillStyle = "#ffffff";
-        ctx.font = `700 18px ${FONT_BOLD}`;
-        ctx.fillText(`🎁 ${g.giftName}  •  جزاك الله خير`, cx, cy + boxImgH / 2 + 22);
     }
 }
 
@@ -947,9 +898,7 @@ function renderFrame() {
     // نفس ترتيب z-index في overlay.html الأصلي، من الخلف للأمام
     drawJoinNotifications();    // z-index: auto (0) — يسار الشاشة
     drawCommentNotifications(); // z-index: auto (0) — يمين الشاشة
-    // اللوقو يُخفى تلقائياً وقت ظهور بنر الهدية (نفس شرط انتهاء الهدية المستخدم بالضبط بالأسفل)
-    const giftActive = !!(state.gift && Date.now() <= state.giftHideAt);
-    if (!giftActive) drawLogo(); // z-index: 50
+    drawLogo();              // z-index: 50
     drawTasbih();             // z-index: 100
     drawClock();                // z-index: 100
     drawStats();                  // z-index: 100
