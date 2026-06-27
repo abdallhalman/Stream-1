@@ -66,6 +66,21 @@ const ctx = canvas.getContext("2d");
 const imageCache = new Map(); // url -> Image | "loading" | "failed"
 const FALLBACK_AVATAR = "https://www.tiktok.com/favicon.ico";
 
+// حد أقصى لعدد الصور المخزّنة بالكاش بنفس الوقت. بدون هذا الحد، كل أفاتار فريد
+// (كل مشاهد/معلّق/متابع جديد طول البث) يتراكم بالذاكرة للأبد ولا يُحذف أبداً —
+// على بث طويل (10-12 ساعة) مع تفاعل قوي، هذا يضخّم استهلاك الذاكرة تدريجياً ويزيد
+// توقفات garbage collection (تظهر كفريمات بطيئة)، وبالنهاية يضغط على الذاكرة كامل العملية.
+// لما يتجاوز الكاش الحد، نحذف أقدم الصور (بترتيب أول ما دخلت الكاش) — لو احتجناها
+// مرة ثانية بالمستقبل، تنزل من جديد عادي، بدون أي خسارة وظيفية.
+const IMAGE_CACHE_MAX = 500;
+
+function evictOldImagesIfNeeded() {
+    while (imageCache.size > IMAGE_CACHE_MAX) {
+        const oldestKey = imageCache.keys().next().value;
+        imageCache.delete(oldestKey);
+    }
+}
+
 function getImage(url) {
     if (!url) return null;
     const cached = imageCache.get(url);
@@ -74,7 +89,10 @@ function getImage(url) {
 
     imageCache.set(url, "loading");
     loadImage(url)
-        .then((img) => imageCache.set(url, img))
+        .then((img) => {
+            imageCache.set(url, img);
+            evictOldImagesIfNeeded();
+        })
         .catch(() => imageCache.set(url, "failed")); // فشل التحميل = دائرة بديلة بدون توقف
     return null;
 }
@@ -204,7 +222,7 @@ function setLikes(total) {
     }
 }
 
-function pushNotification(list, kind, name, action, avatar, pushAmount) {
+function pushNotification(list, kind, name, action, avatar, pushAmount, extra) {
     const now = Date.now();
 
     // الكروت الموجودة "تُدفع" للأعلى: نضيف مقدار الدفعة لإزاحتها الحالية المتبقية (لا نستبدلها)
@@ -224,6 +242,7 @@ function pushNotification(list, kind, name, action, avatar, pushAmount) {
         createdAt: now,
         animFrom: now,
         animStartOffset: pushAmount, // يدخل من خطوة واحدة تحت موقعه، فيبدو أنه "يزحف" للأعلى مع الباقي
+        ...extra, // بيانات جاهزة محسوبة مسبقاً (مثل أسطر التعليق) — تمنع إعادة الحساب كل فريم بالرسم
     });
     if (list.length > NOTIF_MAX) list.length = NOTIF_MAX;
 }
@@ -233,17 +252,26 @@ function addJoin({ name, avatar }) {
 }
 
 function addComment({ name, text, avatar }) {
-    // نحسب ارتفاع الكرت الفعلي (حسب طول النص) قبل الإضافة، لمعرفة مقدار الدفع الصحيح للكروت الأقدم
+    const safeName = name || "متابع";
+    const safeText = text || "";
+
+    // نحسب تقسيم النص على أسطر مرة واحدة هنا (وقت استقبال التعليق) ونخزّنه جاهزاً على العنصر،
+    // بدل إعادة حسابه من الصفر (تقسيم كلمة بكلمة + قياس عرض كل كلمة) كل فريم بدالة الرسم —
+    // هذا كان أكبر سبب لارتفاع حمل المعالج مع زيادة كثافة التعليقات (كل تعليق نشط كان يُعاد
+    // قياسه وتقسيمه ١٠ مرات بالثانية طول مدة بقائه على الشاشة قبل التلاشي).
     const tokens = [
-        { text: `${name || "متابع"}:`, font: `700 18px ${FONT_BOLD}` },
-        { text: text || "", font: `600 18px ${FONT_TEXT}` },
+        { text: `${safeName}:`, font: `600 18px ${FONT_BOLD}`, color: "#ffbc00" },
+        { text: safeText, font: `600 18px ${FONT_TEXT}`, color: "rgba(255,255,255,0.95)" },
     ];
-    const lines = layoutInlineTokens(tokens, COMMENT_MAX_TEXT_W);
-    const contentH = Math.max(COMMENT_AVATAR_D + 2, lines.length * COMMENT_LINE_HEIGHT);
+    const cachedLines = layoutInlineTokens(tokens, COMMENT_MAX_TEXT_W);
+    const contentH = Math.max(COMMENT_AVATAR_D + 2, cachedLines.length * COMMENT_LINE_HEIGHT);
     const cardH = contentH + COMMENT_PAD_Y * 2;
     const pushAmount = cardH + COMMENT_MARGIN_TOP;
 
-    pushNotification(state.commentNotifications, "comment", name, text, avatar, pushAmount);
+    pushNotification(state.commentNotifications, "comment", safeName, safeText, avatar, pushAmount, {
+        cachedLines,
+        cardH,
+    });
 }
 
 function setFollow({ name, avatar, followerCount }) {
@@ -514,19 +542,12 @@ function drawCommentNotifications() {
     const x = WIDTH - COMMENT_EDGE_MARGIN - boxW;
     const now = Date.now();
 
-    const maxTextW = COMMENT_MAX_TEXT_W;
-
     let cursorBottom = bottomY;
 
     state.commentNotifications.forEach((item, idx) => {
-        const tokens = [
-            { text: `${item.name}:`, font: `600 18px ${FONT_BOLD}`, color: "#ffbc00" },
-            { text: item.action || "", font: `600 18px ${FONT_TEXT}`, color: "rgba(255,255,255,0.95)" },
-        ];
-        const lines = layoutInlineTokens(tokens, maxTextW);
-        const textBlockH = lines.length * lineHeight;
-        const contentH = Math.max(avatarD + 2, textBlockH); // +2 يطابق margin-top الأفاتار الأصلي
-        const cardH = contentH + padY * 2;
+        // مخزّنة مسبقاً وقت استقبال التعليق (addComment) — لا نعيد التقسيم والقياس هنا كل فريم
+        const lines = item.cachedLines;
+        const cardH = item.cardH;
 
         // الموضع المنطقي (الهدف) — يُستخدم لحساب تراكم الكروت، لا يتأثر بالحركة
         const cardBottom = cursorBottom;
@@ -960,6 +981,18 @@ function renderFrame() {
     return canvas.toBuffer("image/png");
 }
 
+function getDebugCounts() {
+    return {
+        bubbles: state.bubbleText ? 1 : 0,
+        joins: state.joinNotifications.length,
+        comments: state.commentNotifications.length,
+        milestone: state.isMilestoneActive ? 1 : 0,
+        gift: state.gift ? 1 : 0,
+        follow: state.follow ? 1 : 0,
+        imageCacheSize: imageCache.size,
+    };
+}
+
 module.exports = {
     renderFrame,
     setViewerCount,
@@ -968,4 +1001,5 @@ module.exports = {
     addComment,
     setFollow,
     setGift,
+    getDebugCounts,
 };

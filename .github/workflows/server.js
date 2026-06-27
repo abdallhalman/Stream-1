@@ -59,7 +59,8 @@ function renderLoop() {
             console.log(
                 `[render] بطيء: رسم=${renderMs}ms كتابة=${writeMs}ms | ` +
                 `فقاعات=${c.bubbles} انضمام=${c.joins} تعليقات=${c.comments} ` +
-                `milestone=${c.milestone} هدية=${c.gift} متابعة=${c.follow}`
+                `milestone=${c.milestone} هدية=${c.gift} متابعة=${c.follow} ` +
+                `كاش_صور=${c.imageCacheSize}`
             );
         }
     } catch (err) {
@@ -69,8 +70,32 @@ function renderLoop() {
 }
 renderLoop();
 
+// لوق دوري لمراقبة استهلاك الذاكرة وحجم كاش الصور بمرور وقت البث — يساعدنا نتحقق
+// فعلياً (من نفس الجلسة) هل الذاكرة تتضخم مع الوقت، بدل ما نفترض بدون دليل مباشر.
+// راقب: لو RSS يطلع بصعود مستمر بدون أي استقرار طول الساعات، وحجم الكاش يكبر معه،
+// هذا يأكّد نظرية تسرّب الذاكرة. لو RSS يثبّت بعد فترة (الكاش وصل الحد الأقصى الجديد
+// ٥٠٠ ووقف عن الزيادة)، يكون التحديد سليم ومافي تسرّب فعلي يهدد الجلسة.
+const MEMORY_LOG_INTERVAL_MS = 5 * 60 * 1000; // كل 5 دقايق
+setInterval(() => {
+    const mem = process.memoryUsage();
+    const c = renderer.getDebugCounts();
+    console.log(
+        `[memory] RSS=${(mem.rss / 1024 / 1024).toFixed(1)}MB ` +
+        `heapUsed=${(mem.heapUsed / 1024 / 1024).toFixed(1)}MB ` +
+        `كاش_صور=${c.imageCacheSize}`
+    );
+}, MEMORY_LOG_INTERVAL_MS);
+
+// عداد إعادة التشغيل: نسمح بإعادة محاولات الانقطاع العابر (broken pipe / شبكة)
+// بدون ما نوقف الجوب كامل، لكن لو تكرر الفشل بسرعة غير طبيعية (خلل حقيقي لا شبكة)
+// نوقف نهائياً بدل تكرار لا نهائي يلخّم اللوق.
+let ffmpegRestartCount = 0;
+const FFMPEG_MAX_RESTARTS = 20;
+let ffmpegLastStartAt = 0;
+
 function startFFmpeg() {
     console.log("Launching FFmpeg...");
+    ffmpegLastStartAt = Date.now();
 
     const ffmpegArgs = [
         "-re",
@@ -99,7 +124,6 @@ function startFFmpeg() {
         "-b:v", "2500k",
         "-maxrate", "2500k",
         "-bufsize", "5000k",
-        "-b:a", "128k",
         "-pix_fmt", "yuv420p",
         "-c:a", "aac",
         "-b:a", "192k",
@@ -118,7 +142,29 @@ function startFFmpeg() {
 
     ffmpegProcess.on("close", (code) => {
         console.log(`FFmpeg process exited with code ${code}`);
-        process.exit(code);
+
+        // لو كمّل أكثر من 5 دقايق قبل الانقطاع، نعتبره انقطاع عابر (شبكة/broken pipe)
+        // ونصفّر عداد المحاولات المتتالية، فلا نوقف الجوب لمجرد كم انقطاع متباعد على مدى ساعات.
+        if (Date.now() - ffmpegLastStartAt > 5 * 60 * 1000) {
+            ffmpegRestartCount = 0;
+        }
+
+        ffmpegRestartCount++;
+        if (ffmpegRestartCount > FFMPEG_MAX_RESTARTS) {
+            console.error(
+                `FFmpeg: ${FFMPEG_MAX_RESTARTS} محاولات متتالية فشلت بسرعة غير طبيعية — ` +
+                `الأرجح خلل حقيقي (لا انقطاع شبكة عابر)، نوقف الجوب نهائياً.`
+            );
+            process.exit(code);
+            return;
+        }
+
+        console.warn(
+            `FFmpeg: انقطاع (الأرجح broken pipe/شبكة) — إعادة تشغيل تلقائي ` +
+            `(محاولة ${ffmpegRestartCount}/${FFMPEG_MAX_RESTARTS}) بعد 3 ثواني... ` +
+            `اتصال TikTok يبقى شغّال ولا يتأثر.`
+        );
+        setTimeout(startFFmpeg, 3000);
     });
 }
 
@@ -170,6 +216,12 @@ function connectTikTok() {
 tiktok.on("disconnected", () => {
     console.log("TikTok disconnected, retrying in 20s...");
     setTimeout(connectTikTok, 20000);
+});
+
+// بدون هذا المستمع: أي "error" event ترميه المكتبة بدون مستمع يكرش عملية Node كاملة
+// (uncaught exception)، يعني ينقطع البث كامل من خطأ شبكة بسيط بمكتبة tiktok-live-connector.
+tiktok.on("error", (e) => {
+    console.error("TikTok connector error (تم تجاهله، البث يكمّل):", e?.message || e);
 });
 
 tiktok.on("roomUser", data => {
