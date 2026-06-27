@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const renderer = require("./renderer.js");
 
-const TIKTOK_USER = "sl42t";
+const TIKTOK_USER = "chahr_2";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -41,11 +41,27 @@ try {
 // ── حلقة الرسم: محتواة بالكامل داخل try/catch ──
 // أي خطأ في الرسم يُتجاهل فقط لتلك اللقطة، والفريم السابق الناجح يبقى كما هو
 // في mainFramePath، فلا يتأثر FFmpeg ولا اتصال TikTok إطلاقاً.
+const RENDER_WARN_MS = 40; // أي فريم رسم+كتابة يتجاوز هذا الوقت يُسجَّل مع تفاصيل اللحظة
+
 function renderLoop() {
+    const t0 = Date.now();
     try {
         const buffer = renderer.renderFrame();
+        const t1 = Date.now();
         fs.writeFileSync(tmpFramePath, buffer);
         fs.renameSync(tmpFramePath, mainFramePath); // Atomic rename لمنع الـ flicker
+        const t2 = Date.now();
+
+        const renderMs = t1 - t0;
+        const writeMs = t2 - t1;
+        if (renderMs + writeMs > RENDER_WARN_MS) {
+            const c = renderer.getDebugCounts();
+            console.log(
+                `[render] بطيء: رسم=${renderMs}ms كتابة=${writeMs}ms | ` +
+                `فقاعات=${c.bubbles} انضمام=${c.joins} تعليقات=${c.comments} ` +
+                `milestone=${c.milestone} هدية=${c.gift} متابعة=${c.follow}`
+            );
+        }
     } catch (err) {
         console.error("خطأ في حلقة الرسم (تم تجاهل الفريم، الفريم السابق باقي):", err.message);
     }
