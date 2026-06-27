@@ -546,20 +546,22 @@ function drawCommentNotifications() {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // الأفاتار يلتصق بأعلى الكرت (align-items: flex-start الأصلي)، ونقله لليمين ليطابق اتجاه القراءة العربي
-        const avatarCx = x + boxW - padX - avatarR;
+        // الاتجاه يتحدد حسب محتوى التعليق نفسه (الاسم + النص)، لا بشكل ثابت:
+        // عربي/عبري → نفس منطق RTL الأصلي (الأفاتار يمين، النص يبدأ من يمينه يساراً).
+        // أي لغة أخرى (إنجليزي، روسي، إلخ) → LTR: الأفاتار ينتقل لليسار، والنص يبدأ من يمينه نحو اليمين.
+        const rtl = isRTLText(`${item.name} ${item.action}`);
+
+        const avatarCx = rtl ? (x + boxW - padX - avatarR) : (x + padX + avatarR);
         const avatarCy = renderTop + padY + 2 + avatarR;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,188,0,0.6)", 1);
 
         const textStartY = renderTop + padY + lineHeight * 0.78; // محاذاة خط الأساس مع أول سطر
-        const textLeftEdge = x + padX; // الحافة اليسرى لمنطقة النص (ثابتة بغض النظر عن الاتجاه)
-        const textRightEdge = x + boxW - padX - avatarD - gapAvatarText; // الحافة اليمنى (يسار الأفاتار)
 
-        // الاتجاه يتحدد حسب محتوى التعليق نفسه (الاسم + النص)، لا بشكل ثابت:
-        // عربي/عبري → نفس منطق RTL الأصلي. أي لغة أخرى (إنجليزي، روسي، إلخ) → LTR بدون قلب ترتيب الكلمات.
-        if (isRTLText(`${item.name} ${item.action}`)) {
+        if (rtl) {
+            const textRightEdge = x + boxW - padX - avatarD - gapAvatarText; // يبدأ يسار الأفاتار (يمين الكرت)
             drawInlineLines(lines, textRightEdge, textStartY, lineHeight);
         } else {
+            const textLeftEdge = x + padX + avatarD + gapAvatarText; // يبدأ يمين الأفاتار (يسار الكرت)
             drawInlineLinesLTR(lines, textLeftEdge, textStartY, lineHeight);
         }
 
