@@ -120,7 +120,7 @@ const AZKAR_LIST = [
     { main: "أستغفر الله",     sub: "🕋 أستغفر الله العظيم وأتوب إليه"         },
 ];
 
-const NOTIF_MAX        = 9; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
+const NOTIF_MAX        = 8; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
 const GIFT_HIDE_MS     = 7000;
 const FOLLOW_HIDE_MS   = 7000;
 const MILESTONE_MS     = 4000; // كانت 10000 — قصّرناها حسب الطلب
@@ -249,7 +249,7 @@ function pushNotification(list, kind, name, action, avatar, pushAmount, extra) {
 
 function addJoin({ name, avatar }) {
     const safeName = name || "متابع جديد";
-    const action = "انضم إلى البث الآن ✨";
+    const action = "✨انضم إلى البث الآن";
 
     // نقصّ النص (truncate) مرة واحدة هنا، بدل إعادة قياسه حرف-حرف كل فريم بدالة الرسم —
     // نفس مبدأ تعليقات الدردشة: قياس النص مع سلسلة خطوط احتياطية طويلة مكلف، وتكراره
@@ -748,7 +748,7 @@ function drawClock() {
     ctx.fillText(timeText, x + boxW / 2, y + 26);
 
     ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.font = `600 10px ${FONT_TEXT}`;
+    ctx.font = `600 12px ${FONT_TEXT}`;
     ctx.fillText("مكة المكرمة", x + boxW / 2, y + 44);
 }
 
@@ -855,7 +855,7 @@ function drawGiftBanner() {
     const boxH = 100;
 
     ctx.font = `800 17px ${FONT_XBOLD}`;
-    const giftLabel = `🎁 هدية: ${g.giftName}`;
+    const giftLabel = `🎁: ${g.giftName}`;
     const labelW = ctx.measureText(giftLabel).width;
     ctx.font = `700 24px ${FONT_BOLD}`;
     const nameW = ctx.measureText(g.name).width;
