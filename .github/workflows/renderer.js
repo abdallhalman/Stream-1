@@ -123,7 +123,7 @@ const AZKAR_LIST = [
 const NOTIF_MAX        = 9; // عدد الكروت المحفوظة بالذاكرة لكل قائمة (يكفي لتعبئة حاوية التعليقات الأطول)
 const GIFT_HIDE_MS     = 7000;
 const FOLLOW_HIDE_MS   = 7000;
-const MILESTONE_MS     = 10000;
+const MILESTONE_MS     = 4000; // كانت 10000 — قصّرناها حسب الطلب
 const BUBBLE_HOLD_MS   = 2000;
 const BUBBLE_FADE_MS   = 400;
 
@@ -168,12 +168,12 @@ function randomColor() {
 }
 
 const BUBBLE_PALETTES = [
-    { bg: "rgba(57,255,20,0.12)",  border: "rgba(57,255,20,0.6)"  },
-    { bg: "rgba(0,200,255,0.12)",  border: "rgba(0,200,255,0.6)"  },
-    { bg: "rgba(255,188,0,0.12)",  border: "rgba(255,188,0,0.6)"  },
-    { bg: "rgba(255,60,200,0.12)", border: "rgba(255,60,200,0.6)" },
-    { bg: "rgba(157,93,255,0.12)", border: "rgba(157,93,255,0.6)" },
-    { bg: "rgba(255,100,50,0.12)", border: "rgba(255,100,50,0.6)" },
+    { bg: "rgba(57,255,20,0.28)",  border: "rgba(57,255,20,0.85)"  },
+    { bg: "rgba(0,200,255,0.28)",  border: "rgba(0,200,255,0.85)"  },
+    { bg: "rgba(255,188,0,0.28)",  border: "rgba(255,188,0,0.85)"  },
+    { bg: "rgba(255,60,200,0.28)", border: "rgba(255,60,200,0.85)" },
+    { bg: "rgba(157,93,255,0.28)", border: "rgba(157,93,255,0.85)" },
+    { bg: "rgba(255,100,50,0.28)", border: "rgba(255,100,50,0.85)" },
 ];
 
 // ──────────────────────────────────────────────
@@ -255,9 +255,9 @@ function addJoin({ name, avatar }) {
     // نفس مبدأ تعليقات الدردشة: قياس النص مع سلسلة خطوط احتياطية طويلة مكلف، وتكراره
     // ١٠ مرات بالثانية لكل كرت انضمام نشط يزيد الحمل مع كثرة التفاعل بدون أي فايدة
     // (الاسم والنص الثابت لا يتغيران بعد إنشاء الكرت).
-    ctx.font = `600 18px ${FONT_BOLD}`;
+    ctx.font = `600 20px ${FONT_BOLD}`;
     const truncatedName = truncateText(safeName, JOIN_CARD_MAX_TEXT_W);
-    ctx.font = `600 12px ${FONT_TEXT}`;
+    ctx.font = `600 14px ${FONT_TEXT}`;
     const truncatedAction = truncateText(action, JOIN_CARD_MAX_TEXT_W);
 
     pushNotification(state.joinNotifications, "join", safeName, action, avatar, JOIN_STEP_Y, {
@@ -344,7 +344,7 @@ function drawCircleImage(img, cx, cy, radius, borderColor, borderWidth = 2) {
     if (img) {
         ctx.drawImage(img, cx - radius, cy - radius, radius * 2, radius * 2);
     } else {
-        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.fillStyle = "rgba(255,255,255,0.28)";
         ctx.fill();
     }
     ctx.restore();
@@ -371,8 +371,15 @@ function truncateText(text, maxWidth) {
 // وهذا صحيح للعربي لكنه يقلب ترتيب الكلمات لأي تعليق لاتيني/إنجليزي (يطلع آخر كلمة أول).
 // الحل: نكشف اتجاه التعليق فعلياً (عربي/عبري = RTL، أي شي ثاني = LTR) ونختار دالة الرسم المناسبة.
 const RTL_CHARS_REGEX = /[\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+// لازم نتحقق أيضاً من وجود حروف لاتينية فعلية، لأن تعليق "إيموجي فقط" (❤️🔥) ما فيه
+// لا عربي ولا لاتيني — لو اعتبرناه LTR بالخطأ (لأن الفحص القديم بس يبحث عن عربي)
+// يطلع بمظهر غريب/مختلف عن باقي التعليقات. الإيموجي والرموز المجردة تتبع اتجاه الواجهة (RTL).
+const LATIN_CHARS_REGEX = /[A-Za-z\u00C0-\u024F\u0400-\u04FF]/; // لاتيني + سيريلي
 function isRTLText(str) {
-    return RTL_CHARS_REGEX.test(String(str || ""));
+    const s = String(str || "");
+    if (RTL_CHARS_REGEX.test(s)) return true;
+    if (LATIN_CHARS_REGEX.test(s)) return false;
+    return true; // لا عربي ولا لاتيني (إيموجي/رموز/أرقام فقط) → اتبع اتجاه الواجهة الأساسي
 }
 
 // ──────────────────────────────────────────────
@@ -397,11 +404,12 @@ const JOIN_FADE_END_INDEX      = 9; // يختفي تماماً عند الشري
 const COMMENT_FADE_START_INDEX = 1;
 const COMMENT_FADE_END_INDEX   = 9;
 
-const JOIN_STEP_Y = 65; // المسافة بين كرت انضمام وكرت — نفس قيمة الدفع المستخدمة بالحركة
+const JOIN_STEP_Y = 78; // المسافة بين كرت انضمام وكرت — كبّرناها مع زيادة ارتفاع الكرت
 
 // مقاسات كرت الانضمام — موحّدة هنا لاستخدامها بالحساب المسبق (addJoin) وبالرسم معاً
 const JOIN_CARD_BOX_W    = 360;
-const JOIN_CARD_AVATAR_R = 18;
+const JOIN_CARD_H        = 68;  // كانت 54 — كبّرناها حسب الطلب
+const JOIN_CARD_AVATAR_R = 22;  // كانت 18
 const JOIN_CARD_MAX_TEXT_W = JOIN_CARD_BOX_W - (16 + JOIN_CARD_AVATAR_R * 2 + 14) - 16;
 
 // مقاسات كرت التعليق — موحّدة هنا لاستخدامها بحساب الدفع (push) وبالرسم معاً، فلا تتعارض القيم
@@ -429,7 +437,7 @@ function currentAnimOffset(item, now) {
 
 function drawNotificationStack(list, x) {
     const boxW = JOIN_CARD_BOX_W;
-    const cardH = 54;
+    const cardH = JOIN_CARD_H;
     const stepY = JOIN_STEP_Y; // المسافة بين كرت وكرت — كبّرها لتباعد أكثر
     const bottomY = HEIGHT - 40;
     const now = Date.now();
@@ -463,12 +471,12 @@ function drawNotificationStack(list, x) {
         const textX = avatarCx + avatarR + 14;
         ctx.textAlign = "left";
         ctx.fillStyle = item.kind === "comment" ? "#ffbc00" : "#ffffff";
-        ctx.font = `600 18px ${FONT_BOLD}`;
-        ctx.fillText(item.truncatedName, textX, avatarCy - 4);
+        ctx.font = `600 20px ${FONT_BOLD}`;
+        ctx.fillText(item.truncatedName, textX, avatarCy - 5);
 
-        ctx.fillStyle = "rgba(255,255,255,0.55)";
-        ctx.font = `600 12px ${FONT_TEXT}`;
-        ctx.fillText(item.truncatedAction, textX, avatarCy + 16);
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.font = `600 14px ${FONT_TEXT}`;
+        ctx.fillText(item.truncatedAction, textX, avatarCy + 19);
 
         ctx.restore();
     });
@@ -592,26 +600,29 @@ function drawCommentNotifications() {
         ctx.fillStyle = "rgba(12,12,18,0.75)";
         roundRect(x, renderTop, boxW, cardH, 14);
         ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.12)";
+        ctx.strokeStyle = "rgba(255,255,255,0.25)";
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // الاتجاه يتحدد حسب محتوى التعليق نفسه (الاسم + النص)، لا بشكل ثابت:
-        // عربي/عبري → نفس منطق RTL الأصلي (الأفاتار يمين، النص يبدأ من يمينه يساراً).
-        // أي لغة أخرى (إنجليزي، روسي، إلخ) → LTR: الأفاتار ينتقل لليسار، والنص يبدأ من يمينه نحو اليمين.
+        // الأفاتار والاسم بموضع ثابت موحّد دائماً (يمين الكرت) لكل التعليقات بدون استثناء —
+        // هذا يطابق بقية الواجهة (الإحصائيات، بنر المتابعة، بنر الهدية كلها يمين) ويمنع
+        // "تطاير" الأفاتار بين اليمين واليسار حسب لغة كل تعليق على حدة.
+        // الشي الوحيد اللي يتغير حسب اللغة هو اتجاه تدفق الكلمات داخل نفس مساحة النص الثابتة:
+        // عربي/عبري → يبدأ من حافة النص اليمنى (جنب الأفاتار) ويتدفق يساراً (قراءة صحيحة).
+        // أي لغة أخرى (إنجليزي، روسي، إيموجي مجرّد...) → يبدأ من الحافة اليسرى ويتدفق يميناً.
         const rtl = isRTLText(`${item.name} ${item.action}`);
 
-        const avatarCx = rtl ? (x + boxW - padX - avatarR) : (x + padX + avatarR);
+        const avatarCx = x + boxW - padX - avatarR;
         const avatarCy = renderTop + padY + 2 + avatarR;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,188,0,0.6)", 1);
 
         const textStartY = renderTop + padY + lineHeight * 0.78; // محاذاة خط الأساس مع أول سطر
+        const textRightEdge = x + boxW - padX - avatarD - gapAvatarText; // حافة النص اليمنى (ثابتة، جنب الأفاتار)
+        const textLeftEdge = x + padX;                                   // حافة النص اليسرى (ثابتة)
 
         if (rtl) {
-            const textRightEdge = x + boxW - padX - avatarD - gapAvatarText; // يبدأ يسار الأفاتار (يمين الكرت)
             drawInlineLines(lines, textRightEdge, textStartY, lineHeight);
         } else {
-            const textLeftEdge = x + padX + avatarD + gapAvatarText; // يبدأ يمين الأفاتار (يسار الكرت)
             drawInlineLinesLTR(lines, textLeftEdge, textStartY, lineHeight);
         }
 
@@ -638,20 +649,23 @@ function drawBubble(cx, y) {
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = `700 16px ${FONT_BOLD}`;
+    ctx.font = `700 20px ${FONT_BOLD}`; // كان 16px
     const textW = ctx.measureText(state.bubbleText).width;
-    const boxW = textW + 40, boxH = 36;
+    const boxW = textW + 56, boxH = 46; // كانت 40/36 — كبّرناها
 
+    ctx.shadowColor = state.bubblePalette.border;
+    ctx.shadowBlur = 10; // هالة خفيفة تزيد وضوح اللون
     ctx.fillStyle = state.bubblePalette.bg;
-    roundRect(cx - boxW / 2, y - boxH / 2, boxW, boxH, 30);
+    roundRect(cx - boxW / 2, y - boxH / 2, boxW, boxH, 34);
     ctx.fill();
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = state.bubblePalette.border;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2; // كان 1
     ctx.stroke();
 
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
-    ctx.fillText(state.bubbleText, cx, y + 5);
+    ctx.fillText(state.bubbleText, cx, y + 6);
     ctx.restore();
 }
 
@@ -724,7 +738,7 @@ function drawClock() {
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     roundRect(x, y, boxW, boxH, 14);
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -754,7 +768,7 @@ function drawStats() {
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     roundRect(x, y, boxW, boxH, 16);
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -795,7 +809,7 @@ function drawFollowBanner() {
     ctx.fillStyle = "rgba(20,15,30,0.75)";
     roundRect(x, y, boxW, boxH, 50);
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    ctx.strokeStyle = "rgba(255,255,255,0.28)";
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -833,19 +847,19 @@ function drawGiftBanner() {
     const g = state.gift;
 
     // ===== ١) الجزء العلوي: نفس بنر المتابعة بالضبط (شكل، أبعاد، تمدد حسب طول الاسم) =====
-    // الفرق الوحيد: التسمية "🎁 هدية" بدل "FOLLOW 👤"، وعداد التكرار بتأثير pop بدل عداد ثابت.
+    // سطرين: "🎁 هدية: اسم الهدية" تسمية صغيرة فوق، واسم المُرسِل بسطر أكبر تحتها.
     const avatarR = 36, avatarD = avatarR * 2;
     const padX = 28;
     const gapTextAvatar = 20;
     const gapCountText = 28;
     const boxH = 100;
 
-    ctx.font = `800 22px ${FONT_XBOLD}`;
-    const giftLabel = "🎁 هدية:";
+    ctx.font = `800 17px ${FONT_XBOLD}`;
+    const giftLabel = `🎁 هدية: ${g.giftName}`;
     const labelW = ctx.measureText(giftLabel).width;
     ctx.font = `700 24px ${FONT_BOLD}`;
     const nameW = ctx.measureText(g.name).width;
-    const textBlockW = labelW + 8 + nameW; // سطر واحد: "🎁 هدية: الاسم" بنفس المحاذاة والمستوى
+    const textBlockW = Math.max(labelW, nameW); // سطرين فوق بعض، نفس المحاذاة
 
     const countText = `× ${g.count}`;
     ctx.font = `600 19px ${FONT_TEXT}`;
@@ -860,7 +874,7 @@ function drawGiftBanner() {
     ctx.fillStyle = "rgba(20,15,30,0.75)";
     roundRect(x, y, boxW, boxH, 50);
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    ctx.strokeStyle = "rgba(255,255,255,0.28)";
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -871,12 +885,12 @@ function drawGiftBanner() {
     const textRightEdge = avatarCx - avatarR - gapTextAvatar;
     ctx.textAlign = "right";
     ctx.fillStyle = "#ffbc00";
-    ctx.font = `800 22px ${FONT_XBOLD}`;
-    ctx.fillText(giftLabel, textRightEdge, avatarCy + 8);
+    ctx.font = `800 17px ${FONT_XBOLD}`;
+    ctx.fillText(giftLabel, textRightEdge, avatarCy - 12);
 
     ctx.fillStyle = "#ffffff";
     ctx.font = `700 24px ${FONT_BOLD}`;
-    ctx.fillText(g.name, textRightEdge - labelW - 8, avatarCy + 8);
+    ctx.fillText(g.name, textRightEdge, avatarCy + 18);
 
     // عداد التكرار (بتأثير pop عند كل تحديث، نفس إحساس count-pop الأصلي)
     const bumpElapsed = Date.now() - (g.lastBumpAt || g.shownAt);
@@ -924,11 +938,11 @@ function drawGiftBanner() {
 
         ctx.drawImage(giftImg, cx - imgW / 2, cy - imgH / 2, imgW, imgH);
 
-        // اسم الهدية + جملة شكر أسفل الصورة (سطر واحد للحفاظ على المساحة)
+        // جملة شكر فقط أسفل الصورة (اسم الهدية انتقل فوق جنب كلمة "هدية")
         ctx.textAlign = "center";
         ctx.fillStyle = "#ffffff";
         ctx.font = `700 18px ${FONT_BOLD}`;
-        ctx.fillText(`🎁 ${g.giftName}  •  جزاك الله خير`, cx, cy + boxImgH / 2 + 22);
+        ctx.fillText("🤍 جزاك الله خير", cx, cy + boxImgH / 2 + 22);
     }
 }
 
@@ -946,39 +960,36 @@ function roundRectAt(x, y, w, h, r) {
 function drawMilestoneBanner() {
     if (!state.isMilestoneActive) return;
     const elapsed = Date.now() - state.milestoneShownAt;
-    const t = Math.min(1, elapsed / 500);
-    const scale = 0.5 + 0.5 * (1 - Math.pow(1 - t, 3)); // ease-out تقريبي لنفس إحساس CSS
+    const t = Math.min(1, elapsed / 400);
+    const scale = 0.6 + 0.4 * (1 - Math.pow(1 - t, 3)); // ease-out أخف، بدون قفزة حجم كبيرة
 
     ctx.save();
     ctx.globalAlpha = 1;
-    ctx.fillStyle = "rgba(0,0,0,0.75)";
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    // إزالة تعتيم الشاشة الكامل القديم — يظهر الآن كبطاقة بسيطة بدون حجب باقي العناصر
 
-    const boxW = 560, boxH = 220;
+    const boxW = 380, boxH = 110; // كانت 560×220 — صغّرناها حسب الطلب
     ctx.translate(WIDTH / 2, HEIGHT / 2);
     ctx.scale(scale, scale);
 
-    const grad = ctx.createLinearGradient(-boxW / 2, -boxH / 2, boxW / 2, boxH / 2);
-    grad.addColorStop(0, "rgba(255,20,147,0.9)");
-    grad.addColorStop(1, "rgba(139,0,139,0.9)");
-    ctx.fillStyle = grad;
-    roundRectAt(-boxW / 2, -boxH / 2, boxW, boxH, 30);
+    // نفس لغة التصميم المستخدمة بباقي البنرات (غامق شفاف + حدّ ذهبي) بدل التدرّج الوردي/النيون القديم
+    ctx.fillStyle = "rgba(20,15,30,0.85)";
+    roundRectAt(-boxW / 2, -boxH / 2, boxW, boxH, 26);
     ctx.fill();
-    ctx.strokeStyle = "#39FF14";
-    ctx.lineWidth = 3;
-    ctx.shadowColor = "#39FF14";
-    ctx.shadowBlur = 30;
+    ctx.strokeStyle = "#ffbc00";
+    ctx.lineWidth = 2;
+    ctx.shadowColor = "#ffbc00";
+    ctx.shadowBlur = 10; // كانت 30
     ctx.stroke();
     ctx.shadowBlur = 0;
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
-    ctx.font = `700 36px ${FONT_BOLD}`;
-    ctx.fillText("تم تحقيق الهدف!", 0, -20);
-
-    ctx.fillStyle = "#ffcc00";
     ctx.font = `700 24px ${FONT_BOLD}`;
-    ctx.fillText(state.milestoneText, 0, 30);
+    ctx.fillText("تم تحقيق الهدف! 🎉", 0, -10);
+
+    ctx.fillStyle = "#ffbc00";
+    ctx.font = `700 17px ${FONT_BOLD}`;
+    ctx.fillText(state.milestoneText, 0, 20);
 
     ctx.restore();
 }

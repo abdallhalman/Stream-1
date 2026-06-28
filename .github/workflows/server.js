@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const renderer = require("./renderer.js");
 
-const TIKTOK_USER = "sl42t";
+const TIKTOK_USER = "designer..fares..4k";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -41,7 +41,9 @@ try {
 // ── حلقة الرسم: محتواة بالكامل داخل try/catch ──
 // أي خطأ في الرسم يُتجاهل فقط لتلك اللقطة، والفريم السابق الناجح يبقى كما هو
 // في mainFramePath، فلا يتأثر FFmpeg ولا اتصال TikTok إطلاقاً.
-const RENDER_WARN_MS = 40; // أي فريم رسم+كتابة يتجاوز هذا الوقت يُسجَّل مع تفاصيل اللحظة
+const RENDER_WARN_MS = 40; // أي فريم رسم+كتابة يتجاوز هذا الوقت يُعتبر "بطيء"
+const RENDER_WARN_LOG_COOLDOWN_MS = 10000; // لا نطبع أكثر من رسالة بطء واحدة كل 10 ثواني، حتى لو تكرر الشرط كل فريم
+let lastRenderWarnLogAt = 0;
 
 function renderLoop() {
     const t0 = Date.now();
@@ -54,7 +56,9 @@ function renderLoop() {
 
         const renderMs = t1 - t0;
         const writeMs = t2 - t1;
-        if (renderMs + writeMs > RENDER_WARN_MS) {
+        const now = Date.now();
+        if (renderMs + writeMs > RENDER_WARN_MS && now - lastRenderWarnLogAt > RENDER_WARN_LOG_COOLDOWN_MS) {
+            lastRenderWarnLogAt = now;
             const c = renderer.getDebugCounts();
             console.log(
                 `[render] بطيء: رسم=${renderMs}ms كتابة=${writeMs}ms | ` +
