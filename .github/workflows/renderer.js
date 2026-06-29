@@ -255,9 +255,9 @@ function addJoin({ name, avatar }) {
     // نفس مبدأ تعليقات الدردشة: قياس النص مع سلسلة خطوط احتياطية طويلة مكلف، وتكراره
     // ١٠ مرات بالثانية لكل كرت انضمام نشط يزيد الحمل مع كثرة التفاعل بدون أي فايدة
     // (الاسم والنص الثابت لا يتغيران بعد إنشاء الكرت).
-    ctx.font = `600 20px ${FONT_BOLD}`;
+    ctx.font = `500 20px ${FONT_BOLD}`;
     const truncatedName = truncateText(safeName, JOIN_CARD_MAX_TEXT_W);
-    ctx.font = `600 14px ${FONT_TEXT}`;
+    ctx.font = `500 14px ${FONT_TEXT}`;
     const truncatedAction = truncateText(action, JOIN_CARD_MAX_TEXT_W);
 
     pushNotification(state.joinNotifications, "join", safeName, action, avatar, JOIN_STEP_Y, {
@@ -275,8 +275,8 @@ function addComment({ name, text, avatar }) {
     // هذا كان أكبر سبب لارتفاع حمل المعالج مع زيادة كثافة التعليقات (كل تعليق نشط كان يُعاد
     // قياسه وتقسيمه ١٠ مرات بالثانية طول مدة بقائه على الشاشة قبل التلاشي).
     const tokens = [
-        { text: `${safeName}:`, font: `600 18px ${FONT_BOLD}`, color: "#ffbc00" },
-        { text: safeText, font: `600 18px ${FONT_TEXT}`, color: "rgba(255,255,255,0.95)" },
+        { text: `${safeName}:`, font: `500 18px ${FONT_BOLD}`, color: "#ffbc00" },
+        { text: safeText, font: `500 18px ${FONT_TEXT}`, color: "rgba(255,255,255,0.95)" },
     ];
     const cachedLines = layoutInlineTokens(tokens, COMMENT_MAX_TEXT_W);
     const contentH = Math.max(COMMENT_AVATAR_D + 2, cachedLines.length * COMMENT_LINE_HEIGHT);
@@ -475,7 +475,7 @@ function drawNotificationStack(list, x) {
         ctx.fillText(item.truncatedName, textX, avatarCy - 5);
 
         ctx.fillStyle = "rgba(255,255,255,0.6)";
-        ctx.font = `600 14px ${FONT_TEXT}`;
+        ctx.font = `500 14px ${FONT_TEXT}`;
         ctx.fillText(item.truncatedAction, textX, avatarCy + 19);
 
         ctx.restore();
@@ -649,7 +649,7 @@ function drawBubble(cx, y) {
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = `700 20px ${FONT_BOLD}`; // كان 16px
+    ctx.font = `600 20px ${FONT_BOLD}`; // كان 16px
     const textW = ctx.measureText(state.bubbleText).width;
     const boxW = textW + 56, boxH = 46; // كانت 40/36 — كبّرناها
 
@@ -703,7 +703,7 @@ function drawTasbih() {
     ctx.scale(bumpScale, bumpScale);
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
-    ctx.font = `800 20px ${FONT_XBOLD}`;
+    ctx.font = `600 20px ${FONT_XBOLD}`;
     ctx.shadowColor = "rgba(0,0,0,0.8)";
     ctx.shadowBlur = 4;
     ctx.fillText(state.tasbihNumbersText, 0, 7);
@@ -744,11 +744,11 @@ function drawClock() {
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
-    ctx.font = `700 21px ${FONT_BOLD}`;
+    ctx.font = `500 21px ${FONT_BOLD}`;
     ctx.fillText(timeText, x + boxW / 2, y + 26);
 
     ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.font = `600 12px ${FONT_TEXT}`;
+    ctx.font = `500 12px ${FONT_TEXT}`;
     ctx.fillText("مكة المكرمة", x + boxW / 2, y + 44);
 }
 
@@ -756,7 +756,7 @@ function drawStats() {
     const viewersText = `👤 ${state.viewerCount.toLocaleString()}`;
     const likesText = `❤️ ${state.totalLikes.toLocaleString()}`;
 
-    ctx.font = `700 21px ${FONT_BOLD}`;
+    ctx.font = `500 21px ${FONT_BOLD}`;
     const gap = 20, padX = 25, padY = 10;
     const w1 = ctx.measureText(viewersText).width;
     const w2 = ctx.measureText(likesText).width;
@@ -789,14 +789,14 @@ function drawFollowBanner() {
     const gapCountText = 28;
     const boxH = 100;
 
-    ctx.font = `700 28px ${FONT_BOLD}`;
+    ctx.font = `600 28px ${FONT_BOLD}`;
     const nameW = ctx.measureText(f.name).width;
-    ctx.font = `800 15px ${FONT_XBOLD}`;
+    ctx.font = `700 15px ${FONT_XBOLD}`;
     const labelW = ctx.measureText("FOLLOW 👤").width;
     const textBlockW = Math.max(nameW, labelW);
 
     const countText = `👥 ${f.count}`;
-    ctx.font = `600 19px ${FONT_TEXT}`;
+    ctx.font = `500 19px ${FONT_TEXT}`;
     const countTextW = ctx.measureText(countText).width;
     const cbW = countTextW + 36, cbH = 42;
 
@@ -822,7 +822,7 @@ function drawFollowBanner() {
     const textRightEdge = avatarCx - avatarR - gapTextAvatar;
     ctx.textAlign = "right";
     ctx.fillStyle = "#ffbc00";
-    ctx.font = `800 15px ${FONT_XBOLD}`;
+    ctx.font = `700 15px ${FONT_XBOLD}`;
     ctx.fillText("FOLLOW 👤", textRightEdge, avatarCy - 12);
 
     ctx.fillStyle = "#ffffff";
@@ -837,7 +837,7 @@ function drawFollowBanner() {
     ctx.fill();
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(255,255,255,0.9)";
-    ctx.font = `600 19px ${FONT_TEXT}`;
+    ctx.font = `500 19px ${FONT_TEXT}`;
     ctx.fillText(countText, cbX + cbW / 2, cbY + cbH / 2 + 7);
 }
 
@@ -854,15 +854,15 @@ function drawGiftBanner() {
     const gapCountText = 28;
     const boxH = 100;
 
-    ctx.font = `800 17px ${FONT_XBOLD}`;
+    ctx.font = `700 17px ${FONT_XBOLD}`;
     const giftLabel = `🎁: ${g.giftName}`;
     const labelW = ctx.measureText(giftLabel).width;
-    ctx.font = `700 24px ${FONT_BOLD}`;
+    ctx.font = `600 24px ${FONT_BOLD}`;
     const nameW = ctx.measureText(g.name).width;
     const textBlockW = Math.max(labelW, nameW); // سطرين فوق بعض، نفس المحاذاة
 
     const countText = `× ${g.count}`;
-    ctx.font = `600 19px ${FONT_TEXT}`;
+    ctx.font = `500 19px ${FONT_TEXT}`;
     const countTextW = ctx.measureText(countText).width;
     const cbW = countTextW + 36, cbH = 42;
 
@@ -885,11 +885,11 @@ function drawGiftBanner() {
     const textRightEdge = avatarCx - avatarR - gapTextAvatar;
     ctx.textAlign = "right";
     ctx.fillStyle = "#ffbc00";
-    ctx.font = `800 17px ${FONT_XBOLD}`;
+    ctx.font = `700 17px ${FONT_XBOLD}`;
     ctx.fillText(giftLabel, textRightEdge, avatarCy - 12);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = `700 24px ${FONT_BOLD}`;
+    ctx.font = `600 24px ${FONT_BOLD}`;
     ctx.fillText(g.name, textRightEdge, avatarCy + 18);
 
     // عداد التكرار (بتأثير pop عند كل تحديث، نفس إحساس count-pop الأصلي)
@@ -904,7 +904,7 @@ function drawGiftBanner() {
     ctx.fill();
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffff00";
-    ctx.font = `700 19px ${FONT_BOLD}`;
+    ctx.font = `600 19px ${FONT_BOLD}`;
     ctx.fillText(countText, 0, 7);
     ctx.restore();
 
@@ -941,7 +941,7 @@ function drawGiftBanner() {
         // جملة شكر فقط أسفل الصورة (اسم الهدية انتقل فوق جنب كلمة "هدية")
         ctx.textAlign = "center";
         ctx.fillStyle = "#ffffff";
-        ctx.font = `700 18px ${FONT_BOLD}`;
+        ctx.font = `600 18px ${FONT_BOLD}`;
         ctx.fillText("🤍 جزاك الله خير", cx, cy + boxImgH / 2 + 22);
     }
 }
@@ -984,11 +984,11 @@ function drawMilestoneBanner() {
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
-    ctx.font = `700 24px ${FONT_BOLD}`;
+    ctx.font = `600 24px ${FONT_BOLD}`;
     ctx.fillText("تم تحقيق الهدف!", 0, -10);
 
     ctx.fillStyle = "#ffbc00";
-    ctx.font = `700 17px ${FONT_BOLD}`;
+    ctx.font = `600 18px ${FONT_BOLD}`;
     ctx.fillText(state.milestoneText, 0, 20);
 
     ctx.restore();
