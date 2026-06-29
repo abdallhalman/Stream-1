@@ -471,7 +471,7 @@ function drawNotificationStack(list, x) {
         const textX = avatarCx + avatarR + 14;
         ctx.textAlign = "left";
         ctx.fillStyle = item.kind === "comment" ? "#ffbc00" : "#ffffff";
-        ctx.font = `600 20px ${FONT_BOLD}`;
+        ctx.font = `500 20px ${FONT_BOLD}`;
         ctx.fillText(item.truncatedName, textX, avatarCy - 5);
 
         ctx.fillStyle = "rgba(255,255,255,0.6)";
