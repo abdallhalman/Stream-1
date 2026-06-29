@@ -6,7 +6,7 @@ on:
 jobs:
   stream:
     runs-on: self-hosted
-    timeout-minutes: 2880
+    timeout-minutes: 1200
     steps:
 
       - name: Checkout repository
