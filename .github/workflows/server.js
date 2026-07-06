@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const renderer = require("./renderer.js");
 
-const TIKTOK_USER = "sl42t";
+const TIKTOK_USER = "designer..fares..4k";
 const STREAM_KEY = process.env.STREAM_KEY;
 const WIDTH  = 1280;
 const HEIGHT = 720;
@@ -189,8 +189,9 @@ function handleComment(data) {
         if (text) {
             renderer.addComment({
                 name: data.nickname || data.uniqueId,
-                text: text.replace(/\[heart\]/g, "❤️"),
+                text,  // نمرر النص الخام بدون استبدال — الرندرر يعالج [..] بنفسه
                 avatar: data.profilePictureUrl,
+                emoteList: data.emoteList || [], // صور إيموجي تيك توك الخاصة
             });
             lastCommentTime = now;
         }
