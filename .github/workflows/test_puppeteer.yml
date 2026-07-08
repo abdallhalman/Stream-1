@@ -6,7 +6,7 @@ on:
 jobs:
   stream:
     runs-on: self-hosted
-    timeout-minutes: 2800
+    timeout-minutes: 1200
     steps:
 
       - name: Checkout repository
@@ -23,9 +23,14 @@ jobs:
       - name: Download Almarai font (غير متوفر كخط نظام، يُحمّل ويُسجَّل يدوياً في renderer.js)
         run: |
           mkdir -p .github/workflows/fonts
-          curl -L -o .github/workflows/fonts/Almarai-Regular.ttf   "https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-Regular.ttf"
-          curl -L -o .github/workflows/fonts/Almarai-Bold.ttf      "https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-Bold.ttf"
-          curl -L -o .github/workflows/fonts/Almarai-ExtraBold.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-ExtraBold.ttf"
+          curl -fL -o .github/workflows/fonts/Almarai-Regular.ttf   "https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-Regular.ttf"
+          curl -fL -o .github/workflows/fonts/Almarai-Bold.ttf      "https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-Bold.ttf"
+          curl -fL -o .github/workflows/fonts/Almarai-ExtraBold.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-ExtraBold.ttf"
+
+      - name: Download Noto Color Emoji (يُسجَّل يدوياً ليأخذ أولوية على Symbols في Skia — خط النظام apt يخسر أمام الخطوط المسجّلة يدوياً)
+        run: |
+          curl -fL -o .github/workflows/fonts/NotoColorEmoji.ttf \
+            "https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf"
 
       - name: Download Noto Symbols/Math fonts (مربعات الرموز الغريبة — غير متوفرة عبر apt إطلاقاً حتى مع fonts-noto، تشمل الخط الزخرفي المستخدم بأسماء تيك توك)
         run: |
@@ -43,7 +48,7 @@ jobs:
         run: |
           mkdir -p downloads
           # اختيار 5 أرقام عشوائية من 1 إلى 18
-          SELECTED=$(shuf -i 1-40 -n 10)
+          SELECTED=$(shuf -i 1-18 -n 5)
           i=1
           for NUM in $SELECTED; do
             curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio${NUM}.mp3" -o downloads/audio${i}.mp3

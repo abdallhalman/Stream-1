@@ -17,17 +17,21 @@ const HEIGHT = 720;
 // يحمّل خطوط النظام المثبتة عبر apt (Noto Sans / Noto Sans Arabic / Noto Color Emoji)
 GlobalFonts.loadSystemFonts();
 
-// Almarai + خطوط Noto Symbols/Symbols2/Math ليست خطوط نظام (Math و Symbols أصلاً غير متوفرة
-// عبر apt في دبيان/أوبنتو إطلاقاً، حتى مع تثبيت fonts-noto الكامل — لازم تنزيلها يدوياً من
-// google/fonts بالضبط كما نسوي مع Almarai). تتحمّل بخطوة الـ workflow لمجلد fonts/ وتُسجَّل هنا.
+// Almarai + Noto Color Emoji + خطوط Noto Symbols/Symbols2/Math كلها تُسجَّل يدوياً.
+// السبب الجوهري: Skia يعطي الخطوط المسجلة بـ registerFromPath أولوية على خطوط النظام
+// (المثبتة عبر apt) عند البحث عن الـ glyph — بغض النظر عن ترتيبهم في ctx.font.
+// لذلك fonts-noto-color-emoji المثبّت عبر apt كان يخسر أمام Symbols2 المسجّل يدوياً،
+// فتظهر الإيموجي أحادية اللون. الحل: نسجّل Noto Color Emoji يدوياً أيضاً ونضعه أولاً
+// في القائمة — هكذا Skia يجده أول من يبحث ويأخذ النسخة الملوّنة.
 const FONTS_DIR = path.join(__dirname, "fonts");
 const customFonts = [
+    ["NotoColorEmoji.ttf", "Noto Color Emoji"],      // ← أولاً دائماً: يضمن الإيموجي الملوّن قبل Symbols
     ["Almarai-Regular.ttf", "Almarai"],
     ["Almarai-Bold.ttf", "Almarai Bold"],
     ["Almarai-ExtraBold.ttf", "Almarai ExtraBold"],
     ["NotoSansSymbols-Regular.ttf", "Noto Sans Symbols"],
     ["NotoSansSymbols2-Regular.ttf", "Noto Sans Symbols 2"],
-    ["NotoSansMath-Regular.ttf", "Noto Sans Math"], // يغطي تحديداً حروف "الخط الزخرفي" 𝓮𝔁𝓪𝓶𝓹𝓵𝓮 اللي تستخدمها أسماء تيك توك
+    ["NotoSansMath-Regular.ttf", "Noto Sans Math"],
 ];
 for (const [file, alias] of customFonts) {
     const fp = path.join(FONTS_DIR, file);
@@ -270,12 +274,21 @@ function addJoin({ name, avatar }) {
 // (مو مصفوفة كلمات) — وقت الرسم نرسم كل سطر بنداء fillText واحد، فيحافظ محرك الخطوط على
 // ترتيب القراءة الصحيح داخلياً تلقائياً (عربي، إنجليزي، أو خليط الاثنين بنفس السطر) بدون
 // أي تخمين أو تدخل يدوي بترتيب الكلمات — هذا أصل المشكلة اللي كنا نواجهها بالتصنيف القديم.
+// جدول استبدال إيموجي تيك توك الخاصة بنظيرها الـ Unicode
+// يُستخدم كـ fallback لما emoteList فارغة أو ما تحمّل صورة الرمز
+function applyEmoteFallback(text) {
+    // رموز TikTok الخاصة ([thumb][heart] إلخ) مو Unicode — تيك توك يرندرها كصور بتطبيقه.
+    // عبر connector تجي كنص خام مو مدعوم بأي خط، فنحذفها كلياً بدل ما تظهر بشكل غريب.
+    return String(text || "").replace(/\[[^\]]+\]/g, "").replace(/\s+/g, " ").trim();
+}
+
 // ── تحويل نص+emoteList لـ tokens مختلطة (نص / صورة إيموجي) ──
 // emoteList من tiktok-live-connector: [{emoteId, emoteImageUrl, placeInTheList}]
 // نقسّم النص عند كل رمز [..] ونُنتج tokens بالترتيب: نص ثم إيموجي ثم نص...
 function buildMixedTokens(text, emoteList, textFont, textColor) {
     if (!emoteList || !emoteList.length) {
-        return [{ type: "text", text: String(text || ""), font: textFont, color: textColor }];
+        // لا emoteList — نستبدل الرموز المعروفة بـ Unicode كـ fallback
+        return [{ type: "text", text: applyEmoteFallback(String(text || "")), font: textFont, color: textColor }];
     }
     const tokens = [];
     const sorted = [...emoteList].sort((a, b) => (a.placeInTheList || 0) - (b.placeInTheList || 0));
@@ -297,11 +310,32 @@ function buildMixedTokens(text, emoteList, textFont, textColor) {
 // كل سطر = مصفوفة قطع جاهزة للرسم، كل قطعة فيها advance (عرضها + مسافة بعدها) محسوب مسبقاً
 function wrapMixedTokens(tokens, firstLineMaxW, restMaxW) {
     const EM_PAD = 3;
-    const lines = [];
+    const rawLines = [];
     let line = [], lineW = 0, maxW = firstLineMaxW;
 
     function commit() {
-        if (line.length) lines.push(line);
+        if (!line.length) return;
+        // ── دمج كلمات متتالية من نفس الخط واللون في نص واحد ──
+        // هذا الخطوة هي الأهم: لو خلّينا "hello world" ككلمتين منفصلتين ورسمناهم كل واحد
+        // من اليمين، يطلع "world hello" (معكوس). لكن لو دمجناهم في fillText واحد،
+        // canvas يرسم "hello world" بشكل صحيح وبترتيبه الطبيعي (bidi داخلي للمحرك).
+        const merged = [];
+        for (const p of line) {
+            const last = merged[merged.length - 1];
+            if (p.type === "text" && last && last.type === "text" && last.font === p.font && last.color === p.color) {
+                last.text += " " + p.text;
+            } else {
+                merged.push({ ...p });
+            }
+        }
+        // إعادة حساب عرض كل قطعة مدموجة بدقة
+        merged.forEach(p => {
+            if (p.type === "text") {
+                ctx.font = p.font;
+                p.advance = ctx.measureText(p.text).width + ctx.measureText(" ").width;
+            }
+        });
+        rawLines.push(merged);
         line = []; lineW = 0; maxW = restMaxW;
     }
 
@@ -325,7 +359,7 @@ function wrapMixedTokens(tokens, firstLineMaxW, restMaxW) {
         }
     }
     commit();
-    return lines;
+    return rawLines;
 }
 
 function wrapPlainText(text, font, firstLineMaxW, restMaxW) {
@@ -533,17 +567,16 @@ function currentAnimOffset(item, now) {
 function drawNotificationStack(list, x) {
     const boxW = JOIN_CARD_BOX_W;
     const cardH = JOIN_CARD_H;
-    const stepY = JOIN_STEP_Y; // المسافة بين كرت وكرت — كبّرها لتباعد أكثر
+    const stepY = JOIN_STEP_Y;
     const bottomY = HEIGHT - 40;
     const now = Date.now();
 
-    // [0] = الأحدث ويظهر بالأسفل (أقرب للحافة)، الأقدم يرتفع للأعلى ويتلاشى تدريجياً
     list.forEach((item, idx) => {
         const cardBottom = bottomY - idx * stepY;
         const targetY = cardBottom - cardH;
-        const y = targetY + currentAnimOffset(item, now); // الموضع الفعلي للرسم خلال حركة الزحف
+        const y = targetY + currentAnimOffset(item, now);
         const alpha = fadeAlphaByIndex(idx, JOIN_FADE_START_INDEX, JOIN_FADE_END_INDEX);
-        if (alpha <= 0.01) return; // تلاشى تماماً، لا داعي لرسمه
+        if (alpha <= 0.01) return;
 
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -558,20 +591,24 @@ function drawNotificationStack(list, x) {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
+        // في overlay.html الأصلي مع dir="rtl": الأفاتار (أول عنصر) يظهر يمين الكرت،
+        // والنص يظهر يسار الأفاتار. نحاكي هذا بتثبيت الأفاتار على اليمين.
         const avatarR = JOIN_CARD_AVATAR_R;
-        const avatarCx = x + 16 + avatarR;
+        const avatarCx = x + boxW - 16 - avatarR; // يمين الكرت
         const avatarCy = y + cardH / 2;
         drawCircleImage(getImage(item.avatar), avatarCx, avatarCy, avatarR, "rgba(255,255,255,0.4)", 1);
 
-        const textX = avatarCx + avatarR + 14;
+        // النص يبدأ من يسار الكرت ويتجه نحو الأفاتار (يمين)
+        const textX = x + 14;
+        const textMaxW = boxW - 16 - avatarR * 2 - 14 - 14;
         ctx.textAlign = "left";
         ctx.fillStyle = item.kind === "comment" ? "#ffbc00" : "#ffffff";
         ctx.font = `600 20px ${FONT_BOLD}`;
-        ctx.fillText(item.truncatedName, textX, avatarCy - 5);
+        ctx.fillText(truncateText(item.truncatedName, textMaxW), textX, avatarCy - 5);
 
         ctx.fillStyle = "rgba(255,255,255,0.6)";
         ctx.font = `600 14px ${FONT_TEXT}`;
-        ctx.fillText(item.truncatedAction, textX, avatarCy + 19);
+        ctx.fillText(item.truncatedAction ? truncateText(item.truncatedAction, textMaxW) : "", textX, avatarCy + 19);
 
         ctx.restore();
     });
@@ -891,6 +928,9 @@ function drawClock() {
 }
 
 function drawStats() {
+    // في overlay.html الأصلي: <div>👤 viewers</div><div>❤️ likes</div>
+    // مع dir="rtl"، العنصر الأول (viewers) يظهر على اليمين والثاني (likes) على يساره.
+    // نحاكي هذا بتبديل ترتيب الرسم: likes أولاً (أقصى اليمين) ثم viewers بجانبه يساراً.
     const viewersText = `👤 ${state.viewerCount.toLocaleString()}`;
     const likesText = `❤️ ${state.totalLikes.toLocaleString()}`;
 
@@ -912,8 +952,9 @@ function drawStats() {
 
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
-    ctx.fillText(viewersText, x + padX, y + boxH / 2 + 7);
-    ctx.fillText(likesText, x + padX + w1 + gap, y + boxH / 2 + 7);
+    // ترتيب dir="rtl": ❤️ أقرب لليمين، ثم 👤 يساراً
+    ctx.fillText(likesText, x + padX, y + boxH / 2 + 7);
+    ctx.fillText(viewersText, x + padX + w2 + gap, y + boxH / 2 + 7);
 }
 
 function drawFollowBanner() {
