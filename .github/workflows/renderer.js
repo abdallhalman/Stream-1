@@ -17,20 +17,20 @@ const HEIGHT = 720;
 // يحمّل خطوط النظام المثبتة عبر apt (Noto Sans / Noto Sans Arabic / Noto Color Emoji)
 GlobalFonts.loadSystemFonts();
 
-// Almarai + Noto Color Emoji + خطوط Noto Symbols/Symbols2/Math كلها تُسجَّل يدوياً.
-// السبب الجوهري: Skia يعطي الخطوط المسجلة بـ registerFromPath أولوية على خطوط النظام
-// (المثبتة عبر apt) عند البحث عن الـ glyph — بغض النظر عن ترتيبهم في ctx.font.
-// لذلك fonts-noto-color-emoji المثبّت عبر apt كان يخسر أمام Symbols2 المسجّل يدوياً،
-// فتظهر الإيموجي أحادية اللون. الحل: نسجّل Noto Color Emoji يدوياً أيضاً ونضعه أولاً
-// في القائمة — هكذا Skia يجده أول من يبحث ويأخذ النسخة الملوّنة.
+// ─── تسجيل الخطوط ───
+// القاعدة الجوهرية: Skia يعطي الخطوط المسجّلة يدوياً أولوية على خطوط النظام دائماً.
+// لذلك نسجّل فقط ما نحتاجه بالضبط، بلا زيادة:
+//   • Almarai: للعربي
+//   • NotoSansSymbols: للأحرف الزخرفية بأسماء TikTok (𝓮𝔁𝓪𝓶𝓹𝓵𝓮) — U+1D400-U+1D7FF
+//   • NotoSansMath: للرموز الرياضية
+//   • NotoColorEmoji: لا نسجّله يدوياً (١٠ ميغابايت، يسبب ٢٧٥ms/فريم!) — يظل كخط نظام
+//   • NotoSansSymbols2: لا نسجّله (يحتوي إيموجي أحادية اللون تتعارض مع Color Emoji)
 const FONTS_DIR = path.join(__dirname, "fonts");
 const customFonts = [
-    ["NotoColorEmoji.ttf", "Noto Color Emoji"],      // ← أولاً دائماً: يضمن الإيموجي الملوّن قبل Symbols
     ["Almarai-Regular.ttf", "Almarai"],
     ["Almarai-Bold.ttf", "Almarai Bold"],
     ["Almarai-ExtraBold.ttf", "Almarai ExtraBold"],
     ["NotoSansSymbols-Regular.ttf", "Noto Sans Symbols"],
-    ["NotoSansSymbols2-Regular.ttf", "Noto Sans Symbols 2"],
     ["NotoSansMath-Regular.ttf", "Noto Sans Math"],
 ];
 for (const [file, alias] of customFonts) {
@@ -52,7 +52,7 @@ for (const [file, alias] of customFonts) {
 // مهم: "Noto Color Emoji" لازم يجي قبل خطوط Symbols/Math، لأن رموز كثيرة (⭐❤️✅☀️▶️) موجودة
 // بالخطين معاً — الرندرر يختار أول خط بالقائمة يحتوي الرمز، فلو Symbols قبل، تطلع أحادية اللون
 // حتى لو فيها نسخة ملونة بـ Color Emoji. خطوط Symbols/Math تبقى حل أخير فقط لما لا توجد بـ Color Emoji إطلاقاً.
-const FONT_FALLBACK_TAIL = `"Noto Color Emoji", "Noto Sans Symbols", "Noto Sans Symbols 2", "Noto Sans Math", "Noto Sans CJK SC", "Noto Sans Thai", "Noto Sans Devanagari", "Noto Sans Hebrew", "DejaVu Sans", sans-serif`;
+const FONT_FALLBACK_TAIL = `"Noto Color Emoji", "Noto Sans Symbols", "Noto Sans Math", "Noto Sans CJK SC", "Noto Sans Thai", "Noto Sans Devanagari", "Noto Sans Hebrew", "DejaVu Sans", sans-serif`;
 
 const FONT_TEXT  = `"Almarai", "Noto Sans Arabic", "Noto Sans", ${FONT_FALLBACK_TAIL}`;
 const FONT_BOLD  = `"Almarai Bold", "Almarai", "Noto Sans Arabic", "Noto Sans", ${FONT_FALLBACK_TAIL}`;
@@ -253,7 +253,7 @@ function pushNotification(list, kind, name, action, avatar, pushAmount, extra) {
 
 function addJoin({ name, avatar }) {
     const safeName = name || "متابع جديد";
-    const action = "✨انضم إلى البث الآن";
+    const action = "انضم إلى البث الآن ✨";
 
     // نقصّ النص (truncate) مرة واحدة هنا، بدل إعادة قياسه حرف-حرف كل فريم بدالة الرسم —
     // نفس مبدأ تعليقات الدردشة: قياس النص مع سلسلة خطوط احتياطية طويلة مكلف، وتكراره
@@ -921,7 +921,7 @@ function drawClock() {
     ctx.fillText(timeText, x + boxW / 2, y + 26);
 
     ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.font = `600 12px ${FONT_TEXT}`;
+    ctx.font = `600 10px ${FONT_TEXT}`;
     ctx.fillText("مكة المكرمة", x + boxW / 2, y + 44);
 }
 
@@ -1032,7 +1032,7 @@ function drawGiftBanner() {
     const boxH = 100;
 
     ctx.font = `800 17px ${FONT_XBOLD}`;
-    const giftLabel = `🎁: ${g.giftName}`;
+    const giftLabel = `🎁 هدية: ${g.giftName}`;
     const labelW = ctx.measureText(giftLabel).width;
     ctx.font = `700 24px ${FONT_BOLD}`;
     const nameW = ctx.measureText(g.name).width;
