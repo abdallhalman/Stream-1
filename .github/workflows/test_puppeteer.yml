@@ -6,7 +6,7 @@ on:
 jobs:
   stream:
     runs-on: self-hosted
-    timeout-minutes: 1200
+    timeout-minutes: 2800
     steps:
 
       - name: Checkout repository
@@ -47,8 +47,8 @@ jobs:
       - name: Download audio files
         run: |
           mkdir -p downloads
-          # اختيار 5 أرقام عشوائية من 1 إلى 18
-          SELECTED=$(shuf -i 1-18 -n 5)
+          # اختيار 10 أرقام عشوائية من 1 إلى 40
+          SELECTED=$(shuf -i 1-40 -n 10)
           i=1
           for NUM in $SELECTED; do
             curl -L "https://huggingface.co/datasets/abdallhslman/stream-engine/resolve/main/audios_permanent/audio${NUM}.mp3" -o downloads/audio${i}.mp3
