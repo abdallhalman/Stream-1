@@ -1162,7 +1162,7 @@ function drawMilestoneBanner() {
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffffff";
     ctx.font = `700 24px ${FONT_BOLD}`;
-    ctx.fillText("تم تحقيق الهدف! 🎉", 0, -10);
+    ctx.fillText("تم تحقيق الهدف!", 0, -10);
 
     ctx.fillStyle = "#ffbc00";
     ctx.font = `700 17px ${FONT_BOLD}`;
